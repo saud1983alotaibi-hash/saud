@@ -43,6 +43,7 @@
         .p-none { border-right:4px solid var(--p-none); }
         .s-num { font-family:'Amiri', serif; font-size:18px; color:var(--gold2); font-weight:700; }
         .s-parties { font-size:12px; color:var(--text2); background:var(--ink3); border-radius:10px; padding:8px 10px; margin:10px 0; }
+        .s-notes { font-size:11px; color:var(--text3); background:rgba(0,0,0,0.2); border-radius:8px; padding:8px; margin-top:8px; border:1px dashed var(--rim2); line-height:1.5; }
         .countdown-box { margin-top:10px; padding:10px; border-radius:12px; font-size:12px; display:flex; justify-content:space-between; align-items:center; }
         .countdown-box.urgent { background:rgba(239,68,68,0.1); color:#f87171; border:1px solid rgba(239,68,68,0.2); }
         .countdown-box.ok { background:rgba(16,185,129,0.1); color:#34d399; border:1px solid rgba(16,185,129,0.2); }
@@ -53,6 +54,7 @@
         .field { margin-bottom:15px; padding:0 20px; }
         .field label { display:block; font-size:12px; color:var(--text3); margin-bottom:5px; }
         .field input, .field select, .field textarea { width:100%; background:var(--ink3); border:1px solid var(--rim2); border-radius:12px; padding:12px; color:var(--text); font-family:inherit; }
+        .field textarea { height:80px; resize:none; }
         .hidden { display:none !important; }
         .btn-gold { width:90%; margin:10px 5%; background:var(--gold); color:var(--ink); padding:16px; border-radius:16px; font-weight:700; border:none; cursor:pointer; }
     </style>
@@ -75,8 +77,7 @@
         </div>
     </div>
 
-    <div id="content">
-        </div>
+    <div id="content"></div>
 </div>
 
 <div class="overlay hidden" id="form-sheet">
@@ -85,21 +86,15 @@
         <div style="width:40px; height:4px; background:var(--rim2); margin:12px auto; border-radius:2px;"></div>
         <h3 style="text-align:center; margin-bottom:20px; font-family:'Amiri'; color:var(--gold2);">تفاصيل الجلسة</h3>
         <div class="field"><label>رقم القضية</label><input id="f-num" type="text" placeholder="مثلاً: 2026/123"></div>
-        <div class="field"><label>اسم القاضي</label><input id="f-judge" type="text"></div>
+        <div class="field"><label>المحكمة او الدائرة</label><input id="f-judge" type="text"></div>
         <div class="field"><label>المدعي</label><input id="f-plnt" type="text"></div>
         <div class="field"><label>المدعى عليه</label><input id="f-dfnd" type="text"></div>
         <div style="display:flex; gap:10px;">
             <div class="field" style="flex:1"><label>التاريخ</label><input id="f-date" type="date"></div>
             <div class="field" style="flex:1"><label>الوقت</label><input id="f-time" type="time"></div>
         </div>
-        <div class="field">
-            <label>الأهمية</label>
-            <select id="f-prio">
-                <option value="none">عادية</option>
-                <option value="low">منخفضة</option>
-                <option value="med">متوسطة</option>
-                <option value="high">عالية (🔴)</option>
-            </select>
+        <div class="field"><label>مذكرات وملاحظات</label><textarea id="f-notes" placeholder="اكتب تفاصيل المذكرات هنا..."></textarea></div>
+        <div class="field hidden"> <select id="f-prio"><option value="none" selected>عادية</option></select>
         </div>
         <button class="btn-gold" onclick="saveS()">حفظ البيانات</button>
     </div>
@@ -134,13 +129,16 @@
             dfnd: document.getElementById('f-dfnd').value,
             date: document.getElementById('f-date').value,
             time: document.getElementById('f-time').value,
-            priority: document.getElementById('f-prio').value,
+            notes: document.getElementById('f-notes').value,
+            priority: 'none',
             status: 'scheduled'
         };
         data.push(newS);
         localStorage.setItem('legal_sessions', JSON.stringify(data));
         closeForm();
         render();
+        // مسح الحقول بعد الحفظ
+        ['f-num', 'f-judge', 'f-plnt', 'f-dfnd', 'f-date', 'f-time', 'f-notes'].forEach(id => document.getElementById(id).value = '');
     }
 
     function getCD(date, time) {
@@ -167,7 +165,7 @@
         let list = data;
         if (currentTab === 'home') {
             list = data.filter(s => new Date(s.date).toDateString() === new Date().toDateString());
-            if(list.length === 0) container.innerHTML = '<p style="text-align:center; color:var(--text3); margin-top:40px;">لا توجد جلسات مجدولة لليوم</p>';
+            if(list.length === 0) container.innerHTML = '<p style="text-align:center; color:var(--text3); margin-top:40px;">لا توجد جلسات اليوم</p>';
         }
 
         list.sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
@@ -183,6 +181,7 @@
                 </div>
                 <div class="s-parties">⚖️ ${s.plnt} ضد ${s.dfnd}</div>
                 <div style="font-size:12px; color:var(--text3)">القاضي: ${s.judge}</div>
+                ${s.notes ? `<div class="s-notes">📑 <b>المذكرات:</b><br>${s.notes}</div>` : ''}
                 <div class="countdown-box ${cd.cls}">
                     <span>${cd.lbl}</span>
                     <span class="badge" style="color:${ST[s.status].clr}; border-color:${ST[s.status].clr}">${ST[s.status].lbl}</span>
@@ -192,12 +191,9 @@
         });
     }
 
-    // تحديث التاريخ في الهيدر
     document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('ar-SA', {weekday:'long', day:'numeric', month:'long'});
-    
-    // التشغيل الأولي
     render();
-    setInterval(render, 60000); // تحديث العد التنازلي كل دقيقة
+    setInterval(render, 60000);
 </script>
 
 </body>
