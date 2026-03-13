@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>المكتب القانوني السيادي الشامل</title>
+    <title>المكتب القانوني السيادي - النسخة الكاملة</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { 
-            --ios-blue: #007AFF; --ios-purple: #5856D6; --ios-red: #FF3B30; --ios-green: #34C759;
+            --ios-blue: #007AFF; --ios-red: #FF3B30; --ios-green: #34C759; --ios-gold: #AF9500;
             --ios-bg: #F2F2F7; --ios-card: #FFFFFF; --text-main: #000;
         }
         body.dark-mode { --ios-bg: #000; --ios-card: #1C1C1E; --text-main: #FFF; }
@@ -19,137 +19,169 @@
         .header { position: sticky; top: 0; background: rgba(var(--ios-card), 0.8); backdrop-filter: blur(20px); padding: 50px 20px 15px; z-index: 100; border-bottom: 0.5px solid #333; display: flex; justify-content: space-between; align-items: center; }
         .container { padding: 15px; display: none; }
 
-        .session-card { background: var(--ios-card); border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-right: 8px solid var(--ios-blue); }
+        .session-card { background: var(--ios-card); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-right: 8px solid var(--ios-blue); }
         
-        /* رادار الاستئناف والمالية */
-        .badge { font-size: 11px; padding: 5px 10px; border-radius: 8px; margin-top: 5px; display: inline-block; }
+        /* الرادارات والشارات */
+        .badge-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        .badge { font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: bold; }
         .deadline { background: rgba(255, 59, 48, 0.1); color: var(--ios-red); border: 0.5px solid var(--ios-red); }
         .finance { background: rgba(52, 199, 89, 0.1); color: var(--ios-green); border: 0.5px solid var(--ios-green); }
+        .timer-badge { background: rgba(0, 122, 255, 0.1); color: var(--ios-blue); border: 0.5px solid var(--ios-blue); }
 
-        /* مصفوفة الرد والذكاء الاصطناعي */
-        .ai-box { background: linear-gradient(135deg, #1e1e2e, #2d2d44); color: #e0e0e0; padding: 15px; border-radius: 15px; margin-top: 15px; font-size: 13px; line-height: 1.6; border: 1px solid var(--ios-purple); }
-        
-        .btn-main { background: var(--ios-blue); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
-        input, textarea, select { width: 100%; padding: 15px; margin: 8px 0; border: 1px solid #ccc; border-radius: 12px; background: var(--ios-card); color: var(--text-main); font-size: 15px; box-sizing: border-box; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        /* مصفوفة الرد */
+        .strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .strategy-item { padding: 10px; border-radius: 10px; font-size: 11px; line-height: 1.4; }
+        .opp { background: rgba(255, 59, 48, 0.05); border: 0.5px solid #ff3b3055; }
+        .me { background: rgba(52, 199, 89, 0.05); border: 0.5px solid #34c75955; }
+
+        .qr-area { text-align: center; margin: 15px 0; display: none; background: white; padding: 10px; border-radius: 10px; }
+        .qr-area canvas { margin: 0 auto; }
+
+        .btn-main { background: var(--ios-blue); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: bold; width: 100%; cursor: pointer; }
+        input, textarea { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ccc; border-radius: 12px; background: var(--ios-card); color: var(--text-main); font-size: 15px; box-sizing: border-box; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .btn-sm { padding: 10px; border-radius: 8px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="lock-screen">
-    <h2>المكتب السيادي 🛡️</h2>
-    <input type="password" id="pass-input" placeholder="كلمة المرور (123)">
-    <button class="btn-main" onclick="unlock()">فتح المكتب</button>
+    <h2 style="margin-bottom:20px;">المكتب السيادي 🛡️</h2>
+    <input type="password" id="pass-input" placeholder="كلمة المرور">
+    <button class="btn-main" onclick="unlock()">فتح النظام</button>
 </div>
 
 <div class="header" id="app-header" style="display:none;">
-    <h1 style="margin:0; font-size:18px;">المحامي السيادي (الشامل) ✨</h1>
+    <h1 style="margin:0; font-size:18px;">المكتب القانوني المتكامل ⚖️</h1>
     <button onclick="document.body.classList.toggle('dark-mode')" style="background:none; border:none; font-size:20px;">🌓</button>
 </div>
 
 <div class="container" id="app-container">
-    <div style="background:var(--ios-card); padding:20px; border-radius:20px; margin-bottom:20px;">
-        <input type="text" id="title" placeholder="اسم القضية / الموكل">
-        <input type="date" id="jDate" title="تاريخ صدور الحكم (لرادار الاستئناف)">
-        <div class="action-grid">
+    <div style="background:var(--ios-card); padding:20px; border-radius:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <h4 style="margin:0 0 10px 0;">تسجيل قضية جديدة</h4>
+        <input type="text" id="title" placeholder="اسم القضية / الخصم">
+        <input type="date" id="jDate" title="تاريخ الحكم (لحساب الاستئناف)">
+        <div class="action-grid" style="margin:0;">
             <input type="number" id="totalFee" placeholder="إجمالي الأتعاب">
-            <input type="number" id="paidFee" placeholder="المبلغ المحصل">
+            <input type="number" id="paidFee" placeholder="المحصل">
         </div>
-        <textarea id="facts" placeholder="وقائع القضية (للتحليل الذكي)..." rows="3"></textarea>
-        <button onclick="saveSession()" class="btn-main">حفظ واعتماد القضية ⚖️</button>
+        <input type="text" id="opp_claim" placeholder="ادعاء الخصم الرئيسي">
+        <input type="text" id="my_reply" placeholder="الرد القانوني الفاصل">
+        <textarea id="notes" placeholder="ملاحظات إضافية..." rows="2"></textarea>
+        <button onclick="saveSession()" class="btn-main" style="margin-top:10px;">إضافة للمكتب</button>
     </div>
 
     <div id="session-list"></div>
 </div>
 
 <script>
-    const APP_PASSWORD = "123"; // غيرها حسب رغبتك
-    let API_KEY = localStorage.getItem('gemini_api_key');
+    const APP_PASSWORD = "123"; // كلمة المرور الخاصة بك
+    let sessions = JSON.parse(localStorage.getItem('legal_sovereign_vault')) || [];
+    let workStart;
 
     function unlock() {
         if (document.getElementById('pass-input').value === APP_PASSWORD) {
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('app-header').style.display = 'flex';
             document.getElementById('app-container').style.display = 'block';
-            if (!API_KEY) {
-                API_KEY = prompt("أدخل مفتاح API (Gemini):");
-                localStorage.setItem('gemini_api_key', API_KEY);
-            }
             renderSessions();
-        } else { alert("خطأ!"); }
+        } else { alert("كلمة المرور خاطئة"); }
     }
-
-    let sessions = JSON.parse(localStorage.getItem('legal_master_vault')) || [];
 
     function saveSession() {
         const title = document.getElementById('title').value;
         const jDate = document.getElementById('jDate').value;
         const total = document.getElementById('totalFee').value || 0;
         const paid = document.getElementById('paidFee').value || 0;
-        const facts = document.getElementById('facts').value;
+        const opp = document.getElementById('opp_claim').value;
+        const rep = document.getElementById('my_reply').value;
+        const notes = document.getElementById('notes').value;
 
         if(!title) return alert("أدخل اسم القضية");
 
         const deadline = jDate ? new Date(jDate) : null;
         if(deadline) deadline.setDate(deadline.getDate() + 30);
 
-        const newS = {
-            id: Date.now(), title, facts,
-            appealDate: deadline ? deadline.toISOString().split('T')[0] : 'غير محدد',
-            total, paid, analysis: ""
-        };
+        sessions.push({
+            id: Date.now(), title, opp, rep, notes, total, paid,
+            appealDate: deadline ? deadline.toISOString().split('T')[0] : 'لم يحدد',
+            workMinutes: 0
+        });
 
-        sessions.push(newS);
-        localStorage.setItem('legal_master_vault', JSON.stringify(sessions));
+        localStorage.setItem('legal_sovereign_vault', JSON.stringify(sessions));
         renderSessions();
-    }
-
-    async function runAI(id) {
-        const s = sessions.find(x => x.id === id);
-        const aiBox = document.getElementById(`ai-${id}`);
-        aiBox.style.display = "block";
-        aiBox.innerHTML = "جاري التحليل الذكي...";
-
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ contents: [{ parts: [{ text: `كمحامي سعودي، حلل هذه الواقعة واذكر المواد النظامية المناسبة: ${s.facts}` }] }] })
-            });
-            const data = await res.json();
-            const reply = data.candidates[0].content.parts[0].text;
-            s.analysis = reply;
-            localStorage.setItem('legal_master_vault', JSON.stringify(sessions));
-            renderSessions();
-        } catch (e) { aiBox.innerHTML = "خطأ في الاتصال!"; }
+        clearInputs();
     }
 
     function renderSessions() {
         const list = document.getElementById('session-list');
-        list.innerHTML = sessions.map(s => `
+        list.innerHTML = sessions.map(s => {
+            const remaining = s.total - s.paid;
+            return `
             <div class="session-card">
                 <h3 style="margin:0">${s.title}</h3>
-                <div class="badge deadline">⚖️ آخر موعد استئناف: ${s.appealDate}</div>
-                <div class="badge finance">💰 المحصل: ${s.paid} من ${s.total}</div>
-                
-                <p style="font-size:12px; opacity:0.7;">${s.facts}</p>
-                
-                <div id="ai-${s.id}" class="ai-box" style="${s.analysis ? 'display:block' : 'display:none'}">
-                    ${s.analysis ? '<strong>💡 التحليل:</strong><br>' + s.analysis.replace(/\n/g, '<br>') : ''}
+                <div class="badge-row">
+                    <span class="badge deadline">⚖️ استئناف: ${s.appealDate}</span>
+                    <span class="badge finance">💰 المتبقي: ${remaining} ريال</span>
+                    <span class="badge timer-badge">⏳ عمل: ${s.workMinutes} د</span>
                 </div>
 
+                <div class="strategy-grid">
+                    <div class="strategy-item opp"><b>⚠️ الخصم:</b><br>${s.opp || '-'}</div>
+                    <div class="strategy-item me"><b>✅ الرد:</b><br>${s.rep || '-'}</div>
+                </div>
+
+                <div id="qr-${s.id}" class="qr-area"></div>
+
                 <div class="action-grid">
-                    <button onclick="runAI(${s.id})" style="background:var(--ios-purple); color:white; border:none; padding:10px; border-radius:10px;">✨ تحليل AI</button>
-                    <button onclick="deleteS(${s.id})" style="background:#eee; border:none; padding:10px; border-radius:10px;">🗑 حذف</button>
+                    <button class="btn-sm" style="background:var(--ios-blue); color:white;" onclick="toggleTimer(${s.id})">⏱️ بدء/إيقاف وقت</button>
+                    <button class="btn-sm" style="background:#eee;" onclick="genQR(${s.id})">📲 رمز QR</button>
+                    <button class="btn-sm" style="background:var(--ios-green); color:white; grid-column: span 2;" onclick="shareWA(${s.id})">🟢 مشاركة عبر واتساب</button>
+                    <button class="btn-sm" style="background:none; color:var(--ios-red); grid-column: span 2;" onclick="deleteS(${s.id})">حذف القضية</button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
+    }
+
+    function toggleTimer(id) {
+        if (workStart) {
+            const diff = Math.round((new Date() - workStart) / 60000);
+            const s = sessions.find(x => x.id === id);
+            s.workMinutes += diff;
+            localStorage.setItem('legal_sovereign_vault', JSON.stringify(sessions));
+            workStart = null;
+            renderSessions();
+            alert(`تم إضافة ${diff} دقيقة عمل.`);
+        } else {
+            workStart = new Date();
+            alert("بدأ احتساب وقت العمل...");
+        }
+    }
+
+    function genQR(id) {
+        const div = document.getElementById(`qr-${id}`);
+        div.style.display = (div.style.display === 'block') ? 'none' : 'block';
+        if (div.innerHTML === "") {
+            new QRCode(div, { text: `CASE_ID_${id}`, width: 100, height: 100 });
+        }
+    }
+
+    function shareWA(id) {
+        const s = sessions.find(x => x.id === id);
+        const text = `⚖️ *ملخص قضية*\n📌 *الموضوع:* ${s.title}\n📅 *الاستئناف:* ${s.appealDate}\n🔻 *ادعاء الخصم:* ${s.opp}\n🔹 *ردنا:* ${s.rep}\n⏳ *وقت العمل:* ${s.workMinutes} دقيقة`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
     }
 
     function deleteS(id) {
-        sessions = sessions.filter(x => x.id !== id);
-        localStorage.setItem('legal_master_vault', JSON.stringify(sessions));
-        renderSessions();
+        if(confirm("حذف القضية؟")) {
+            sessions = sessions.filter(x => x.id !== id);
+            localStorage.setItem('legal_sovereign_vault', JSON.stringify(sessions));
+            renderSessions();
+        }
+    }
+
+    function clearInputs() {
+        ['title','jDate','totalFee','paidFee','opp_claim','my_reply','notes'].forEach(id => document.getElementById(id).value = '');
     }
 </script>
 </body>
