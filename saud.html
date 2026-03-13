@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>المكتب القانوني الذكي - الإصدار السيادي</title>
+    <title>المكتب القانوني السيادي - نظام مشفر</title>
     <style>
         :root { 
             --ios-blue: #007AFF; --ios-purple: #5856D6; --ios-bg: #F2F2F7; --ios-card: #FFFFFF; --text-main: #000;
@@ -11,84 +11,101 @@
         body.dark-mode { --ios-bg: #000; --ios-card: #1C1C1E; --text-main: #FFF; }
         body { background-color: var(--ios-bg); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 120px; color: var(--text-main); transition: 0.3s; }
         
+        /* شاشة القفل */
+        #lock-screen { position: fixed; inset: 0; background: var(--ios-bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        
         .header { position: sticky; top: 0; background: rgba(var(--ios-card), 0.8); backdrop-filter: blur(20px); padding: 50px 20px 15px; z-index: 100; border-bottom: 0.5px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .container { padding: 15px; }
+        .container { padding: 15px; display: none; } /* مخفي حتى يتم فتح القفل */
 
         .session-card { background: var(--ios-card); border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-right: 8px solid var(--ios-purple); }
+        .ai-box { background: linear-gradient(135deg, #1e1e2e, #2d2d44); color: #e0e0e0; padding: 15px; border-radius: 15px; margin-top: 15px; font-size: 13px; line-height: 1.6; border: 1px solid var(--ios-purple); display: none; }
         
-        /* قسم الذكاء الاصطناعي */
-        .ai-box { background: linear-gradient(135deg, #1e1e2e, #2d2d44); color: #e0e0e0; padding: 15px; border-radius: 15px; margin-top: 15px; font-size: 13px; line-height: 1.6; border: 1px solid var(--ios-purple); }
-        .ai-loading { animation: pulse 1.5s infinite; color: var(--ios-purple); font-weight: bold; }
-        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-
-        .btn-ai { background: var(--ios-purple); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        
-        input, textarea { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #444; border-radius: 15px; background: var(--ios-bg); color: var(--text-main); font-size: 16px; box-sizing: border-box; }
-        
-        .mic-btn { background: var(--ios-red); color: white; border: none; border-radius: 50%; width: 45px; height: 45px; margin-right: 10px; }
+        input, textarea { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ccc; border-radius: 15px; background: var(--ios-card); color: var(--text-main); font-size: 16px; box-sizing: border-box; }
+        .btn-main { background: var(--ios-blue); color: white; border: none; padding: 18px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="header">
+<div id="lock-screen">
+    <h2 style="margin-bottom:20px;">الدخول للمكتب السيادي 🛡️</h2>
+    <input type="password" id="pass-input" placeholder="أدخل كلمة المرور الخاصة بك">
+    <button class="btn-main" onclick="unlock()">فتح النظام</button>
+    <p id="lock-msg" style="color:red; margin-top:10px; font-size:12px;"></p>
+</div>
+
+<div class="header" id="app-header" style="display:none;">
     <h1 style="margin:0; font-size:20px;">المحامي السيادي AI ✨</h1>
     <button onclick="document.body.classList.toggle('dark-mode')" style="background:none; border:none; font-size:20px;">🌓</button>
 </div>
 
-<div class="container">
+<div class="container" id="app-container">
     <div style="background:var(--ios-card); padding:20px; border-radius:20px; margin-bottom:20px;">
         <h3 style="margin:0 0 10px 0;">قضية جديدة</h3>
         <input type="text" id="ai-title" placeholder="اسم القضية / الخصم">
-        
-        <div style="display:flex; align-items:center;">
-            <textarea id="ai-facts" placeholder="اشرح الوقائع أو أملِها صوتياً..." rows="4"></textarea>
-            <button class="mic-btn" onclick="startVoice()">🎙️</button>
-        </div>
-        
-        <button onclick="saveAndAnalyze()" style="background:var(--ios-blue); color:white; width:100%; padding:18px; border:none; border-radius:12px; font-weight:bold; margin-top:10px;">حفظ وتحليل بالذكاء الاصطناعي</button>
+        <textarea id="ai-facts" placeholder="اشرح الوقائع..." rows="4"></textarea>
+        <button onclick="saveAndAnalyze()" class="btn-main">حفظ وتحليل ذكي</button>
+        <button onclick="resetAPI()" style="background:none; border:none; color:gray; font-size:10px; margin-top:10px;">إعادة ضبط مفتاح API</button>
     </div>
-
     <div id="session-list"></div>
 </div>
 
 <script>
-    let sessions = JSON.parse(localStorage.getItem('legal_ai_vault')) || [];
-    const API_KEY = "AIzaSyBL67Iqz9IJone1WfbadvNLyh5XIQvdXBo"; 
+    // --- إعدادات الأمان ---
+    const APP_PASSWORD = "123"; // اغيرها لأي كلمة مرور تريدها
+    let API_KEY = localStorage.getItem('gemini_api_key');
 
-    // ميزة الإملاء الصوتي
-    function startVoice() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'ar-SA';
-        recognition.start();
-        recognition.onresult = (event) => {
-            document.getElementById('ai-facts').value += event.results[0][0].transcript;
-        };
+    function unlock() {
+        const input = document.getElementById('pass-input').value;
+        if (input === APP_PASSWORD) {
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('app-header').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'block';
+            checkAPIKey();
+        } else {
+            document.getElementById('lock-msg').innerText = "كلمة المرور غير صحيحة!";
+        }
     }
+
+    function checkAPIKey() {
+        if (!API_KEY) {
+            const key = prompt("يرجى إدخال مفتاح Gemini API الخاص بك (سيتم حفظه محلياً فقط):");
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                API_KEY = key;
+            }
+        }
+    }
+
+    function resetAPI() {
+        localStorage.removeItem('gemini_api_key');
+        location.reload();
+    }
+
+    // --- الوظائف الأساسية ---
+    let sessions = JSON.parse(localStorage.getItem('legal_ai_vault')) || [];
 
     async function analyzeWithAI(id, text) {
         const aiBox = document.getElementById(`ai-result-${id}`);
         aiBox.style.display = "block";
-        aiBox.innerHTML = "<div class='ai-loading'>⚖️ جاري استحضار الأنظمة والتحليل الذكي...</div>";
+        aiBox.innerHTML = "⚖️ جاري التحليل الذكي...";
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `بصفتك مستشاراً قانونياً سعودياً، حلل هذه الوقائع: "${text}". اذكر المواد النظامية، نقاط القوة، واقترح رداً قانونياً مفحماً.` }] }]
+                    contents: [{ parts: [{ text: `بصفتك مستشاراً قانونياً سعودياً، حلل هذه الوقائع: "${text}". اذكر المواد النظامية، نقاط القوة، واقترح رداً قانونياً.` }] }]
                 })
             });
-
             const data = await response.json();
             const reply = data.candidates[0].content.parts[0].text;
-            aiBox.innerHTML = `<strong>💡 رأي الذكاء الاصطناعي:</strong><br>${reply.replace(/\n/g, '<br>')}`;
+            aiBox.innerHTML = `<strong>💡 التحليل:</strong><br>${reply.replace(/\n/g, '<br>')}`;
             
             const s = sessions.find(x => x.id === id);
             s.analysis = reply;
             localStorage.setItem('legal_ai_vault', JSON.stringify(sessions));
-
         } catch (e) {
-            aiBox.innerHTML = "❌ حدث خطأ. تأكد من اتصال الإنترنت.";
+            aiBox.innerHTML = "❌ خطأ! تأكد من صحة المفتاح أو الاتصال.";
         }
     }
 
@@ -108,16 +125,14 @@
         const list = document.getElementById('session-list');
         list.innerHTML = sessions.map(s => `
             <div class="session-card">
-                <h3 style="margin:0">${s.title}</h3>
+                <h3>${s.title}</h3>
                 <p style="font-size:13px; opacity:0.7;">${s.facts}</p>
                 <div id="ai-result-${s.id}" class="ai-box" style="${s.analysis ? 'display:block' : 'display:none'}">
                     ${s.analysis ? '<strong>💡 التحليل المحفوظ:</strong><br>' + s.analysis.replace(/\n/g, '<br>') : ''}
                 </div>
-                <button class="btn-ai" onclick="analyzeWithAI(${s.id}, '${s.facts}')">✨ تحديث التحليل الذكي</button>
             </div>
         `).join('');
     }
-
     renderSessions();
 </script>
 </body>
