@@ -3,185 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>المكتب القانوني السيادي - النسخة الكاملة</title>
+    <title>مكتب المحامي سعود العتيبي - النسخة الاحترافية</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { 
-            --ios-blue: #007AFF; --ios-red: #FF3B30; --ios-green: #34C759; --ios-gold: #AF9500;
-            --ios-bg: #F2F2F7; --ios-card: #FFFFFF; --text-main: #000;
+            --gold: #AF9500; --dark-blue: #1A2B48; --ios-blue: #007AFF;
+            --ios-bg: #F8F9FA; --card-bg: #FFFFFF; --text-dark: #2C3E50;
         }
-        body.dark-mode { --ios-bg: #000; --ios-card: #1C1C1E; --text-main: #FFF; }
-        body { background-color: var(--ios-bg); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 120px; color: var(--text-main); transition: 0.3s; }
+        body { background-color: var(--ios-bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; color: var(--text-dark); transition: 0.3s; }
         
-        /* شاشة القفل */
-        #lock-screen { position: fixed; inset: 0; background: var(--ios-bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        
-        .header { position: sticky; top: 0; background: rgba(var(--ios-card), 0.8); backdrop-filter: blur(20px); padding: 50px 20px 15px; z-index: 100; border-bottom: 0.5px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .container { padding: 15px; display: none; }
+        /* شاشة القفل الفاخرة */
+        #lock-screen { position: fixed; inset: 0; background: var(--dark-blue); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .lock-logo { font-size: 50px; margin-bottom: 20px; }
+        .pass-container { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; backdrop-filter: blur(10px); width: 80%; max-width: 320px; text-align: center; }
 
-        .session-card { background: var(--ios-card); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-right: 8px solid var(--ios-blue); }
-        
-        /* الرادارات والشارات */
-        .badge-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
-        .badge { font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: bold; }
-        .deadline { background: rgba(255, 59, 48, 0.1); color: var(--ios-red); border: 0.5px solid var(--ios-red); }
-        .finance { background: rgba(52, 199, 89, 0.1); color: var(--ios-green); border: 0.5px solid var(--ios-green); }
-        .timer-badge { background: rgba(0, 122, 255, 0.1); color: var(--ios-blue); border: 0.5px solid var(--ios-blue); }
+        /* الهيدر */
+        .header { position: sticky; top: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); padding: 50px 20px 20px; z-index: 100; border-bottom: 1px solid #E1E4E8; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; margin: 0; color: var(--dark-blue); font-weight: 800; }
 
-        /* مصفوفة الرد */
-        .strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .strategy-item { padding: 10px; border-radius: 10px; font-size: 11px; line-height: 1.4; }
-        .opp { background: rgba(255, 59, 48, 0.05); border: 0.5px solid #ff3b3055; }
-        .me { background: rgba(52, 199, 89, 0.05); border: 0.5px solid #34c75955; }
+        /* لوحة التحكم (Dashboard) */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px; }
+        .stat-card { background: var(--dark-blue); color: white; padding: 15px; border-radius: 18px; text-align: center; box-shadow: 0 5px 15px rgba(26,43,72,0.2); }
+        .stat-card span { font-size: 11px; opacity: 0.8; display: block; margin-bottom: 5px; }
+        .stat-card b { font-size: 18px; color: var(--gold); }
 
-        .qr-area { text-align: center; margin: 15px 0; display: none; background: white; padding: 10px; border-radius: 10px; }
-        .qr-area canvas { margin: 0 auto; }
+        .container { padding: 0 20px 100px; display: none; }
 
-        .btn-main { background: var(--ios-blue); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: bold; width: 100%; cursor: pointer; }
-        input, textarea { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ccc; border-radius: 12px; background: var(--ios-card); color: var(--text-main); font-size: 15px; box-sizing: border-box; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
-        .btn-sm { padding: 10px; border-radius: 8px; border: none; font-size: 11px; font-weight: bold; cursor: pointer; }
+        /* بطاقة القضية */
+        .case-card { background: var(--card-bg); border-radius: 22px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #EEE; position: relative; overflow: hidden; }
+        .case-card::before { content: ''; position: absolute; top: 0; right: 0; width: 6px; height: 100%; background: var(--gold); }
+        .case-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .case-title { font-size: 17px; font-weight: 700; color: var(--dark-blue); }
+
+        /* التفاصيل الإدارية */
+        .info-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .pill { font-size: 11px; padding: 6px 12px; border-radius: 10px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .pill-red { background: #FFF0F0; color: #FF3B30; }
+        .pill-green { background: #F0FFF4; color: #34C759; }
+        .pill-blue { background: #F0F7FF; color: var(--ios-blue); }
+
+        /* مصفوفة الاستراتيجية */
+        .strategy-map { background: #F8F9FA; border-radius: 15px; padding: 12px; margin-top: 10px; }
+        .strategy-line { font-size: 12px; margin-bottom: 8px; line-height: 1.5; }
+        .strategy-line b { color: var(--dark-blue); display: block; margin-bottom: 2px; }
+
+        /* الأزرار */
+        .btn-prime { background: var(--dark-blue); color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 700; width: 100%; font-size: 16px; box-shadow: 0 4px 12px rgba(26,43,72,0.3); }
+        .action-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .btn-icon { background: #F0F2F5; border: none; padding: 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--dark-blue); transition: 0.2s; }
+        .btn-icon:active { transform: scale(0.95); background: #E2E5E9; }
+
+        input, textarea { width: 100%; padding: 14px; margin: 10px 0; border: 1.5px solid #E1E4E8; border-radius: 14px; font-size: 15px; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--gold); }
+
+        .form-section { background: white; padding: 25px; border-radius: 25px; margin-bottom: 25px; border: 1px solid #EEE; }
     </style>
 </head>
 <body>
 
 <div id="lock-screen">
-    <h2 style="margin-bottom:20px;">المكتب السيادي 🛡️</h2>
-    <input type="password" id="pass-input" placeholder="كلمة المرور">
-    <button class="btn-main" onclick="unlock()">فتح النظام</button>
+    <div class="lock-logo">⚖️</div>
+    <div class="pass-container">
+        <h3 style="margin:0 0 20px 0;">مكتب المحامي سعود</h3>
+        <input type="password" id="pass-input" placeholder="كلمة المرور" style="text-align:center; background:rgba(255,255,255,0.9); border:none;">
+        <button class="btn-prime" onclick="unlock()" style="background:var(--gold);">دخول النظام</button>
+    </div>
 </div>
 
 <div class="header" id="app-header" style="display:none;">
-    <h1 style="margin:0; font-size:18px;">المكتب القانوني المتكامل ⚖️</h1>
-    <button onclick="document.body.classList.toggle('dark-mode')" style="background:none; border:none; font-size:20px;">🌓</button>
+    <h1>المكتب السيادي 🛡️</h1>
+    <div style="color:var(--gold); font-size:20px;">⚖️</div>
 </div>
 
 <div class="container" id="app-container">
-    <div style="background:var(--ios-card); padding:20px; border-radius:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        <h4 style="margin:0 0 10px 0;">تسجيل قضية جديدة</h4>
-        <input type="text" id="title" placeholder="اسم القضية / الخصم">
-        <input type="date" id="jDate" title="تاريخ الحكم (لحساب الاستئناف)">
-        <div class="action-grid" style="margin:0;">
-            <input type="number" id="totalFee" placeholder="إجمالي الأتعاب">
-            <input type="number" id="paidFee" placeholder="المحصل">
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span>إجمالي القضايا</span>
+            <b id="stat-count">0</b>
         </div>
-        <input type="text" id="opp_claim" placeholder="ادعاء الخصم الرئيسي">
-        <input type="text" id="my_reply" placeholder="الرد القانوني الفاصل">
-        <textarea id="notes" placeholder="ملاحظات إضافية..." rows="2"></textarea>
-        <button onclick="saveSession()" class="btn-main" style="margin-top:10px;">إضافة للمكتب</button>
+        <div class="stat-card">
+            <span>مبالغ التحصيل</span>
+            <b id="stat-finance">0</b>
+        </div>
     </div>
 
-    <div id="session-list"></div>
+    <div class="form-section">
+        <h3 style="margin:0 0 15px 0; color:var(--dark-blue);">إدراج ملف جديد</h3>
+        <input type="text" id="title" placeholder="اسم الموكل / رقم القضية">
+        <div style="display:flex; gap:10px;">
+            <input type="date" id="jDate" title="تاريخ الحكم">
+            <input type="number" id="remaining" placeholder="المبلغ المتبقي">
+        </div>
+        <textarea id="strategy" placeholder="ملخص الدفوع والاستراتيجية القانونية..." rows="3"></textarea>
+        <button class="btn-prime" onclick="saveCase()">اعتماد الملف في القاعدة</button>
+    </div>
+
+    <div id="cases-list"></div>
 </div>
 
 <script>
-    const APP_PASSWORD = "123"; // كلمة المرور الخاصة بك
-    let sessions = JSON.parse(localStorage.getItem('legal_sovereign_vault')) || [];
-    let workStart;
+    const PWD = "123"; 
+    let cases = JSON.parse(localStorage.getItem('saud_vault_v3')) || [];
 
     function unlock() {
-        if (document.getElementById('pass-input').value === APP_PASSWORD) {
+        if(document.getElementById('pass-input').value === PWD) {
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('app-header').style.display = 'flex';
             document.getElementById('app-container').style.display = 'block';
-            renderSessions();
-        } else { alert("كلمة المرور خاطئة"); }
+            updateStats();
+            renderCases();
+        } else { alert("كلمة المرور غير صحيحة"); }
     }
 
-    function saveSession() {
+    function saveCase() {
         const title = document.getElementById('title').value;
         const jDate = document.getElementById('jDate').value;
-        const total = document.getElementById('totalFee').value || 0;
-        const paid = document.getElementById('paidFee').value || 0;
-        const opp = document.getElementById('opp_claim').value;
-        const rep = document.getElementById('my_reply').value;
-        const notes = document.getElementById('notes').value;
+        const remaining = document.getElementById('remaining').value || 0;
+        const strategy = document.getElementById('strategy').value;
 
-        if(!title) return alert("أدخل اسم القضية");
+        if(!title) return alert("يرجى إدخال اسم الموكل");
 
         const deadline = jDate ? new Date(jDate) : null;
         if(deadline) deadline.setDate(deadline.getDate() + 30);
 
-        sessions.push({
-            id: Date.now(), title, opp, rep, notes, total, paid,
-            appealDate: deadline ? deadline.toISOString().split('T')[0] : 'لم يحدد',
+        cases.push({
+            id: Date.now(), title, strategy, remaining,
+            deadline: deadline ? deadline.toISOString().split('T')[0] : 'غير محدد',
             workMinutes: 0
         });
 
-        localStorage.setItem('legal_sovereign_vault', JSON.stringify(sessions));
-        renderSessions();
+        localStorage.setItem('saud_vault_v3', JSON.stringify(cases));
+        updateStats();
+        renderCases();
         clearInputs();
     }
 
-    function renderSessions() {
-        const list = document.getElementById('session-list');
-        list.innerHTML = sessions.map(s => {
-            const remaining = s.total - s.paid;
-            return `
-            <div class="session-card">
-                <h3 style="margin:0">${s.title}</h3>
-                <div class="badge-row">
-                    <span class="badge deadline">⚖️ استئناف: ${s.appealDate}</span>
-                    <span class="badge finance">💰 المتبقي: ${remaining} ريال</span>
-                    <span class="badge timer-badge">⏳ عمل: ${s.workMinutes} د</span>
+    function updateStats() {
+        document.getElementById('stat-count').innerText = cases.length;
+        const totalRem = cases.reduce((acc, c) => acc + Number(c.remaining), 0);
+        document.getElementById('stat-finance').innerText = totalRem.toLocaleString() + " ر.س";
+    }
+
+    function renderCases() {
+        const list = document.getElementById('cases-list');
+        list.innerHTML = cases.map(c => `
+            <div class="case-card">
+                <div class="case-header">
+                    <div class="case-title">${c.title}</div>
+                    <div style="color:var(--gold); cursor:pointer;" onclick="deleteCase(${c.id})">🗑</div>
                 </div>
 
-                <div class="strategy-grid">
-                    <div class="strategy-item opp"><b>⚠️ الخصم:</b><br>${s.opp || '-'}</div>
-                    <div class="strategy-item me"><b>✅ الرد:</b><br>${s.rep || '-'}</div>
+                <div class="info-row">
+                    <div class="pill pill-red">📅 استئناف: ${c.deadline}</div>
+                    <div class="pill pill-green">💰 متبقي: ${c.remaining} ر.س</div>
                 </div>
 
-                <div id="qr-${s.id}" class="qr-area"></div>
+                <div class="strategy-map">
+                    <div class="strategy-line"><b>📝 الاستراتيجية القانونية:</b>${c.strategy || 'لا يوجد ملاحظات'}</div>
+                </div>
 
-                <div class="action-grid">
-                    <button class="btn-sm" style="background:var(--ios-blue); color:white;" onclick="toggleTimer(${s.id})">⏱️ بدء/إيقاف وقت</button>
-                    <button class="btn-sm" style="background:#eee;" onclick="genQR(${s.id})">📲 رمز QR</button>
-                    <button class="btn-sm" style="background:var(--ios-green); color:white; grid-column: span 2;" onclick="shareWA(${s.id})">🟢 مشاركة عبر واتساب</button>
-                    <button class="btn-sm" style="background:none; color:var(--ios-red); grid-column: span 2;" onclick="deleteS(${s.id})">حذف القضية</button>
+                <div class="action-bar">
+                    <button class="btn-icon" onclick="shareWA(${c.id})">🟢 واتساب</button>
+                    <button class="btn-icon" onclick="toggleTimer(${c.id})">⏱️ ${c.workMinutes} د</button>
+                    <button class="btn-icon" onclick="alert('Case ID: '+${c.id})">🆔 تفاصيل</button>
                 </div>
             </div>
-        `}).join('');
+        `).join('');
     }
 
     function toggleTimer(id) {
-        if (workStart) {
-            const diff = Math.round((new Date() - workStart) / 60000);
-            const s = sessions.find(x => x.id === id);
-            s.workMinutes += diff;
-            localStorage.setItem('legal_sovereign_vault', JSON.stringify(sessions));
-            workStart = null;
-            renderSessions();
-            alert(`تم إضافة ${diff} دقيقة عمل.`);
-        } else {
-            workStart = new Date();
-            alert("بدأ احتساب وقت العمل...");
-        }
-    }
-
-    function genQR(id) {
-        const div = document.getElementById(`qr-${id}`);
-        div.style.display = (div.style.display === 'block') ? 'none' : 'block';
-        if (div.innerHTML === "") {
-            new QRCode(div, { text: `CASE_ID_${id}`, width: 100, height: 100 });
+        const c = cases.find(x => x.id === id);
+        const start = confirm("هل تريد بدء احتساب وقت العمل؟");
+        if(start) {
+            const startTime = Date.now();
+            alert("بدأ العمل.. اضغط موافق عند الانتهاء");
+            const endTime = Date.now();
+            const mins = Math.round((endTime - startTime) / 60000) || 1;
+            c.workMinutes += mins;
+            localStorage.setItem('saud_vault_v3', JSON.stringify(cases));
+            renderCases();
         }
     }
 
     function shareWA(id) {
-        const s = sessions.find(x => x.id === id);
-        const text = `⚖️ *ملخص قضية*\n📌 *الموضوع:* ${s.title}\n📅 *الاستئناف:* ${s.appealDate}\n🔻 *ادعاء الخصم:* ${s.opp}\n🔹 *ردنا:* ${s.rep}\n⏳ *وقت العمل:* ${s.workMinutes} دقيقة`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+        const c = cases.find(x => x.id === id);
+        const msg = `⚖️ *ملخص ملف قانوني*\n📌 *الموكل:* ${c.title}\n📅 *موعد الاستئناف:* ${c.deadline}\n💰 *المطالبة المالية:* ${c.remaining} ر.س\n📜 *الاستراتيجية:* ${c.strategy}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
     }
 
-    function deleteS(id) {
-        if(confirm("حذف القضية؟")) {
-            sessions = sessions.filter(x => x.id !== id);
-            localStorage.setItem('legal_sovereign_vault', JSON.stringify(sessions));
-            renderSessions();
+    function deleteCase(id) {
+        if(confirm("هل أنت متأكد من أرشفة (حذف) هذا الملف؟")) {
+            cases = cases.filter(x => x.id !== id);
+            localStorage.setItem('saud_vault_v3', JSON.stringify(cases));
+            updateStats();
+            renderCases();
         }
     }
 
     function clearInputs() {
-        ['title','jDate','totalFee','paidFee','opp_claim','my_reply','notes'].forEach(id => document.getElementById(id).value = '');
+        ['title','jDate','remaining','strategy'].forEach(id => document.getElementById(id).value = '');
     }
 </script>
 </body>
