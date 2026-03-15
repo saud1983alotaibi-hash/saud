@@ -250,7 +250,7 @@ option { background:var(--ink2); }
       <button class="tp" id="tb-tasks" onclick="go('tasks')"><span class="dot"></span>المهمات</button>
       <button class="tp" id="tb-contacts" onclick="go('contacts')"><span class="dot"></span>الأطراف</button>
       <button class="tp" id="tb-files" onclick="go('files')"><span class="dot"></span>الملفات</button>
-      <button class="tp" id="tb-ai" onclick="go('ai')"><span class="dot"></span>المستشار</button>
+      <button class="tp" id="tb-ai" onclick="go('ai')"><span class="dot"></span>سعود</button>
       <button class="tp" id="tb-cal" onclick="go('cal')"><span class="dot"></span>التقويم</button>
       <button class="tp" id="tb-stats" onclick="go('stats')"><span class="dot"></span>التقارير</button>
     </div>
@@ -1610,9 +1610,9 @@ function rAI() {
 
   if (!aiMessages.length) {
     h += '<div style="text-align:center;padding:20px 0">' +
-      '<div style="font-size:40px;margin-bottom:10px">🟢</div>' +
+      '<div style="font-size:40px;margin-bottom:10px">⚖️</div>' +
       '<div style="font-size:14px;font-weight:700;color:var(--text2);margin-bottom:6px">مرحباً! أنا سعود مستشارك القانوني</div>' +
-      '<div style="font-size:11px;color:#10a37f;margin-bottom:16px">مدعوم بـ ChatGPT-4o من OpenAI</div>';
+      '<div style="font-size:11px;color:var(--text3);margin-bottom:16px">اسألني عن أي موضوع قانوني</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:center">';
     AI_QUICK.forEach(function(q) {
       h += '<button onclick="sendAI(\''+q+'\')" style="background:var(--gold-dim);color:var(--gold2);border:1px solid var(--gold-rim);border-radius:18px;padding:7px 12px;font-size:11px;cursor:pointer">'+q+'</button>';
@@ -1626,7 +1626,7 @@ function rAI() {
       } else {
         h += '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:7px">' +
           '<div style="background:var(--card);border:1px solid var(--rim2);border-radius:16px 16px 16px 4px;padding:10px 13px;max-width:86%;font-size:12px;color:var(--text);line-height:1.6">'+m.content.replace(/\n/g,'<br>')+'</div>' +
-          '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#10a37f,#1a7f5a);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:auto">🟢</div></div>';
+          '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:auto">🤖</div></div>';
       }
     });
     if (aiLoading) {
@@ -1684,7 +1684,7 @@ function sendAI(msg) {
       'Authorization': 'Bearer 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'
     },
     body: JSON.stringify({
-      model: 'gpt-4o-2024-11-20',
+      model: 'gpt-4o',
       max_tokens: 1000,
       messages: [{role:'system', content:AI_SYSTEM}].concat(msgs)
     })
