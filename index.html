@@ -5,10 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#08090d">
+<meta name="apple-mobile-web-app-title" content="الجلسات القضائية">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="الجلسات القضائية">
+<meta name="theme-color" content="#08090d" id="themeColorMeta">
+<meta name="description" content="تطبيق إدارة الجلسات القضائية بالذكاء الاصطناعي">
+<link rel="manifest" id="pwaManifest">
 <title>الجلسات القضائية</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg: #08090d;
@@ -449,6 +455,7 @@ option { background: var(--surface); }
       <div class="hdr-actions">
         <button class="btn-icon" id="btnTheme" onclick="toggleTheme()" title="تبديل المظهر">🌙</button>
         <button class="btn-icon" onclick="showColorPicker()" title="تخصيص الألوان">🎨</button>
+        <button class="btn-icon" onclick="showImportModal()" title="استيراد Excel/CSV">📤</button>
         <button class="btn-icon" onclick="showApiKeyModal()" title="مفتاح API" id="btnKey">🔑</button>
         <button class="btn-icon" onclick="showBackupModal()" title="نسخ احتياطي">💾</button>
         <button class="btn-icon" id="btnNotif" onclick="toggleNotif()">🔔</button>
@@ -464,6 +471,11 @@ option { background: var(--surface); }
       <button class="tab"    id="tb-ai"       onclick="go('ai')">🤖 سعود AI</button>
       <button class="tab"    id="tb-cal"      onclick="go('cal')">التقويم</button>
       <button class="tab"    id="tb-stats"    onclick="go('stats')">التقارير</button>
+      <button class="tab"    id="tb-fees"     onclick="go('fees')">💰 الأتعاب</button>
+      <button class="tab"    id="tb-tools"    onclick="go('tools')">🛠️ أدوات</button>
+      <button class="tab"    id="tb-live"     onclick="go('live')">🔴 مباشر</button>
+      <button class="tab"    id="tb-archive"  onclick="go('archive')">🗄️ الأرشيف</button>
+      <button class="tab"    id="tb-settings" onclick="go('settings')">⚙️ الإعدادات</button>
     </div>
     <div style="height:1px;background:var(--border)"></div>
   </div>
@@ -503,6 +515,19 @@ option { background: var(--surface); }
       </div>
       <div class="field"><label>🏛️ المحكمة *</label><input id="fCourt" type="text" placeholder="اسم المحكمة" dir="rtl" oninput="chkV()"></div>
       <div class="field"><label>القاعة</label><input id="fRoom" type="text" placeholder="قاعة 3" dir="rtl"></div>
+      <div class="field">
+        <label>🎥 رابط الاجتماع عن بُعد</label>
+        <div style="position:relative">
+          <input id="fMeetUrl" type="url" placeholder="https://teams.microsoft.com/... أو Zoom أو Meet" dir="ltr" style="padding-left:44px" oninput="updMeetIcon(this.value)">
+          <div id="meetIconPreview" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none">🔗</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:7px">
+          <button type="button" onclick="setMeetTemplate('teams')" style="flex:1;background:rgba(100,153,255,0.1);color:#6499ff;border:1px solid rgba(100,153,255,0.3);border-radius:8px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">Teams</button>
+          <button type="button" onclick="setMeetTemplate('zoom')" style="flex:1;background:rgba(45,140,255,0.1);color:#2d8cff;border:1px solid rgba(45,140,255,0.3);border-radius:8px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">Zoom</button>
+          <button type="button" onclick="setMeetTemplate('meet')" style="flex:1;background:rgba(52,168,83,0.1);color:#34a853;border:1px solid rgba(52,168,83,0.3);border-radius:8px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">Meet</button>
+          <button type="button" onclick="pasteMeetUrl()" style="flex:1;background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:8px;padding:6px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">📋 لصق</button>
+        </div>
+      </div>
       <div class="field"><label>المدعي</label><input id="fPlnt" type="text" placeholder="اسم المدعي" dir="rtl"></div>
       <div class="field"><label>المدعى عليه</label><input id="fDfnd" type="text" placeholder="اسم المدعى عليه" dir="rtl"></div>
       <div class="field"><label>التاريخ *</label><input id="fDate" type="date" dir="ltr" oninput="chkV()"></div>
@@ -620,6 +645,16 @@ var tasks=[],contacts=[],wordFiles=[],folders=[];
 var aiMessages=[],aiLoading=false;
 var curFolder=null;
 var apiKey='';
+// PIN lock
+var pinEnabled=false,pinCode='',pinLocked=false,pinAttempts=0;
+// Linked cases
+var caseLinks=[];
+// Custom tabs
+var hiddenTabs=[];
+// Lawyer profile
+var lawyerProfile={name:'',title:'محامٍ',license:'',phone:'',email:''};
+// Archive
+var archivedSessions=[];
 
 try{tasks=JSON.parse(localStorage.getItem('j_tasks')||'[]');}catch(e){tasks=[];}
 try{contacts=JSON.parse(localStorage.getItem('j_contacts')||'[]');}catch(e){contacts=[];}
@@ -629,6 +664,11 @@ try{aiMessages=JSON.parse(localStorage.getItem('j_aimsg')||'[]');}catch(e){aiMes
 try{isDay=localStorage.getItem('j_theme')==='day';}catch(e){}
 try{notifOn=localStorage.getItem('j_notif')==='1';}catch(e){}
 try{apiKey=localStorage.getItem('j_apikey')||'';}catch(e){}
+try{pinEnabled=localStorage.getItem('j_pin_enabled')==='1';pinCode=localStorage.getItem('j_pin_code')||'';}catch(e){}
+try{caseLinks=JSON.parse(localStorage.getItem('j_case_links')||'[]');}catch(e){caseLinks=[];}
+try{hiddenTabs=JSON.parse(localStorage.getItem('j_hidden_tabs')||'[]');}catch(e){hiddenTabs=[];}
+try{lawyerProfile=JSON.parse(localStorage.getItem('j_lawyer_profile')||'{}');lawyerProfile=Object.assign({name:'',title:'محامٍ',license:'',phone:'',email:''},lawyerProfile);}catch(e){}
+try{archivedSessions=JSON.parse(localStorage.getItem('j_archive')||'[]');}catch(e){archivedSessions=[];}
 try{var si=parseInt(localStorage.getItem('j_ctheme'));if(!isNaN(si)&&COLOR_THEMES[si]){curTheme=si;var ct=COLOR_THEMES[si];var rs=document.documentElement.style;rs.setProperty('--gold',ct.gold);rs.setProperty('--gold2',ct.gold2);rs.setProperty('--gold-a10',ct.gold+'1a');rs.setProperty('--gold-a20',ct.gold+'33');rs.setProperty('--gold-a30',ct.gold+'4d');if(!isDay){rs.setProperty('--bg',ct.ink);rs.setProperty('--surface',ct.card);}}}catch(e){}
 
 /* ═══════════════════════════════════════════════════════════
@@ -672,7 +712,24 @@ function showColorPicker(){var modal=document.createElement('div');modal.id='clr
 ═══════════════════════════════════════════════════════════ */
 function toggleNotif(){if(!('Notification' in window)){toast("⚠️ المتصفح لا يدعم الإشعارات");return;}if(notifOn){notifOn=false;notifTimers.forEach(function(t){clearTimeout(t);});notifTimers=[];localStorage.setItem('j_notif','0');updNotifBtn();toast("🔕 تم إيقاف الإشعارات");return;}Notification.requestPermission().then(function(p){if(p==='granted'){notifOn=true;localStorage.setItem('j_notif','1');schedNotifs();schedDaily();updNotifBtn();toast("🔔 تم تفعيل الإشعارات");}else toast("⚠️ لم يتم السماح");});}
 function updNotifBtn(){var b=document.getElementById('btnNotif');if(b){b.classList.toggle('active',notifOn);b.textContent=notifOn?'🔔':'🔕';}}
-function schedNotifs(){notifTimers.forEach(function(t){clearTimeout(t);});notifTimers=[];if(!notifOn)return;var now=new Date();data.filter(function(s){return s.status==='scheduled';}).forEach(function(s){var tgt=new Date(s.date+'T'+s.time+':00');var d30=tgt-now-1800000,d0=tgt-now;if(d30>0)notifTimers.push(setTimeout(function(){new Notification("⚖️ تذكير",{body:"جلسة "+s.num+" بعد 30 دقيقة"});},d30));if(d0>0&&d0<86400000)notifTimers.push(setTimeout(function(){new Notification("🔴 جلسة الآن",{body:"جلسة "+s.num+" - "+(s.court||"")});},d0));});}
+function schedNotifs(){
+  notifTimers.forEach(function(t){clearTimeout(t);});notifTimers=[];if(!notifOn)return;
+  var now=new Date();
+  data.filter(function(s){return s.status==='scheduled';}).forEach(function(s){
+    var tgt=new Date(s.date+'T'+s.time+':00');
+    var d30=tgt-now-1800000,d5=tgt-now-300000,d0=tgt-now;
+    if(d30>0)notifTimers.push(setTimeout(function(){new Notification('⚖️ تذكير',{body:'جلسة '+s.num+' بعد 30 دقيقة'+(s.meetUrl?' — عن بُعد':'')});},d30));
+    if(d5>0&&s.meetUrl)notifTimers.push(setTimeout(function(){
+      var n=new Notification('🎥 جلسة عن بُعد خلال 5 دقائق',{body:'جلسة '+s.num+' — اضغط للانضمام',requireInteraction:true});
+      n.onclick=function(){window.open(s.meetUrl,'_blank');};
+    },d5));
+    if(d0>0&&d0<86400000)notifTimers.push(setTimeout(function(){
+      var body='جلسة '+s.num+' — '+(s.court||'');
+      var n=new Notification('🔴 جلسة الآن',{body:body+(s.meetUrl?' (عن بُعد)':''),requireInteraction:!!s.meetUrl});
+      if(s.meetUrl)n.onclick=function(){window.open(s.meetUrl,'_blank');};
+    },d0));
+  });
+}
 function schedDaily(){var now=new Date(),nxt=new Date(now);nxt.setHours(8,0,0,0);if(nxt<=now)nxt.setDate(nxt.getDate()+1);setTimeout(function(){if(notifOn&&Notification.permission==='granted'){var n=data.filter(function(s){return s.date===today();}).length;if(n>0)new Notification("📅 جلساتك اليوم",{body:"لديك "+n+" جلسة اليوم"});}schedDaily();},nxt-now);}
 
 /* ═══════════════════════════════════════════════════════════
@@ -1236,6 +1293,7 @@ function card(s){
     '<div class="s-card-footer"><div class="s-card-court">🏛️ '+(s.court||'—')+'</div>'+
     '<div class="s-card-actions">'+bdg(s.status)+'<button onclick="cycleStatus('+s.id+',event)" class="btn-cycle">🔁</button></div></div>'+
     ((att>0||hasMemo)?'<div style="font-size:9px;color:var(--text3);margin-top:6px;display:flex;gap:8px">'+(att>0?'<span>📎 '+att+' مرفق</span>':'')+(hasMemo?'<span>📝 مذكرة</span>':'')+'</div>':'')+
+    (s.meetUrl?'<div style="margin-top:8px">'+meetJoinBtn(s,'small')+'</div>':'')+
     tagsHTML(s.tags||[])+cdInline(s)+'</div>';
 }
 
@@ -1243,7 +1301,7 @@ function card(s){
    NAVIGATION & RENDER
 ═══════════════════════════════════════════════════════════ */
 function go(t){curTab=t;document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('on');});var tb=document.getElementById('tb-'+t);if(tb)tb.classList.add('on');render();}
-function render(){var el=document.getElementById('cnt');if(curTab==='home')el.innerHTML=rHome();else if(curTab==='list')el.innerHTML=rList();else if(curTab==='tasks')el.innerHTML=rTasks();else if(curTab==='contacts')el.innerHTML=rContacts();else if(curTab==='files')el.innerHTML=rFiles();else if(curTab==='ai')el.innerHTML=rAI();else if(curTab==='cal')el.innerHTML=rCal();else if(curTab==='stats')el.innerHTML=rStats();startTick();}
+function render(){var el=document.getElementById('cnt');if(curTab==='home')el.innerHTML=rHome();else if(curTab==='list')el.innerHTML=rList();else if(curTab==='tasks')el.innerHTML=rTasks();else if(curTab==='contacts')el.innerHTML=rContacts();else if(curTab==='files')el.innerHTML=rFiles();else if(curTab==='ai')el.innerHTML=rAI();else if(curTab==='cal')el.innerHTML=rCal();else if(curTab==='stats')el.innerHTML=rStats();else if(curTab==='fees')el.innerHTML=rFees();else if(curTab==='tools'){el.innerHTML=rTools();setTimeout(renderToolCharts,100);}else if(curTab==='live'){el.innerHTML=rLive();startLiveTick();}else if(curTab==='archive')el.innerHTML=rArchive();else if(curTab==='settings')el.innerHTML=rSettings();applyHiddenTabs();startTick();}
 function secHdr(icon,title){return'<div class="sec-hdr"><span>'+icon+'</span>'+title+'</div>';}
 
 /* ═══════════════════════════════════════════════════════════
@@ -1256,6 +1314,23 @@ function rHome(){
   var statsData=[{e:'📋',l:'إجمالي',v:data.length,c:'var(--gold2)'},{e:'📅',l:'اليوم',v:todayS.length,c:'var(--amber)'},{e:'🔵',l:'مجدولة',v:data.filter(function(s){return s.status==='scheduled';}).length,c:'var(--blue)'},{e:'✅',l:'منتهية',v:data.filter(function(s){return s.status==='completed';}).length,c:'var(--green)'}];
   var h='<div class="stats-grid stagger">';statsData.forEach(function(s){h+='<div class="stat-card" style="--sc-clr:'+s.c+'"><div class="stat-icon">'+s.e+'</div><div class="stat-value">'+s.v+'</div><div class="stat-label">'+s.l+'</div></div>';});h+='</div>';
   if(high.length){h+=secHdr('🔴','عالية الأهمية')+'<div class="stagger">';high.slice(0,2).forEach(function(s){h+=card(s);});h+='</div>';}
+
+  // Remote sessions today
+  var remoteSessions=data.filter(function(s){return s.date===td&&s.meetUrl&&(s.status==='scheduled'||s.status==='inProgress');});
+  if(remoteSessions.length){
+    h+=secHdr('🎥','جلسات عن بُعد اليوم');
+    h+='<div class="stagger">';
+    remoteSessions.forEach(function(s){
+      var info=getMeetInfo(s.meetUrl)||{icon:'🔗',color:'var(--gold2)',bg:'var(--gold-a10)',border:'var(--gold-a30)',name:'اجتماع'};
+      h+='<div style="background:'+info.bg+';border:1px solid '+info.border+';border-radius:var(--r-md);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+      h+='<div style="font-size:24px">'+info.icon+'</div>';
+      h+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+s.num+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">'+s.time+' · '+info.name+'</div></div>';
+      h+=meetJoinBtn(s,'small');
+      h+='</div>';
+    });
+    h+='</div>';
+  }
   if(todayS.length){h+=secHdr('📅','جلسات اليوم')+'<div class="stagger">';todayS.forEach(function(s){h+=card(s);});h+='</div>';}
   if(upcoming.length){h+=secHdr('🔜','قادمة قريباً')+'<div class="stagger">';upcoming.forEach(function(s){h+=card(s);});h+='</div>';}
   h+=rWeek();
@@ -1326,6 +1401,7 @@ function rFiles(){var h='';if(curFolder===null){h+='<div style="display:flex;jus
    STATS
 ═══════════════════════════════════════════════════════════ */
 function rStats(){if(!data.length)return'<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">لا توجد بيانات</div></div>';var byS={scheduled:0,inProgress:0,completed:0,postponed:0},byT={},byC={};data.forEach(function(s){byS[s.status]=(byS[s.status]||0)+1;byT[s.type]=(byT[s.type]||0)+1;var c=s.court||'غير محدد';byC[c]=(byC[c]||0)+1;});var mxT=Math.max.apply(null,Object.values(byT)),mxC=Math.max.apply(null,Object.values(byC));var h=secHdr('📊','نظرة عامة')+'<div class="stat-grid3 stagger">';[{e:'📋',v:data.length,l:'إجمالي',c:'var(--gold2)'},{e:'✅',v:byS.completed,l:'منتهية',c:'var(--green)'},{e:'📅',v:byS.scheduled,l:'مجدولة',c:'var(--blue)'},{e:'⚡',v:byS.inProgress,l:'جارية',c:'var(--amber)'},{e:'⏸',v:byS.postponed,l:'مؤجلة',c:'var(--red)'},{e:'📈',v:data.length?Math.round((byS.completed/data.length)*100)+'%':'0%',l:'نسبة الإنجاز',c:'var(--purple)'}].forEach(function(x){h+='<div class="stat-mini"><div style="font-size:16px;margin-bottom:3px">'+x.e+'</div><div class="stat-mini-val" style="color:'+x.c+'">'+x.v+'</div><div class="stat-mini-lbl">'+x.l+'</div></div>';});h+='</div>'+secHdr('📁','توزيع حسب النوع')+'<div class="bar-chart">';Object.entries(byT).sort(function(a,b){return b[1]-a[1];}).forEach(function(item){h+='<div class="bar-row"><div class="bar-label">'+item[0]+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round((item[1]/mxT)*100)+'%;background:var(--gold)"></div></div><div class="bar-val" style="color:var(--gold2)">'+item[1]+'</div></div>';});h+='</div>'+secHdr('🏛️','أكثر المحاكم')+'<div class="bar-chart">';Object.entries(byC).sort(function(a,b){return b[1]-a[1];}).slice(0,5).forEach(function(item){h+='<div class="bar-row"><div class="bar-label">'+item[0]+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round((item[1]/mxC)*100)+'%;background:var(--blue)"></div></div><div class="bar-val" style="color:var(--blue)">'+item[1]+'</div></div>';});h+='</div>';
+  h+='<button onclick="showImportModal()" style="width:100%;background:var(--amber-a);color:var(--amber);border:1px solid rgba(232,160,48,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:7px">📤 استيراد من Excel / CSV</button>';
   // AI analysis button
   h+='<button onclick="aiAnalyzeStats()" style="width:100%;background:rgba(16,163,127,0.1);color:#2ecc9a;border:1px solid rgba(16,163,127,0.25);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:7px">⚖️ تحليل ذكي بـ سعود AI</button>';
   h+='<button onclick="expPDF()" style="width:100%;background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:7px">🖨️ تصدير تقرير PDF</button>';
@@ -1455,7 +1531,12 @@ function openDet(id){
   var rows=[['نوع القضية',s.type],['الأهمية',ptag(s.priority||'none')],['🏛️ المحكمة',s.court||'—'],['المدعي',s.plnt||'—'],['المدعى عليه',s.dfnd||'—'],['التاريخ',fmtLD(s.date)],['الوقت',s.time],['القاعة',s.room||'—']];
   if(s.notes)rows.push(['ملاحظات',s.notes]);
   if(s.tags&&s.tags.length)rows.push(['الوسوم',tagsHTML(s.tags)]);
+  if(s.meetUrl)rows.push(['🎥 الاجتماع',meetBadge(s)]);
   var b=cdLarge(s);
+
+  // Big join button if has meeting URL
+  if(s.meetUrl)b+=meetJoinBtn(s,'big');
+
   b+=rows.map(function(r){return'<div class="det-row"><span class="det-key">'+r[0]+'</span><span class="det-val">'+r[1]+'</span></div>';}).join('');
 
   // Ask AI about this session
@@ -1485,11 +1566,78 @@ function confDel(){delTgt=detId;document.getElementById('dlg').classList.remove(
 /* ═══════════════════════════════════════════════════════════
    FORM
 ═══════════════════════════════════════════════════════════ */
-function openAdd(){editId=null;curPrio='none';curTags=[];document.getElementById('formTitle').textContent='جلسة جديدة';document.getElementById('btnSave').textContent='حفظ الجلسة';['fNum','fCourt','fRoom','fPlnt','fDfnd','fNotes'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('fType').value='جنائية';document.getElementById('fStatus').value='scheduled';document.getElementById('fDate').value='';document.getElementById('fTime').value='';document.getElementById('btnSave').disabled=true;setPrio('none');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker([]);document.getElementById('formSheet').classList.remove('hid');}
-function openEdit(s){editId=s.id;curPrio=s.priority||'none';curTags=(s.tags||[]).slice();document.getElementById('formTitle').textContent='تعديل الجلسة';document.getElementById('btnSave').textContent='💾 حفظ التعديلات';document.getElementById('fNum').value=s.num;document.getElementById('fType').value=s.type;document.getElementById('fCourt').value=s.court||'';document.getElementById('fRoom').value=s.room||'';document.getElementById('fPlnt').value=s.plnt||'';document.getElementById('fDfnd').value=s.dfnd||'';document.getElementById('fDate').value=s.date;document.getElementById('fTime').value=s.time;document.getElementById('fStatus').value=s.status;document.getElementById('fNotes').value=s.notes||'';document.getElementById('btnSave').disabled=false;setPrio(s.priority||'none');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker(s.tags||[]);document.getElementById('formSheet').classList.remove('hid');}
+function openAdd(){editId=null;curPrio='none';curTags=[];document.getElementById('formTitle').textContent='جلسة جديدة';document.getElementById('btnSave').textContent='حفظ الجلسة';['fNum','fCourt','fRoom','fPlnt','fDfnd','fNotes','fMeetUrl'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('fType').value='جنائية';document.getElementById('fStatus').value='scheduled';document.getElementById('fDate').value='';document.getElementById('fTime').value='';document.getElementById('btnSave').disabled=true;setPrio('none');updMeetIcon('');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker([]);document.getElementById('formSheet').classList.remove('hid');}
+function openEdit(s){editId=s.id;curPrio=s.priority||'none';curTags=(s.tags||[]).slice();document.getElementById('formTitle').textContent='تعديل الجلسة';document.getElementById('btnSave').textContent='💾 حفظ التعديلات';document.getElementById('fNum').value=s.num;document.getElementById('fType').value=s.type;document.getElementById('fCourt').value=s.court||'';document.getElementById('fRoom').value=s.room||'';document.getElementById('fMeetUrl').value=s.meetUrl||'';document.getElementById('fPlnt').value=s.plnt||'';document.getElementById('fDfnd').value=s.dfnd||'';document.getElementById('fDate').value=s.date;document.getElementById('fTime').value=s.time;document.getElementById('fStatus').value=s.status;document.getElementById('fNotes').value=s.notes||'';document.getElementById('btnSave').disabled=false;setPrio(s.priority||'none');updMeetIcon(s.meetUrl||'');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker(s.tags||[]);document.getElementById('formSheet').classList.remove('hid');}
 function closeForm(){document.getElementById('formSheet').classList.add('hid');editId=null;}
 function chkV(){var ok=document.getElementById('fNum').value.trim()&&document.getElementById('fCourt').value.trim()&&document.getElementById('fDate').value&&document.getElementById('fTime').value;document.getElementById('btnSave').disabled=!ok;}
-function saveS(){var ex=editId?data.find(function(x){return x.id===editId;}):null;var s={id:editId||Date.now(),num:document.getElementById('fNum').value.trim(),type:document.getElementById('fType').value,court:document.getElementById('fCourt').value.trim(),room:document.getElementById('fRoom').value.trim(),plnt:document.getElementById('fPlnt').value.trim(),dfnd:document.getElementById('fDfnd').value.trim(),date:document.getElementById('fDate').value,time:document.getElementById('fTime').value,status:document.getElementById('fStatus').value,priority:curPrio,tags:curTags.slice(),notes:document.getElementById('fNotes').value.trim(),attachments:ex?(ex.attachments||[]):[],memo:ex?(ex.memo||''):'',minutes:ex?(ex.minutes||''):'',quickNote:ex?(ex.quickNote||''):'',stage:ex?(ex.stage||''):''};if(!s.num||!s.court||!s.date||!s.time)return;dbPut(s).then(function(){if(editId)data=data.map(function(x){return x.id===editId?s:x;});else data.push(s);schedNotifs();toast(editId?'✅ تم حفظ التعديلات':'✅ أُضيفت الجلسة');closeForm();render();});}
+
+/* ── Meeting URL helpers ── */
+function getMeetInfo(url){
+  if(!url)return null;
+  var u=url.toLowerCase();
+  if(u.includes('teams.microsoft.com')||u.includes('teams.live.com'))
+    return{name:'Teams',icon:'🟦',color:'#6499ff',bg:'rgba(100,153,255,0.12)',border:'rgba(100,153,255,0.3)'};
+  if(u.includes('zoom.us')||u.includes('zoom.com'))
+    return{name:'Zoom',icon:'🟦',color:'#2d8cff',bg:'rgba(45,140,255,0.12)',border:'rgba(45,140,255,0.3)'};
+  if(u.includes('meet.google.com'))
+    return{name:'Google Meet',icon:'🟩',color:'#34a853',bg:'rgba(52,168,83,0.12)',border:'rgba(52,168,83,0.3)'};
+  if(u.includes('webex.com'))
+    return{name:'Webex',icon:'🟧',color:'#f6921e',bg:'rgba(246,146,30,0.12)',border:'rgba(246,146,30,0.3)'};
+  if(u.startsWith('http'))
+    return{name:'اجتماع عن بُعد',icon:'🔗',color:'var(--gold2)',bg:'var(--gold-a10)',border:'var(--gold-a30)'};
+  return null;
+}
+
+function updMeetIcon(url){
+  var el=document.getElementById('meetIconPreview');if(!el)return;
+  var info=getMeetInfo(url);
+  el.textContent=info?info.icon:'🔗';
+}
+
+function setMeetTemplate(type){
+  var inp=document.getElementById('fMeetUrl');if(!inp)return;
+  var placeholders={
+    teams:'https://teams.microsoft.com/l/meetup-join/...',
+    zoom:'https://zoom.us/j/...',
+    meet:'https://meet.google.com/...'
+  };
+  inp.value='';inp.placeholder=placeholders[type]||'';inp.focus();
+  var icons={teams:'🟦',zoom:'🟦',meet:'🟩'};
+  var el=document.getElementById('meetIconPreview');if(el)el.textContent=icons[type]||'🔗';
+}
+
+function pasteMeetUrl(){
+  if(navigator.clipboard&&navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(t){
+      var inp=document.getElementById('fMeetUrl');
+      if(inp&&t&&t.startsWith('http')){inp.value=t.trim();updMeetIcon(t.trim());toast('📋 تم اللصق');}
+      else toast('⚠️ الحافظة لا تحتوي رابطاً صالحاً');
+    }).catch(function(){toast('⚠️ لا يمكن الوصول للحافظة');});
+  } else toast('⚠️ غير مدعوم في هذا المتصفح');
+}
+
+function joinMeeting(url){
+  if(!url){toast('⚠️ لا يوجد رابط اجتماع');return;}
+  window.open(url,'_blank');
+  toast('🚀 جارٍ الانضمام...');
+}
+
+function meetBadge(s){
+  var info=getMeetInfo(s.meetUrl||'');
+  if(!info)return'';
+  return'<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:14px;font-size:10px;font-weight:700;background:'+info.bg+';color:'+info.color+';border:1px solid '+info.border+'">'+info.icon+' '+info.name+'</span>';
+}
+
+function meetJoinBtn(s,size){
+  var info=getMeetInfo(s.meetUrl||'');
+  if(!info)return'';
+  var big=size==='big';
+  return'<button onclick="joinMeeting(\''+s.meetUrl.replace(/'/g,"\\'")+'\')" style="'+(big?'width:100%;padding:13px;font-size:13px;margin-bottom:8px;':'padding:5px 12px;font-size:11px;')+
+    'background:'+info.bg+';color:'+info.color+';border:1px solid '+info.border+';border-radius:'+(big?'var(--r-md)':'18px')+
+    ';font-weight:700;cursor:pointer;display:'+(big?'flex':'inline-flex')+';align-items:center;justify-content:center;gap:6px;font-family:Tajawal,sans-serif">'+
+    info.icon+' انضم عبر '+info.name+'</button>';
+}
+function saveS(){var ex=editId?data.find(function(x){return x.id===editId;}):null;var s={id:editId||Date.now(),num:document.getElementById('fNum').value.trim(),type:document.getElementById('fType').value,court:document.getElementById('fCourt').value.trim(),room:document.getElementById('fRoom').value.trim(),meetUrl:(document.getElementById('fMeetUrl').value||'').trim(),plnt:document.getElementById('fPlnt').value.trim(),dfnd:document.getElementById('fDfnd').value.trim(),date:document.getElementById('fDate').value,time:document.getElementById('fTime').value,status:document.getElementById('fStatus').value,priority:curPrio,tags:curTags.slice(),notes:document.getElementById('fNotes').value.trim(),attachments:ex?(ex.attachments||[]):[],memo:ex?(ex.memo||''):'',minutes:ex?(ex.minutes||''):'',quickNote:ex?(ex.quickNote||''):'',stage:ex?(ex.stage||''):''};if(!s.num||!s.court||!s.date||!s.time)return;dbPut(s).then(function(){if(editId)data=data.map(function(x){return x.id===editId?s:x;});else data.push(s);schedNotifs();toast(editId?'✅ تم حفظ التعديلات':'✅ أُضيفت الجلسة');closeForm();render();});}
 
 /* ═══════════════════════════════════════════════════════════
    DELETE
@@ -1508,9 +1656,648 @@ function calPrev(){calD=new Date(calD.getFullYear(),calD.getMonth()-1,1);render(
 function calNext(){calD=new Date(calD.getFullYear(),calD.getMonth()+1,1);render();}
 function selDay(d){selD=new Date(d+'T00:00:00');render();}
 
+function calPrev(){calD=new Date(calD.getFullYear(),calD.getMonth()-1,1);render();}
+function calNext(){calD=new Date(calD.getFullYear(),calD.getMonth()+1,1);render();}
+function selDay(d){selD=new Date(d+'T00:00:00');render();}
+
 /* ═══════════════════════════════════════════════════════════
-   BOOT
+   IMPORT FROM EXCEL / CSV
 ═══════════════════════════════════════════════════════════ */
+var importPreviewRows=[];
+var COL_MAP={
+  num:['رقم القضية','رقم','num','case number','case_number'],
+  type:['نوع القضية','نوع','type','case type'],
+  court:['المحكمة','محكمة','court'],
+  room:['القاعة','قاعة','room'],
+  plnt:['المدعي','مدعي','plaintiff'],
+  dfnd:['المدعى عليه','المدعى','defendant'],
+  date:['التاريخ','تاريخ','date'],
+  time:['الوقت','وقت','time'],
+  status:['الحالة','حالة','status'],
+  priority:['الأهمية','أهمية','priority'],
+  notes:['ملاحظات','notes']
+};
+var ST_MAP={'مجدولة':'scheduled','scheduled':'scheduled','جارية':'inProgress','منتهية':'completed','completed':'completed','مؤجلة':'postponed','postponed':'postponed'};
+var PR_MAP={'عالية':'high','high':'high','متوسطة':'med','med':'med','منخفضة':'low','low':'low','عادية':'none','none':'none'};
+
+function findCol(headers,aliases){
+  for(var i=0;i<headers.length;i++){
+    var h=String(headers[i]||'').trim().toLowerCase();
+    for(var j=0;j<aliases.length;j++){if(h===aliases[j].toLowerCase()||h.includes(aliases[j].toLowerCase()))return i;}
+  }
+  return -1;
+}
+
+function parseDate(v){
+  if(!v)return'';
+  var s=String(v).trim();
+  // Excel serial number
+  if(/^\d{4,5}$/.test(s)){var d=new Date(Math.round((parseInt(s)-25569)*86400*1000));return d.toISOString().split('T')[0];}
+  // dd/mm/yyyy or dd-mm-yyyy
+  var m=s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  // yyyy-mm-dd
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.substring(0,10);
+  return s;
+}
+
+function parseTime(v){
+  if(!v)return'09:00';
+  var s=String(v).trim();
+  if(/^\d{1,2}:\d{2}/.test(s))return s.substring(0,5);
+  if(/^0\.\d+$/.test(s)){var t=Math.round(parseFloat(s)*1440);return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
+  return'09:00';
+}
+
+function rowToSession(row,map){
+  var g=function(k){var i=map[k];return i>=0?String(row[i]||'').trim():'';};
+  return{
+    id:Date.now()+Math.random(),
+    num:g('num')||'—',
+    type:g('type')||'مدنية',
+    court:g('court')||'—',
+    room:g('room')||'',
+    plnt:g('plnt')||'',
+    dfnd:g('dfnd')||'',
+    date:parseDate(g('date'))||today(),
+    time:parseTime(g('time')),
+    status:ST_MAP[(g('status')||'').toLowerCase()]||'scheduled',
+    priority:PR_MAP[(g('priority')||'').toLowerCase()]||'none',
+    notes:g('notes')||'',
+    attachments:[],memo:'',minutes:'',quickNote:'',tags:[],stage:''
+  };
+}
+
+function showImportModal(){
+  var m=document.createElement('div');m.id='impModal';
+  m.style.cssText='position:fixed;inset:0;z-index:500;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px)';
+  bg.onclick=function(){if(!importPreviewRows.length)m.remove();};
+  var box=document.createElement('div');
+  box.id='impBox';
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;max-height:90vh;overflow-y:auto;padding-bottom:max(20px,env(safe-area-inset-bottom))';
+  box.innerHTML=impWelcomeHTML();
+  m.appendChild(bg);m.appendChild(box);document.body.appendChild(m);
+}
+
+function impWelcomeHTML(){
+  return'<div style="padding:20px">'+
+    '<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:6px">📤 استيراد جلسات</div>'+
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:16px">ارفع ملف Excel أو CSV لاستيراد الجلسات تلقائياً</div>'+
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:12px">'+
+      '<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📋 الأعمدة المدعومة</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:5px">'+
+      ['رقم القضية','نوع القضية','المحكمة','القاعة','المدعي','المدعى عليه','التاريخ','الوقت','الحالة','الأهمية','ملاحظات'].map(function(c){
+        return'<span style="font-size:10px;background:var(--surface3);color:var(--text3);border-radius:5px;padding:2px 7px">'+c+'</span>';
+      }).join('')+'</div>'+
+    '</div>'+
+    '<label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;background:var(--gold-a10);border:2px dashed var(--gold-a30);border-radius:var(--r-md);cursor:pointer;font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px">'+
+      '📂 اختر ملف Excel أو CSV'+
+      '<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(this)">'+
+    '</label>'+
+    '<button onclick="downloadTemplate()" style="width:100%;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px;font-weight:600;font-size:12px;cursor:pointer;margin-bottom:10px">⬇️ تحميل قالب Excel فارغ</button>'+
+    '<button onclick="document.getElementById(\'impModal\').remove()" style="width:100%;background:none;color:var(--text3);padding:9px;font-size:12px;cursor:pointer">إغلاق</button>'+
+  '</div>';
+}
+
+function downloadTemplate(){
+  var csv='رقم القضية,نوع القضية,المحكمة,القاعة,المدعي,المدعى عليه,التاريخ,الوقت,الحالة,الأهمية,ملاحظات\n';
+  csv+='2025/001,جنائية,محكمة الجزاء,قاعة 1,النيابة العامة,محمد أحمد,2026-04-10,09:00,مجدولة,عالية,جلسة الاستماع\n';
+  csv+='2025/002,مدنية,المحكمة العامة,قاعة 3,شركة الأمل,علي سالم,2026-04-15,10:30,مجدولة,متوسطة,\n';
+  var bom='\uFEFF';
+  var blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='قالب_الجلسات.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('⬇️ تم تحميل القالب');
+}
+
+function handleImportFile(input){
+  var file=input.files[0];if(!file)return;
+  var isCSV=file.name.toLowerCase().endsWith('.csv');
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var rows=[];
+      if(isCSV){
+        var text=e.target.result;
+        // Remove BOM
+        if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+        var lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
+        rows=lines.map(function(l){
+          // Handle quoted fields
+          var cols=[];var cur='';var inQ=false;
+          for(var i=0;i<l.length;i++){
+            var c=l[i];
+            if(c==='"'&&!inQ){inQ=true;}
+            else if(c==='"'&&inQ){inQ=false;}
+            else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+            else cur+=c;
+          }
+          cols.push(cur.trim());
+          return cols;
+        });
+      } else {
+        if(typeof XLSX==='undefined'){toast('⚠️ مكتبة Excel غير محملة');return;}
+        var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      }
+      if(!rows||rows.length<2){toast('⚠️ الملف فارغ أو غير صالح');return;}
+      var headers=rows[0].map(function(h){return String(h||'');});
+      var colMap={};
+      Object.keys(COL_MAP).forEach(function(k){colMap[k]=findCol(headers,COL_MAP[k]);});
+      var sessions=rows.slice(1).filter(function(r){return r.some(function(c){return String(c||'').trim();});}).map(function(r){return rowToSession(r,colMap);});
+      if(!sessions.length){toast('⚠️ لا توجد بيانات صالحة');return;}
+      importPreviewRows=sessions;
+      showImportPreview(sessions);
+    }catch(err){console.error(err);toast('⚠️ خطأ في قراءة الملف: '+err.message);}
+  };
+  if(isCSV)reader.readAsText(file,'UTF-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function showImportPreview(sessions){
+  var box=document.getElementById('impBox');if(!box)return;
+  var h='<div style="padding:16px 18px">';
+  h+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:4px">معاينة الاستيراد</div>';
+  h+='<div style="font-size:11px;color:var(--text3);margin-bottom:14px">تم العثور على <strong style="color:var(--gold2)">'+sessions.length+' جلسة</strong> — راجع قبل الاستيراد</div>';
+  // Preview table
+  h+='<div style="overflow-x:auto;margin-bottom:14px"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:360px">';
+  h+='<thead><tr style="background:var(--surface3)">';
+  ['رقم القضية','النوع','المحكمة','التاريخ','الوقت','الحالة'].forEach(function(c){
+    h+='<th style="padding:7px 8px;text-align:right;color:var(--text2);font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border2)">'+c+'</th>';
+  });
+  h+='</tr></thead><tbody>';
+  sessions.slice(0,8).forEach(function(s,i){
+    var bg=i%2===0?'var(--surface2)':'var(--surface3)';
+    h+='<tr style="background:'+bg+'">';
+    [s.num,s.type,s.court,s.date,s.time,ST[s.status]?ST[s.status].lbl:s.status].forEach(function(v){
+      h+='<td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis">'+v+'</td>';
+    });
+    h+='</tr>';
+  });
+  if(sessions.length>8)h+='<tr><td colspan="6" style="padding:6px 8px;color:var(--text3);font-size:10px">... و'+( sessions.length-8)+' جلسة أخرى</td></tr>';
+  h+='</tbody></table></div>';
+  // Options
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:12px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">خيارات الاستيراد</div>';
+  h+='<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer;margin-bottom:6px"><input type="radio" name="impMode" value="add" checked style="accent-color:var(--gold)"> إضافة للجلسات الموجودة</label>';
+  h+='<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer"><input type="radio" name="impMode" value="replace" style="accent-color:var(--gold)"> استبدال جميع الجلسات</label>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px">';
+  h+='<button onclick="doImport()" style="flex:1;background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer">✅ استيراد '+sessions.length+' جلسة</button>';
+  h+='<button onclick="document.getElementById(\'impBox\').innerHTML=impWelcomeHTML()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:var(--r-md);padding:13px;font-size:12px;cursor:pointer">← رجوع</button>';
+  h+='</div></div>';
+  box.innerHTML=h;
+}
+
+function doImport(){
+  var mode=document.querySelector('input[name="impMode"]:checked');
+  var replace=mode&&mode.value==='replace';
+  if(replace&&!confirm('سيتم حذف '+data.length+' جلسة موجودة. متابعة؟'))return;
+  var sessions=importPreviewRows;
+  var fixedIds=sessions.map(function(s){return Object.assign({},s,{id:Date.now()+Math.floor(Math.random()*99999)});});
+  var ops=[];
+  if(replace){
+    ops=data.map(function(s){return dbDel(s.id);});
+    Promise.all(ops).then(function(){
+      data=[];
+      return Promise.all(fixedIds.map(function(s){return dbPut(s);}));
+    }).then(function(){data=fixedIds;importPreviewRows=[];var m=document.getElementById('impModal');if(m)m.remove();toast('✅ تم الاستيراد: '+fixedIds.length+' جلسة');render();});
+  } else {
+    Promise.all(fixedIds.map(function(s){return dbPut(s);})).then(function(){data=data.concat(fixedIds);importPreviewRows=[];var m=document.getElementById('impModal');if(m)m.remove();toast('✅ تمت إضافة: '+fixedIds.length+' جلسة');render();});
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORT ICS (CALENDAR)
+═══════════════════════════════════════════════════════════ */
+function exportICS(ids){
+  var list=ids?data.filter(function(s){return ids.indexOf(s.id)>-1;}):data.filter(function(s){return s.status==='scheduled'||s.status==='inProgress';});
+  if(!list.length){toast('⚠️ لا توجد جلسات للتصدير');return;}
+  var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//الجلسات القضائية//AR','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  list.forEach(function(s){
+    var dt=s.date.replace(/-/g,'')+'T'+s.time.replace(':','')+'00';
+    var uid=s.id+'@jalsat-app';
+    var summary='جلسة: '+s.num+' - '+s.type;
+    var desc='المحكمة: '+(s.court||'')+' | المدعي: '+(s.plnt||'')+' | المدعى عليه: '+(s.dfnd||'');
+    var loc=s.court+(s.room?' - '+s.room:'');
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:'+uid);
+    lines.push('DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z');
+    lines.push('DTSTART;TZID=Asia/Riyadh:'+dt);
+    lines.push('DURATION:PT1H');
+    lines.push('SUMMARY:'+summary);
+    lines.push('DESCRIPTION:'+desc);
+    lines.push('LOCATION:'+loc);
+    lines.push('STATUS:'+(s.status==='scheduled'?'CONFIRMED':'TENTATIVE'));
+    lines.push('BEGIN:VALARM');
+    lines.push('TRIGGER:-PT30M');
+    lines.push('ACTION:DISPLAY');
+    lines.push('DESCRIPTION:تذكير: '+summary);
+    lines.push('END:VALARM');
+    lines.push('END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  var blob=new Blob([lines.join('\r\n')],{type:'text/calendar;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='جلساتي_'+today()+'.ics';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('📅 تم تصدير '+list.length+' جلسة للتقويم');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   QR CODE
+═══════════════════════════════════════════════════════════ */
+function showQR(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var txt='جلسة: '+s.num+'\n'+s.type+' | '+s.court+'\nتاريخ: '+s.date+' الساعة '+s.time+'\nمدعي: '+(s.plnt||'—')+'\nمدعى عليه: '+(s.dfnd||'—');
+  var enc=encodeURIComponent(txt);
+  var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+enc+'&bgcolor=0f1118&color=f0c55a&margin=10';
+  var modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,0.88)';
+  modal.onclick=function(){modal.remove();};
+  modal.innerHTML='<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-xl);padding:24px;text-align:center;max-width:280px;width:100%" onclick="event.stopPropagation()">'+
+    '<div style="font-family:Scheherazade New,serif;font-size:17px;color:var(--gold2);margin-bottom:4px">QR جلسة</div>'+
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:14px">'+s.num+' · '+s.type+'</div>'+
+    '<img src="'+qrUrl+'" style="width:180px;height:180px;border-radius:12px;display:block;margin:0 auto 14px" onerror="this.parentNode.innerHTML+=\'<div style=&quot;color:#f87171;font-size:11px&quot;>⚠️ تعذّر توليد QR</div>\'">'+
+    '<div style="font-size:10px;color:var(--text3);margin-bottom:14px">امسح الكود للاطلاع على تفاصيل الجلسة</div>'+
+    '<button onclick="this.closest(\'[style]\').parentNode.removeChild(this.closest(\'[style]\'))" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:10px;cursor:pointer;font-size:13px">إغلاق</button>'+
+  '</div>';
+  document.body.appendChild(modal);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FEES TRACKING
+═══════════════════════════════════════════════════════════ */
+var fees=[];
+try{fees=JSON.parse(localStorage.getItem('j_fees')||'[]');}catch(e){fees=[];}
+function saveFees(){try{localStorage.setItem('j_fees',JSON.stringify(fees));}catch(e){}}
+
+function rFees(){
+  var total=fees.reduce(function(s,f){return s+(f.amount||0);},0);
+  var paid=fees.filter(function(f){return f.paid;}).reduce(function(s,f){return s+(f.amount||0);},0);
+  var unpaid=total-paid;
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+  h+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">💰 الأتعاب والرسوم</div>';
+  h+='<button onclick="openFeeForm()" style="background:var(--gold);color:#0a0905;border-radius:10px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer">+ إضافة</button>';
+  h+='</div>';
+  // Stats
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">';
+  [{v:total.toLocaleString('ar-SA'),l:'إجمالي',c:'var(--gold2)'},{v:paid.toLocaleString('ar-SA'),l:'مسدّد',c:'var(--green)'},{v:unpaid.toLocaleString('ar-SA'),l:'متبقي',c:'#f87171'}].forEach(function(x){
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;text-align:center">';
+    h+='<div style="font-size:14px;font-weight:900;color:'+x.c+'">'+x.v+'</div>';
+    h+='<div style="font-size:9px;color:var(--text3);margin-top:3px">ر.س '+x.l+'</div></div>';
+  });
+  h+='</div>';
+  if(!fees.length){
+    h+='<div class="empty"><div class="empty-icon">💰</div><div class="empty-title">لا توجد سجلات أتعاب</div><div class="empty-sub">اضغط + إضافة لتسجيل أتعاب</div></div>';
+  } else {
+    h+=secHdr('📋','سجل الأتعاب');
+    fees.slice().reverse().forEach(function(f){
+      var s=data.find(function(x){return x.id===f.sessionId;});
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px;border-right:3px solid '+(f.paid?'var(--green)':'#f87171')+'">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
+      h+='<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+f.desc+'</div>';
+      if(s)h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">📋 '+s.num+' · '+s.type+'</div>';
+      h+='</div>';
+      h+='<div style="text-align:left">';
+      h+='<div style="font-size:16px;font-weight:900;color:var(--gold2)">'+f.amount.toLocaleString('ar-SA')+'</div>';
+      h+='<div style="font-size:9px;color:var(--text3)">ر.س</div></div></div>';
+      h+='<div style="display:flex;gap:7px;align-items:center">';
+      h+='<span style="font-size:10px;background:'+(f.paid?'var(--green-a)':'var(--red-a)')+';color:'+(f.paid?'#34d399':'#f87171')+';border:1px solid '+(f.paid?'rgba(58,184,130,.3)':'rgba(232,80,80,.3)')+';border-radius:14px;padding:2px 8px;font-weight:700">'+(f.paid?'✅ مسدّد':'⏳ معلق')+'</span>';
+      if(f.date)h+='<span style="font-size:10px;color:var(--text3)">📅 '+f.date+'</span>';
+      h+='<div style="margin-right:auto;display:flex;gap:5px">';
+      if(!f.paid)h+='<button onclick="markFeePaid(\''+f.id+'\')" style="background:var(--green-a);color:#34d399;border:1px solid rgba(58,184,130,.3);border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer">تسديد</button>';
+      h+='<button onclick="delFee(\''+f.id+'\')" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:7px;padding:4px 9px;font-size:10px;cursor:pointer">🗑️</button>';
+      h+='</div></div></div>';
+    });
+  }
+  // Form
+  h+='<div id="feeForm" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:14px;margin-top:12px">';
+  h+='<div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px">تسجيل أتعاب / رسوم</div>';
+  h+='<input id="feDesc" type="text" placeholder="وصف الأتعاب / الخدمة *" dir="rtl" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">';
+  h+='<input id="feAmt" type="number" placeholder="المبلغ (ر.س) *" dir="ltr" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block">';
+  h+='<input id="feDate" type="date" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block;color-scheme:dark">';
+  h+='<select id="feSess" dir="rtl" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block">';
+  h+='<option value="">— ربط بجلسة (اختياري) —</option>';
+  data.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(s){h+='<option value="'+s.id+'">'+s.num+' · '+s.court+'</option>';});
+  h+='</select>';
+  h+='<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer;margin-bottom:12px"><input type="checkbox" id="fePaid" style="accent-color:var(--gold);width:16px;height:16px"> تم التسديد</label>';
+  h+='<div style="display:flex;gap:7px"><button onclick="saveFee()" style="flex:1;background:var(--gold);color:#0a0905;border-radius:10px;padding:11px;font-weight:700;font-size:13px;cursor:pointer">حفظ</button><button onclick="document.getElementById(\'feeForm\').style.display=\'none\'" style="flex:1;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:11px;font-size:13px;cursor:pointer">إلغاء</button></div>';
+  h+='</div>';
+  return h;
+}
+
+function openFeeForm(){var f=document.getElementById('feeForm');if(f){f.style.display='block';f.scrollIntoView({behavior:'smooth'});}}
+function saveFee(){
+  var desc=document.getElementById('feDesc');var amt=document.getElementById('feAmt');
+  if(!desc||!desc.value.trim()||!amt||!amt.value){toast('⚠️ أدخل الوصف والمبلغ');return;}
+  var sessEl=document.getElementById('feSess');
+  fees.push({id:'fee_'+Date.now(),desc:desc.value.trim(),amount:parseFloat(amt.value)||0,date:document.getElementById('feDate').value,sessionId:sessEl?parseInt(sessEl.value)||null:null,paid:document.getElementById('fePaid').checked});
+  saveFees();toast('✅ تم التسجيل');render();
+}
+function markFeePaid(id){var f=fees.find(function(x){return x.id===id;});if(f){f.paid=true;saveFees();toast('✅ تم تسجيل التسديد');render();}}
+function delFee(id){fees=fees.filter(function(x){return x.id!==id;});saveFees();toast('🗑️ تم الحذف');render();}
+
+/* ═══════════════════════════════════════════════════════════
+   TOOLS PAGE (LEGAL DEADLINE CALC + CHARTS + MORE)
+═══════════════════════════════════════════════════════════ */
+function rTools(){
+  var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">🛠️ الأدوات القانونية</div>';
+
+  // Charts section
+  h+=secHdr('📊','إحصائيات تفاعلية');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  h+='<canvas id="chartStatus" height="180"></canvas></div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px"><canvas id="chartType" height="160"></canvas></div>';
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px"><canvas id="chartPrio" height="160"></canvas></div>';
+  h+='</div>';
+
+  // Legal deadline calc
+  h+=secHdr('⚖️','حاسبة المواعيد القانونية');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+  h+='<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">تاريخ الحكم / الإجراء</label>';
+  h+='<input type="date" id="dlcDate" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:9px;font-size:12px;color:var(--text);color-scheme:dark"></div>';
+  h+='<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">نوع الإجراء</label>';
+  h+='<select id="dlcType" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:9px;font-size:12px;color:var(--text)" dir="rtl">';
+  [['استئناف حكم ابتدائي','30'],['طعن بالنقض','30'],['تقديم دفوع','15'],['استئناف جنائي','10'],['مدة التنفيذ','30'],['اعتراض على حكم غيابي','30'],['طلب تأجيل','7']].forEach(function(o){h+='<option value="'+o[1]+'">'+o[0]+' ('+o[1]+' يوم)</option>';});
+  h+='</select></div></div>';
+  h+='<button onclick="calcDeadline()" style="width:100%;background:var(--gold);color:#0a0905;border-radius:var(--r-sm);padding:10px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:10px">احسب الموعد النهائي</button>';
+  h+='<div id="dlcResult" style="display:none;background:var(--surface3);border-radius:10px;padding:12px;font-size:13px"></div></div>';
+
+  // Export tools
+  h+=secHdr('📤','تصدير واستيراد');
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
+  [
+    ['📤 استيراد Excel/CSV','showImportModal()','var(--amber-a)','var(--amber)','rgba(232,160,48,.3)'],
+    ['📅 تصدير تقويم ICS','exportICS()','var(--blue-a)','#60a5fa','rgba(74,144,217,.3)'],
+    ['📊 تصدير Excel','exportExcel()','var(--green-a)','#34d399','rgba(58,184,130,.3)'],
+    ['🖨️ تصدير PDF','expPDF()','var(--red-a)','#f87171','rgba(232,80,80,.3)']
+  ].forEach(function(b){
+    h+='<button onclick="'+b[1]+'" style="background:'+b[2]+';color:'+b[3]+';border:1px solid '+b[4]+';border-radius:var(--r-md);padding:12px 8px;font-weight:700;font-size:12px;cursor:pointer;text-align:center">'+b[0]+'</button>';
+  });
+  h+='</div>';
+
+  // Voice search
+  h+=secHdr('🎤','بحث صوتي');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px;text-align:center">';
+  h+='<button id="voiceBtn" onclick="startVoiceSearch()" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0905;font-size:26px;cursor:pointer;border:none;box-shadow:0 0 20px var(--gold-a30);transition:all .15s;display:inline-flex;align-items:center;justify-content:center">🎤</button>';
+  h+='<div id="voiceStatus" style="font-size:11px;color:var(--text3);margin-top:10px">اضغط للبحث الصوتي</div>';
+  h+='</div>';
+
+  return h;
+}
+
+function calcDeadline(){
+  var dateEl=document.getElementById('dlcDate');
+  var typeEl=document.getElementById('dlcType');
+  var resEl=document.getElementById('dlcResult');
+  if(!dateEl||!dateEl.value){toast('⚠️ اختر التاريخ أولاً');return;}
+  var days=parseInt(typeEl.value)||30;
+  var base=new Date(dateEl.value+'T00:00:00');
+  var deadline=new Date(base);deadline.setDate(deadline.getDate()+days);
+  var remaining=Math.ceil((deadline-new Date())/86400000);
+  var clr=remaining<0?'#f87171':remaining<7?'#fbbf24':'#34d399';
+  var msg=remaining<0?'انتهى الموعد منذ '+Math.abs(remaining)+' يوم':remaining===0?'اليوم هو آخر يوم!':'متبقي '+remaining+' يوم';
+  resEl.style.display='block';
+  resEl.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'+
+    '<div><div style="font-size:11px;color:var(--text3);margin-bottom:4px">الموعد النهائي</div>'+
+    '<div style="font-size:16px;font-weight:700;color:var(--text)">'+deadline.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</div></div>'+
+    '<div style="text-align:left"><div style="font-size:18px;font-weight:900;color:'+clr+'">'+msg+'</div></div></div>';
+}
+
+function exportExcel(){
+  var csv='\uFEFF'+'رقم القضية,نوع القضية,المحكمة,القاعة,المدعي,المدعى عليه,التاريخ,الوقت,الحالة,الأهمية,ملاحظات\n';
+  data.forEach(function(s){
+    var row=[s.num,s.type,s.court||'',s.room||'',s.plnt||'',s.dfnd||'',s.date,s.time,ST[s.status].lbl,PT[s.priority||'none'].lbl,s.notes||''];
+    csv+=row.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"';}).join(',')+'\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='الجلسات_'+today()+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('📊 تم تصدير '+data.length+' جلسة');
+}
+
+function startVoiceSearch(){
+  var SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecognition){toast('⚠️ المتصفح لا يدعم التعرف على الصوت');return;}
+  var r=new SpeechRecognition();r.lang='ar-SA';r.continuous=false;r.interimResults=false;
+  var btn=document.getElementById('voiceBtn');
+  var status=document.getElementById('voiceStatus');
+  if(btn){btn.style.background='linear-gradient(135deg,#e85050,#f87171)';btn.style.boxShadow='0 0 20px rgba(232,80,80,.4)';}
+  if(status)status.textContent='جارٍ الاستماع...';
+  r.onresult=function(e){
+    var txt=e.results[0][0].transcript;
+    if(btn){btn.style.background='linear-gradient(135deg,var(--gold),var(--gold2))';btn.style.boxShadow='0 0 20px var(--gold-a30)';}
+    if(status)status.textContent='تم التعرف: "'+txt+'"';
+    setTimeout(function(){go('list');q=txt;render();},400);
+  };
+  r.onerror=function(e){
+    if(btn){btn.style.background='linear-gradient(135deg,var(--gold),var(--gold2))';btn.style.boxShadow='0 0 20px var(--gold-a30)';}
+    if(status)status.textContent='تعذّر التعرف — حاول مرة أخرى';
+  };
+  r.onend=function(){if(btn)btn.style.background='linear-gradient(135deg,var(--gold),var(--gold2))';};
+  r.start();
+}
+
+// Render charts after rTools is inserted in DOM
+function renderToolCharts(){
+  if(typeof Chart==='undefined')return;
+  var byS={scheduled:0,inProgress:0,completed:0,postponed:0};
+  var byT={};var byP={high:0,med:0,low:0,none:0};
+  data.forEach(function(s){byS[s.status]=(byS[s.status]||0)+1;byT[s.type]=(byT[s.type]||0)+1;byP[s.priority||'none']=(byP[s.priority||'none']||0)+1;});
+
+  var isDarkMode=!isDay;
+  var textClr=isDarkMode?'#8893ab':'#64748b';
+  Chart.defaults.color=textClr;
+  Chart.defaults.borderColor=isDarkMode?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.08)';
+
+  var c1=document.getElementById('chartStatus');
+  if(c1){new Chart(c1,{type:'bar',data:{labels:['مجدولة','جارية','منتهية','مؤجلة'],datasets:[{data:[byS.scheduled,byS.inProgress,byS.completed,byS.postponed],backgroundColor:['#378ADD','#e8a030','#3ab882','#e85050'],borderRadius:6,borderSkipped:false}]},options:{plugins:{legend:{display:false},title:{display:true,text:'توزيع الجلسات حسب الحالة',color:isDarkMode?'#f0c55a':'#d4a843',font:{size:12,weight:'600',family:'Tajawal'}}},scales:{y:{ticks:{stepSize:1},grid:{color:isDarkMode?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'}},x:{grid:{display:false}}}}});}
+
+  var c2=document.getElementById('chartType');
+  var tKeys=Object.keys(byT);
+  if(c2&&tKeys.length){new Chart(c2,{type:'doughnut',data:{labels:tKeys,datasets:[{data:tKeys.map(function(k){return byT[k];}),backgroundColor:['#378ADD','#3ab882','#e8a030','#e85050','#8b6fd4','#d4a843'],borderWidth:0,hoverOffset:4}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:9,family:'Tajawal'},padding:6,boxWidth:10}}}}});}
+
+  var c3=document.getElementById('chartPrio');
+  if(c3){new Chart(c3,{type:'doughnut',data:{labels:['عالية','متوسطة','منخفضة','عادية'],datasets:[{data:[byP.high,byP.med,byP.low,byP.none],backgroundColor:['#e85050','#e8a030','#3ab882','#4a90d9'],borderWidth:0,hoverOffset:4}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:9,family:'Tajawal'},padding:6,boxWidth:10}}}}});}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE SESSION MODE
+═══════════════════════════════════════════════════════════ */
+var liveSessionId=null,liveNotes='',liveTick=null,liveStart=null;
+
+function rLive(){
+  var active=liveSessionId?data.find(function(x){return x.id===liveSessionId;}):null;
+  var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">🔴 وضع الجلسة المباشرة</div>';
+
+  if(!active){
+    // Pick session
+    var td=today();
+    var todaySessions=data.filter(function(s){return s.date===td&&(s.status==='scheduled'||s.status==='inProgress');});
+    var upcoming=data.filter(function(s){return s.date>=td&&s.status==='scheduled';}).sort(function(a,b){return(a.date+a.time).localeCompare(b.date+b.time);}).slice(0,5);
+    var list=todaySessions.length?todaySessions:upcoming;
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">اختر جلسة لتفعيل الوضع المباشر</div>';
+    if(!list.length){
+      h+='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">لا توجد جلسات مجدولة اليوم</div>';
+    } else {
+      list.forEach(function(s){
+        h+='<div onclick="startLiveSession('+s.id+')" style="padding:12px;background:var(--surface3);border-radius:10px;margin-bottom:7px;cursor:pointer;border:1px solid var(--border2);transition:border-color .15s" onmouseenter="this.style.borderColor=\'var(--gold-a30)\'" onmouseleave="this.style.borderColor=\'var(--border2)\'">';
+        h+='<div style="display:flex;justify-content:space-between;align-items:center">';
+        h+='<div><div style="font-size:13px;font-weight:700;color:var(--gold2)">'+s.num+'</div>';
+        h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+s.court+' · '+s.time+'</div></div>';
+        h+=bdg(s.status)+'</div></div>';
+      });
+    }
+    h+='</div>';
+    return h;
+  }
+
+  // Active live session
+  var elapsed=liveStart?Math.floor((Date.now()-liveStart)/1000):0;
+  var eh=Math.floor(elapsed/3600),em=Math.floor((elapsed%3600)/60),es=elapsed%60;
+  var etime=pad(eh)+':'+pad(em)+':'+pad(es);
+
+  h+='<div style="background:rgba(232,80,80,0.08);border:1px solid rgba(232,80,80,0.25);border-radius:var(--r-lg);padding:16px;margin-bottom:12px;text-align:center">';
+  h+='<div style="font-size:10px;color:#f87171;font-weight:700;letter-spacing:.1em;margin-bottom:6px;animation:pulse 1.2s infinite">● جارٍ الآن</div>';
+  h+='<div style="font-size:11px;color:var(--text3);margin-bottom:4px">'+active.num+' · '+active.court+'</div>';
+  h+='<div style="font-size:38px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:.04em" id="liveTimer">'+etime+'</div>';
+  h+='<div style="font-size:10px;color:var(--text3);margin-top:4px">مدة الجلسة</div>';
+  h+='</div>';
+
+  // Quick notes
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:12px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📝 تدوين سريع</div>';
+  h+='<textarea id="liveNoteArea" placeholder="سجّل ما يدور في الجلسة..." dir="rtl" rows="6" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:10px;padding:11px;font-size:13px;color:var(--text);resize:none;line-height:1.7;font-family:Tajawal,sans-serif">'+liveNotes+'</textarea>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px">';
+  h+='<button onclick="saveLiveNotes()" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:9px;padding:9px;font-weight:700;font-size:12px;cursor:pointer">💾 حفظ</button>';
+  h+='<button onclick="askAIFromLive()" style="background:rgba(16,163,127,.1);color:#10a37f;border:1px solid rgba(16,163,127,.25);border-radius:9px;padding:9px;font-weight:700;font-size:12px;cursor:pointer">⚖️ سأل سعود</button>';
+  h+='</div></div>';
+
+  // Quick actions
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px">';
+  [['📋','نسخ تفاصيل','copyS('+active.id+')'],['📥','مرفق','addAttFromLive('+active.id+')'],['🔁','غير الحالة','cycleStatusLive('+active.id+')']].forEach(function(b){
+    h+='<button onclick="'+b[2]+'" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px 6px;cursor:pointer;text-align:center">';
+    h+='<div style="font-size:18px">'+b[0]+'</div><div style="font-size:10px;color:var(--text3);margin-top:3px">'+b[1]+'</div></button>';
+  });
+  h+='</div>';
+
+  h+='<button onclick="endLiveSession()" style="width:100%;background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer">⏹ إنهاء الجلسة المباشرة</button>';
+  return h;
+}
+
+function startLiveSession(id){
+  liveSessionId=id;liveNotes='';liveStart=Date.now();
+  var s=data.find(function(x){return x.id===id;});
+  if(s&&s.status==='scheduled'){s.status='inProgress';dbPut(s);}
+  render();toast('🔴 بدأت الجلسة المباشرة');
+}
+
+function startLiveTick(){
+  if(liveTick)clearInterval(liveTick);
+  if(!liveSessionId||!liveStart)return;
+  liveTick=setInterval(function(){
+    var el=document.getElementById('liveTimer');if(!el)return;
+    var elapsed=Math.floor((Date.now()-liveStart)/1000);
+    el.textContent=pad(Math.floor(elapsed/3600))+':'+pad(Math.floor((elapsed%3600)/60))+':'+pad(elapsed%60);
+    // Sync notes
+    var na=document.getElementById('liveNoteArea');if(na)liveNotes=na.value;
+  },1000);
+}
+
+function saveLiveNotes(){
+  var na=document.getElementById('liveNoteArea');if(na)liveNotes=na.value;
+  var s=data.find(function(x){return x.id===liveSessionId;});
+  if(!s)return;
+  s.minutes=(s.minutes?s.minutes+'\n---\n':'')+liveNotes;
+  dbPut(s).then(function(){toast('💾 تم حفظ الملاحظات');});
+}
+
+function askAIFromLive(){
+  var na=document.getElementById('liveNoteArea');if(na)liveNotes=na.value;
+  var s=data.find(function(x){return x.id===liveSessionId;});
+  if(!s)return;
+  var msg='أنا في جلسة مباشرة الآن: '+s.num+' '+s.type+' في '+s.court;
+  if(liveNotes)msg+='\n\nما دوّنته:\n'+liveNotes+'\n\nأحتاج توجيهاً قانونياً سريعاً.';
+  saveLiveNotes();
+  go('ai');
+  setTimeout(function(){sendAI(msg);},350);
+}
+
+function addAttFromLive(id){
+  var input=document.createElement('input');input.type='file';input.accept='image/*,.pdf';
+  input.capture='environment';
+  input.onchange=function(){addAtt(id,input);toast('📎 تم إضافة المرفق');};
+  input.click();
+}
+
+function cycleStatusLive(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  var order=['scheduled','inProgress','completed','postponed'];
+  s.status=order[(order.indexOf(s.status)+1)%order.length];
+  dbPut(s).then(function(){toast('🔁 '+ST[s.status].lbl);});
+}
+
+function endLiveSession(){
+  var s=data.find(function(x){return x.id===liveSessionId;});
+  if(liveTick)clearInterval(liveTick);
+  if(s){
+    var na=document.getElementById('liveNoteArea');if(na)liveNotes=na.value;
+    if(liveNotes){s.minutes=(s.minutes?s.minutes+'\n---\n':'')+liveNotes;dbPut(s);}
+    if(s.status==='inProgress'){s.status='completed';dbPut(s);}
+  }
+  var elapsed=liveStart?Math.floor((Date.now()-liveStart)/1000):0;
+  var em=Math.floor(elapsed/60);
+  liveSessionId=null;liveNotes='';liveStart=null;
+  toast('✅ انتهت الجلسة ('+em+' دقيقة)');
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ADD CHART.JS + QR SUPPORT + IMPORT BUTTON TO STATS
+═══════════════════════════════════════════════════════════ */
+// Load Chart.js dynamically
+(function(){
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+  s.onload=function(){if(curTab==='tools')renderToolCharts();};
+  document.head.appendChild(s);
+})();
+
+// Re-render charts when switching to tools tab
+var _origGo=go;
+go=function(t){_origGo(t);if(t==='tools')setTimeout(renderToolCharts,100);};
+
+// Add QR + ICS export to detail sheet actions
+var _origOpenDet=openDet;
+openDet=function(id){
+  _origOpenDet(id);
+  var b=document.getElementById('detBody');
+  if(!b)return;
+  // Inject extra buttons into action-row
+  var ar=b.querySelector('.action-row');
+  if(ar){
+    var qrBtn=document.createElement('button');
+    qrBtn.className='action-btn';
+    qrBtn.style.cssText='background:rgba(139,111,212,.1);color:#a78bfa;border-color:rgba(139,111,212,.3)';
+    qrBtn.innerHTML='QR 📱';
+    qrBtn.onclick=function(){showQR(id);};
+    var icsBtn=document.createElement('button');
+    icsBtn.className='action-btn';
+    icsBtn.style.cssText='background:var(--blue-a);color:#60a5fa;border-color:rgba(74,144,217,.3)';
+    icsBtn.innerHTML='📅 ICS';
+    icsBtn.onclick=function(){exportICS([id]);};
+    ar.appendChild(qrBtn);
+    ar.appendChild(icsBtn);
+  }
+};
 document.getElementById('hdate').textContent=new Date().toLocaleDateString('ar-SA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 applyTheme();
 updNotifBtn();
@@ -1525,7 +2312,662 @@ openDB().then(function(){return dbAll();}).then(function(rows){
   data=rows;
   if(notifOn&&Notification.permission==='granted'){schedNotifs();schedDaily();}
   render();
+  // Show PIN lock if enabled
+  if(pinEnabled&&pinCode){pinLocked=true;showPinLock();}
+  // Apply hidden tabs
+  applyHiddenTabs();
 }).catch(function(){data=JSON.parse(JSON.stringify(SAMPLE));render();});
+
+/* ═══════════════════════════════════════════════════════════
+   1. PIN LOCK + BIOMETRIC
+═══════════════════════════════════════════════════════════ */
+function savePinState(){try{localStorage.setItem('j_pin_enabled',pinEnabled?'1':'0');localStorage.setItem('j_pin_code',pinCode);}catch(e){}}
+
+function showPinLock(){
+  if(document.getElementById('pinScreen'))return;
+  var div=document.createElement('div');div.id='pinScreen';
+  div.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;font-family:Tajawal,sans-serif;direction:rtl';
+  div.innerHTML=
+    '<div style="font-size:52px;margin-bottom:16px">⚖️</div>'+
+    '<div style="font-family:Scheherazade New,serif;font-size:22px;color:var(--gold2);margin-bottom:6px">الجلسات القضائية</div>'+
+    '<div style="font-size:13px;color:var(--text3);margin-bottom:32px">أدخل رمز PIN للدخول</div>'+
+    '<div id="pinDots" style="display:flex;gap:14px;margin-bottom:28px">'+
+      [1,2,3,4].map(function(){return'<div style="width:16px;height:16px;border-radius:50%;background:var(--surface3);border:2px solid var(--border2);transition:all .2s"></div>';}).join('')+
+    '</div>'+
+    '<div id="pinErr" style="font-size:12px;color:#f87171;min-height:18px;margin-bottom:16px;text-align:center"></div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,72px);gap:10px">'+
+      [1,2,3,4,5,6,7,8,9,'','0','⌫'].map(function(n){
+        if(n==='')return'<div></div>';
+        return'<button onclick="pinKey(\''+n+'\')" style="width:72px;height:72px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);font-size:'+(n==='⌫'?'20':'22')+'px;font-weight:700;color:var(--text);cursor:pointer;font-family:Tajawal,sans-serif;transition:all .1s" onmousedown="this.style.transform=\'scale(.92)\'" onmouseup="this.style.transform=\'scale(1)\'">'+n+'</button>';
+      }).join('')+
+    '</div>'+
+    '<button onclick="tryBiometric()" style="margin-top:24px;background:none;color:var(--text3);border:1px solid var(--border2);border-radius:20px;padding:8px 18px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">🔐 بصمة / Face ID</button>';
+  document.body.appendChild(div);
+  window._pinEntry='';
+}
+
+function pinKey(k){
+  var err=document.getElementById('pinErr');
+  if(k==='⌫'){window._pinEntry=(window._pinEntry||'').slice(0,-1);}
+  else if((window._pinEntry||'').length<4){window._pinEntry=(window._pinEntry||'')+k;}
+  updPinDots();
+  if((window._pinEntry||'').length===4){
+    setTimeout(function(){
+      if(window._pinEntry===pinCode){
+        pinLocked=false;pinAttempts=0;
+        var s=document.getElementById('pinScreen');if(s)s.remove();
+        window._pinEntry='';
+      } else {
+        pinAttempts++;
+        if(err)err.textContent='رمز خاطئ — محاولة '+(pinAttempts)+'/5';
+        window._pinEntry='';updPinDots();
+        if(pinAttempts>=5&&err)err.textContent='⚠️ تم إيقاف التطبيق مؤقتاً';
+      }
+    },200);
+  }
+}
+
+function updPinDots(){
+  var dots=document.querySelectorAll('#pinDots div');
+  var len=(window._pinEntry||'').length;
+  dots.forEach(function(d,i){
+    d.style.background=i<len?'var(--gold)':'var(--surface3)';
+    d.style.borderColor=i<len?'var(--gold-a30)':'var(--border2)';
+    d.style.transform=i===len-1?'scale(1.2)':'scale(1)';
+    setTimeout(function(){if(d)d.style.transform='scale(1)';},150);
+  });
+}
+
+function tryBiometric(){
+  if(window.PublicKeyCredential&&window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable){
+    window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function(ok){
+      if(ok){
+        // Use WebAuthn for biometric
+        var challenge=new Uint8Array(32);crypto.getRandomValues(challenge);
+        navigator.credentials.get({publicKey:{challenge:challenge,timeout:30000,userVerification:'required'}}).then(function(){
+          pinLocked=false;var s=document.getElementById('pinScreen');if(s)s.remove();
+          toast('✅ تم الدخول بالبصمة');
+        }).catch(function(){toast('⚠️ فشل التحقق — أدخل PIN');});
+      } else toast('⚠️ البصمة غير متوفرة على هذا الجهاز');
+    });
+  } else toast('⚠️ غير مدعوم — أدخل PIN');
+}
+
+// Lock on hide
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden&&pinEnabled&&!pinLocked){pinLocked=true;}
+  if(!document.hidden&&pinEnabled&&pinLocked){showPinLock();}
+});
+
+/* ═══════════════════════════════════════════════════════════
+   2. CASE LINKS (ربط القضايا)
+═══════════════════════════════════════════════════════════ */
+function saveCaseLinks(){try{localStorage.setItem('j_case_links',JSON.stringify(caseLinks));}catch(e){}}
+
+function addCaseLink(fromId,toId,type){
+  if(!fromId||!toId||fromId===toId)return;
+  var exists=caseLinks.find(function(l){return(l.from===fromId&&l.to===toId)||(l.from===toId&&l.to===fromId);});
+  if(exists){toast('⚠️ الربط موجود مسبقاً');return;}
+  caseLinks.push({id:'lnk_'+Date.now(),from:fromId,to:toId,type:type||'related'});
+  saveCaseLinks();toast('🔗 تم ربط القضيتين');
+}
+
+function delCaseLink(id){caseLinks=caseLinks.filter(function(l){return l.id!==id;});saveCaseLinks();render();}
+
+function getLinkedSessions(sid){
+  return caseLinks.filter(function(l){return l.from===sid||l.to===sid;}).map(function(l){
+    var otherId=l.from===sid?l.to:l.from;
+    var other=data.find(function(s){return s.id===otherId;})||archivedSessions.find(function(s){return s.id===otherId;});
+    return other?{session:other,type:l.type,linkId:l.id}:null;
+  }).filter(Boolean);
+}
+
+var LINK_TYPES={related:'صلة عامة',appeal:'استئناف',cassation:'نقض',execution:'تنفيذ',derivative:'منبثقة'};
+
+function showLinkModal(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var modal=document.createElement('div');modal.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px)';bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));max-height:80vh;overflow-y:auto';
+  var linked=getLinkedSessions(sid);
+  var otherData=data.filter(function(x){return x.id!==sid;});
+  var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:4px">🔗 ربط القضايا</div>';
+  h+='<div style="font-size:11px;color:var(--text3);margin-bottom:14px">'+s.num+' — اربطها بقضية أخرى</div>';
+  if(linked.length){
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">الروابط الحالية</div>';
+    linked.forEach(function(l){
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:9px;background:var(--surface2);border-radius:10px;margin-bottom:6px">';
+      h+='<div style="font-size:20px">🔗</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--text)">'+l.session.num+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3)">'+LINK_TYPES[l.type]+'</div></div>';
+      h+='<button onclick="delCaseLink(\''+l.linkId+'\')" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:7px;padding:4px 9px;font-size:10px;cursor:pointer;font-family:Tajawal,sans-serif">حذف</button></div>';
+    });
+  }
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin:12px 0 8px">إضافة ربط جديد</div>';
+  h+='<select id="linkTarget" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-md);padding:10px;font-size:12px;color:var(--text);margin-bottom:8px;display:block">';
+  h+='<option value="">— اختر قضية —</option>';
+  otherData.forEach(function(x){h+='<option value="'+x.id+'">'+x.num+' · '+x.court+'</option>';});
+  archivedSessions.forEach(function(x){h+='<option value="'+x.id+'">'+x.num+' (أرشيف)</option>';});
+  h+='</select>';
+  h+='<select id="linkType" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-md);padding:10px;font-size:12px;color:var(--text);margin-bottom:12px;display:block">';
+  Object.entries(LINK_TYPES).forEach(function(e){h+='<option value="'+e[0]+'">'+e[1]+'</option>';});
+  h+='</select>';
+  h+='<div style="display:flex;gap:8px"><button onclick="var t=document.getElementById(\'linkTarget\'),tp=document.getElementById(\'linkType\');addCaseLink('+sid+',parseInt(t.value),tp.value);this.closest(\'div[style*=flex]\').parentNode.parentNode.parentNode.remove();" style="flex:1;background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:11px;font-weight:700;font-size:13px;cursor:pointer;font-family:Tajawal,sans-serif">ربط</button>';
+  h+='<button onclick="this.closest(\'div[style*=flex]\').parentNode.parentNode.parentNode.remove()" style="flex:1;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">إغلاق</button></div>';
+  box.innerHTML=h;modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3. COURT FEES CALCULATOR
+═══════════════════════════════════════════════════════════ */
+var COURT_FEES={
+  civil:     {name:'مدنية',    base:500, pct:0.025, min:500,  max:20000},
+  commercial:{name:'تجارية',   base:600, pct:0.03,  min:600,  max:30000},
+  criminal:  {name:'جنائية',   base:400, pct:0,     min:400,  max:400},
+  personal:  {name:'أحوال شخصية',base:300,pct:0,   min:300,  max:300},
+  labor:     {name:'عمالية',   base:250, pct:0,     min:250,  max:250},
+  admin:     {name:'إدارية',   base:350, pct:0,     min:350,  max:350},
+  appeal:    {name:'استئناف',  base:800, pct:0.015, min:800,  max:15000},
+  cassation: {name:'نقض',      base:1000,pct:0.02,  min:1000, max:20000}
+};
+
+function calcCourtFees(type,amount){
+  var f=COURT_FEES[type];if(!f)return 0;
+  var fee=f.base+(f.pct*( amount||0));
+  return Math.min(Math.max(fee,f.min),f.max);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   4. SEND BY EMAIL
+═══════════════════════════════════════════════════════════ */
+function sendByEmail(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var subject=encodeURIComponent('جلسة قضائية — '+s.num);
+  var body=encodeURIComponent(
+    'تفاصيل الجلسة القضائية\n'+
+    '═══════════════════\n'+
+    'رقم القضية: '+s.num+'\n'+
+    'نوع القضية: '+s.type+'\n'+
+    'المحكمة: '+(s.court||'—')+'\n'+
+    'القاعة: '+(s.room||'—')+'\n'+
+    'المدعي: '+(s.plnt||'—')+'\n'+
+    'المدعى عليه: '+(s.dfnd||'—')+'\n'+
+    'التاريخ: '+s.date+'\n'+
+    'الوقت: '+s.time+'\n'+
+    'الحالة: '+ST[s.status].lbl+'\n'+
+    (s.meetUrl?'رابط الاجتماع: '+s.meetUrl+'\n':'')+
+    (s.notes?'\nملاحظات:\n'+s.notes+'\n':'')+
+    '\n—\nتم الإرسال من تطبيق الجلسات القضائية'
+  );
+  window.location.href='mailto:?subject='+subject+'&body='+body;
+  toast('📨 جارٍ فتح تطبيق البريد...');
+}
+
+function sendWhatsAppMsg(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var msg='*جلسة قضائية* ⚖️\n\n'+
+    '📋 *رقم القضية:* '+s.num+'\n'+
+    '🏛️ *المحكمة:* '+(s.court||'—')+'\n'+
+    '📅 *التاريخ:* '+s.date+'\n'+
+    '⏰ *الوقت:* '+s.time+'\n'+
+    '👤 *المدعي:* '+(s.plnt||'—')+'\n'+
+    '👤 *المدعى عليه:* '+(s.dfnd||'—')+'\n'+
+    '📊 *الحالة:* '+ST[s.status].lbl+
+    (s.meetUrl?'\n🎥 *الاجتماع:* '+s.meetUrl:'');
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   5. ARCHIVE
+═══════════════════════════════════════════════════════════ */
+function saveArchive(){try{localStorage.setItem('j_archive',JSON.stringify(archivedSessions));}catch(e){}}
+
+function archiveSession(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  if(!confirm('أرشفة الجلسة '+s.num+'؟ يمكن استعادتها لاحقاً.'))return;
+  s.archivedAt=new Date().toISOString();
+  archivedSessions.unshift(s);
+  data=data.filter(function(x){return x.id!==id;});
+  dbDel(id).then(function(){saveArchive();closeDet();toast('🗄️ تم الأرشفة');render();});
+}
+
+function restoreSession(id){
+  var s=archivedSessions.find(function(x){return x.id===id;});if(!s)return;
+  delete s.archivedAt;
+  data.push(s);
+  archivedSessions=archivedSessions.filter(function(x){return x.id!==id;});
+  dbPut(s).then(function(){saveArchive();toast('✅ تمت الاستعادة');render();});
+}
+
+function delArchived(id){
+  if(!confirm('حذف نهائي؟'))return;
+  archivedSessions=archivedSessions.filter(function(x){return x.id!==id;});
+  saveArchive();toast('🗑️ تم الحذف النهائي');render();
+}
+
+function rArchive(){
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+  h+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">🗄️ أرشيف القضايا</div>';
+  h+='<div style="font-size:11px;color:var(--text3)">'+archivedSessions.length+' قضية</div></div>';
+  if(!archivedSessions.length){
+    return h+'<div class="empty"><div class="empty-icon">🗄️</div><div class="empty-title">الأرشيف فارغ</div><div class="empty-sub">القضايا المؤرشفة تظهر هنا</div></div>';
+  }
+  // Stats
+  var byType={};archivedSessions.forEach(function(s){byType[s.type]=(byType[s.type]||0)+1;});
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:14px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📊 إحصائيات الأرشيف</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+  Object.entries(byType).forEach(function(e){
+    h+='<span style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:14px;padding:3px 10px;font-size:11px;font-weight:600">'+e[0]+' ('+e[1]+')</span>';
+  });
+  h+='</div></div>';
+  archivedSessions.forEach(function(s){
+    var d=s.archivedAt?new Date(s.archivedAt).toLocaleDateString('ar-SA'):'';
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px;margin-bottom:8px;opacity:.9">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">';
+    h+='<div><div style="font-family:Scheherazade New,serif;font-size:16px;color:var(--text2)">'+s.num+'</div>';
+    h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+s.type+' · '+(s.court||'')+(d?' · أُرشف '+d:'')+'</div></div>';
+    h+=bdg(s.status)+'</div>';
+    h+='<div style="display:flex;gap:7px">';
+    h+='<button onclick="restoreSession('+s.id+')" style="flex:1;background:var(--green-a);color:#34d399;border:1px solid rgba(58,184,130,.3);border-radius:9px;padding:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">↩️ استعادة</button>';
+    h+='<button onclick="delArchived('+s.id+')" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:9px;padding:8px 12px;font-size:12px;cursor:pointer">🗑️</button>';
+    h+='</div></div>';
+  });
+  return h;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   6. SETTINGS PAGE (PIN + Profile + Tabs + Court Fees Calc)
+═══════════════════════════════════════════════════════════ */
+function saveLawyerProfile(){try{localStorage.setItem('j_lawyer_profile',JSON.stringify(lawyerProfile));}catch(e){}}
+function saveHiddenTabs(){try{localStorage.setItem('j_hidden_tabs',JSON.stringify(hiddenTabs));}catch(e){}}
+
+function applyHiddenTabs(){
+  var allTabs=['home','list','tasks','contacts','files','ai','cal','stats','fees','tools','live','archive','settings'];
+  allTabs.forEach(function(t){
+    var el=document.getElementById('tb-'+t);if(!el)return;
+    var forceShow=['home','settings'];
+    el.style.display=(hiddenTabs.indexOf(t)>-1&&forceShow.indexOf(t)===-1)?'none':'';
+  });
+}
+
+function rSettings(){
+  var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:16px">⚙️ الإعدادات</div>';
+
+  // ── Lawyer Profile ──
+  h+=secHdr('👤','ملف المحامي');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  ['name','title','license','phone','email'].forEach(function(k){
+    var labels={name:'الاسم الكامل',title:'اللقب المهني',license:'رقم الترخيص',phone:'رقم الجوال',email:'البريد الإلكتروني'};
+    var types={name:'text',title:'text',license:'text',phone:'tel',email:'email'};
+    h+='<div style="margin-bottom:10px"><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">'+labels[k]+'</label>';
+    h+='<input type="'+types[k]+'" value="'+sanitize(lawyerProfile[k]||'')+'" placeholder="'+labels[k]+'" dir="'+(k==='phone'||k==='email'?'ltr':'rtl')+'" oninput="lawyerProfile[\''+k+'\']=this.value" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif;display:block"></div>';
+  });
+  h+='<button onclick="saveLawyerProfile();toast(\'✅ تم حفظ الملف\')" style="width:100%;background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:11px;font-weight:700;font-size:13px;cursor:pointer;font-family:Tajawal,sans-serif">💾 حفظ الملف</button>';
+  h+='</div>';
+
+  // ── PIN Lock ──
+  h+=secHdr('🔐','قفل التطبيق');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+  h+='<div><div style="font-size:13px;font-weight:600;color:var(--text)">قفل بـ PIN</div>';
+  h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">يقفل عند إغلاق التطبيق</div></div>';
+  h+='<label style="position:relative;display:inline-block;width:44px;height:24px">';
+  h+='<input type="checkbox" '+(pinEnabled?'checked':'')+' onchange="togglePin(this.checked)" style="opacity:0;width:0;height:0">';
+  h+='<span style="position:absolute;inset:0;background:'+(pinEnabled?'var(--gold)':'var(--surface3)')+';border-radius:24px;cursor:pointer;transition:.3s"></span>';
+  h+='<span style="position:absolute;height:18px;width:18px;background:#fff;border-radius:50%;bottom:3px;'+(pinEnabled?'right:3px':'left:3px')+';transition:.3s"></span>';
+  h+='</label></div>';
+  if(pinEnabled){
+    h+='<button onclick="showChangePinModal()" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:10px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">🔑 تغيير رمز PIN</button>';
+  }
+  h+='</div>';
+
+  // ── Court Fees Calculator ──
+  h+=secHdr('💰','حاسبة الرسوم القضائية');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+  h+='<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">نوع القضية</label>';
+  h+='<select id="cfType" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:9px;font-size:12px;color:var(--text)" dir="rtl">';
+  Object.entries(COURT_FEES).forEach(function(e){h+='<option value="'+e[0]+'">'+e[1].name+'</option>';});
+  h+='</select></div>';
+  h+='<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">قيمة النزاع (ر.س)</label>';
+  h+='<input type="number" id="cfAmount" placeholder="0" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:9px;font-size:12px;color:var(--text)"></div></div>';
+  h+='<button onclick="showCourtFeeResult()" style="width:100%;background:var(--gold);color:#0a0905;border-radius:var(--r-sm);padding:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:Tajawal,sans-serif">احسب الرسوم</button>';
+  h+='<div id="cfResult" style="display:none;margin-top:10px;background:var(--surface3);border-radius:10px;padding:12px"></div>';
+  h+='</div>';
+
+  // ── Hide/Show Tabs ──
+  h+=secHdr('🎨','تخصيص التبويبات');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  var tabLabels={home:'🏠 الرئيسية',list:'⚖️ الجلسات',tasks:'📋 المهمات',contacts:'👤 الأطراف',files:'📁 الملفات',ai:'🤖 سعود AI',cal:'📅 التقويم',stats:'📊 التقارير',fees:'💰 الأتعاب',tools:'🛠️ أدوات',live:'🔴 مباشر',archive:'🗄️ الأرشيف'};
+  Object.entries(tabLabels).forEach(function(e){
+    var isHidden=hiddenTabs.indexOf(e[0])>-1;
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">';
+    h+='<span style="font-size:13px;color:var(--text)">'+e[1]+'</span>';
+    h+='<label style="position:relative;display:inline-block;width:40px;height:22px">';
+    h+='<input type="checkbox" '+(isHidden?'':'checked')+' onchange="toggleTabVis(\''+e[0]+'\',this.checked)" style="opacity:0;width:0;height:0">';
+    h+='<span style="position:absolute;inset:0;background:'+(isHidden?'var(--surface3)':'var(--gold)')+';border-radius:22px;cursor:pointer;transition:.3s"></span>';
+    h+='<span style="position:absolute;height:16px;width:16px;background:#fff;border-radius:50%;bottom:3px;'+(isHidden?'left:3px':'right:3px')+';transition:.3s"></span>';
+    h+='</label></div>';
+  });
+  h+='</div>';
+
+  // ── App Info ──
+  h+=secHdr('ℹ️','معلومات التطبيق');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  [['الإصدار','2.0.0'],['الجلسات المحفوظة',data.length+''],['المؤرشفة',archivedSessions.length+''],['المهمات',tasks.length+''],['الأطراف',contacts.length+'']].forEach(function(r){
+    h+='<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text3)">'+r[0]+'</span><span style="color:var(--text);font-weight:600">'+r[1]+'</span></div>';
+  });
+  h+='</div>';
+
+  return h;
+}
+
+function showCourtFeeResult(){
+  var type=document.getElementById('cfType').value;
+  var amt=parseFloat(document.getElementById('cfAmount').value)||0;
+  var fee=calcCourtFees(type,amt);
+  var f=COURT_FEES[type];
+  var el=document.getElementById('cfResult');if(!el)return;
+  el.style.display='block';
+  el.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div><div style="font-size:11px;color:var(--text3);margin-bottom:4px">الرسوم القضائية المقدّرة</div>'+
+    '<div style="font-size:26px;font-weight:900;color:var(--gold2)">'+fee.toLocaleString('ar-SA')+'<span style="font-size:13px;font-weight:500"> ر.س</span></div>'+
+    '</div><div style="font-size:22px">⚖️</div></div>'+
+    '<div style="font-size:10px;color:var(--text3);margin-top:8px;line-height:1.6">'+
+    'الرسم الأساسي: '+f.base.toLocaleString('ar-SA')+' ر.س'+
+    (f.pct>0?' + '+(f.pct*100)+'% من قيمة النزاع':'')+
+    ' | الحد الأدنى: '+f.min.toLocaleString('ar-SA')+' | الحد الأقصى: '+f.max.toLocaleString('ar-SA')+
+    '</div>';
+}
+
+function togglePin(enabled){
+  if(enabled){showSetPinModal();}
+  else{if(!confirm('إلغاء قفل PIN؟'))return;pinEnabled=false;pinCode='';savePinState();render();}
+}
+
+function showSetPinModal(){showPinSetupModal(false);}
+function showChangePinModal(){showPinSetupModal(true);}
+
+function showPinSetupModal(isChange){
+  var modal=document.createElement('div');modal.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.8)';
+  modal.onclick=function(e){if(e.target===modal){if(!pinEnabled)render();modal.remove();}};
+  var box=document.createElement('div');
+  box.style.cssText='background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-xl);padding:28px 22px;width:100%;max-width:300px;text-align:center;font-family:Tajawal,sans-serif;direction:rtl';
+  var step=0,pin1='';
+  function renderStep(){
+    box.innerHTML=
+      '<div style="font-size:32px;margin-bottom:12px">'+(step===0?'🔑':'✅')+'</div>'+
+      '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">'+(step===0?(isChange?'رمز PIN الجديد':'حدد رمز PIN'):'تأكيد رمز PIN')+'</div>'+
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:20px">أدخل 4 أرقام</div>'+
+      '<div id="spDots" style="display:flex;gap:12px;justify-content:center;margin-bottom:16px">'+
+        [1,2,3,4].map(function(){return'<div style="width:14px;height:14px;border-radius:50%;background:var(--surface3);border:2px solid var(--border2)"></div>';}).join('')+
+      '</div>'+
+      '<div id="spErr" style="font-size:11px;color:#f87171;min-height:16px;margin-bottom:12px"></div>'+
+      '<div style="display:grid;grid-template-columns:repeat(3,62px);gap:8px;justify-content:center">'+
+        [1,2,3,4,5,6,7,8,9,'','0','⌫'].map(function(n){
+          if(n==='')return'<div></div>';
+          return'<button onclick="spKey(\''+n+'\')" style="width:62px;height:62px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);font-size:18px;font-weight:700;color:var(--text);cursor:pointer;font-family:Tajawal,sans-serif">'+n+'</button>';
+        }).join('')+
+      '</div>'+
+      '<button onclick="this.closest(\'div[style*=fixed]\').remove();if(!pinEnabled)render();" style="margin-top:16px;background:none;color:var(--text3);border:none;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">إلغاء</button>';
+  }
+  var entry='';
+  window.spKey=function(k){
+    var err=box.querySelector('#spErr');
+    if(k==='⌫'){entry=entry.slice(0,-1);}
+    else if(entry.length<4)entry+=k;
+    var dots=box.querySelectorAll('#spDots div');
+    dots.forEach(function(d,i){d.style.background=i<entry.length?'var(--gold)':'var(--surface3)';d.style.borderColor=i<entry.length?'var(--gold-a30)':'var(--border2)';});
+    if(entry.length===4){
+      setTimeout(function(){
+        if(step===0){pin1=entry;entry='';step=1;renderStep();}
+        else{
+          if(entry===pin1){
+            pinEnabled=true;pinCode=entry;savePinState();
+            modal.remove();toast('✅ تم تفعيل قفل PIN');render();
+          } else {
+            if(err)err.textContent='الرمزان غير متطابقان';entry='';step=0;pin1='';
+            setTimeout(renderStep,600);
+          }
+        }
+      },200);
+    }
+  };
+  renderStep();
+  modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function toggleTabVis(tab,visible){
+  if(visible){hiddenTabs=hiddenTabs.filter(function(t){return t!==tab;});}
+  else{if(hiddenTabs.indexOf(tab)===-1)hiddenTabs.push(tab);}
+  saveHiddenTabs();applyHiddenTabs();
+  toast(visible?'✅ تم إظهار التبويب':'👁 تم إخفاء التبويب');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UPDATE DETAIL SHEET — Add archive, email, links buttons
+═══════════════════════════════════════════════════════════ */
+// Override openDet to add new action buttons
+var _baseOpenDet=openDet;
+openDet=function(id){
+  _baseOpenDet(id);
+  var b=document.getElementById('detBody');if(!b)return;
+  // Add linked sessions display
+  var linked=getLinkedSessions(id);
+  if(linked.length){
+    var lDiv=document.createElement('div');
+    lDiv.style.cssText='background:var(--surface2);border:1px solid rgba(139,111,212,.25);border-radius:var(--r-md);padding:12px;margin:10px 0';
+    var lh='<div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:8px">🔗 القضايا المرتبطة</div>';
+    linked.forEach(function(l){
+      lh+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">';
+      lh+='<div style="font-size:11px;color:var(--text3);background:var(--surface3);border-radius:5px;padding:2px 7px">'+LINK_TYPES[l.type]+'</div>';
+      lh+='<div onclick="closeDet();openDet('+l.session.id+')" style="flex:1;font-size:12px;font-weight:600;color:var(--text);cursor:pointer">'+l.session.num+' · '+l.session.court+'</div>';
+      lh+='</div>';
+    });
+    lDiv.innerHTML=lh;
+    b.insertBefore(lDiv,b.firstChild);
+  }
+  // Add extra action buttons
+  var ar=b.querySelector('.action-row');if(!ar)return;
+  var btns=[
+    ['🔗','ربط','showLinkModal('+id+')','rgba(139,111,212,.1)','#a78bfa','rgba(139,111,212,.3)'],
+    ['📨','إيميل','sendByEmail('+id+')','var(--blue-a)','#60a5fa','rgba(74,144,217,.3)'],
+    ['🗄️','أرشفة','archiveSession('+id+')','var(--surface2)','var(--text3)','var(--border2)']
+  ];
+  btns.forEach(function(btn){
+    var el=document.createElement('button');
+    el.className='action-btn';
+    el.style.cssText='background:'+btn[3]+';color:'+btn[4]+';border-color:'+btn[5];
+    el.innerHTML=btn[0]+' '+btn[1];
+    el.onclick=new Function(btn[2]);
+    ar.appendChild(el);
+  });
+};
+(function(){
+  // ── 1. Inject Web App Manifest as blob ──
+  var goldColor=getComputedStyle(document.documentElement).getPropertyValue('--gold').trim()||'#d4a843';
+  var manifest={
+    name:'الجلسات القضائية',
+    short_name:'جلساتي',
+    description:'تطبيق إدارة الجلسات القضائية بالذكاء الاصطناعي',
+    start_url:window.location.href,
+    display:'standalone',
+    orientation:'portrait',
+    background_color:'#08090d',
+    theme_color:'#08090d',
+    lang:'ar',
+    dir:'rtl',
+    categories:['productivity','legal'],
+    icons:[
+      {src:makePWAIcon(192,'#d4a843'),sizes:'192x192',type:'image/png',purpose:'any maskable'},
+      {src:makePWAIcon(512,'#d4a843'),sizes:'512x512',type:'image/png',purpose:'any maskable'}
+    ],
+    shortcuts:[
+      {name:'جلسة جديدة',short_name:'جديدة',description:'إضافة جلسة جديدة',url:window.location.href+'#new',icons:[{src:makePWAIcon(96,'#d4a843'),sizes:'96x96'}]},
+      {name:'سعود AI',short_name:'سعود',description:'المستشار القانوني',url:window.location.href+'#ai',icons:[{src:makePWAIcon(96,'#10a37f'),sizes:'96x96'}]}
+    ]
+  };
+  var mBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  var mUrl=URL.createObjectURL(mBlob);
+  var mLink=document.getElementById('pwaManifest');
+  if(mLink)mLink.href=mUrl;
+
+  // ── 2. Service Worker — skip (blob URLs not supported in all browsers) ──
+  // PWA install, manifest, and offline detection work without SW
+
+  // ── 3. Install prompt ──
+  var deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();
+    deferredPrompt=e;
+    showInstallBanner();
+  });
+
+  window.addEventListener('appinstalled',function(){
+    hideInstallBanner();
+    deferredPrompt=null;
+    toast('✅ تم تثبيت التطبيق على جهازك!');
+  });
+
+  function showInstallBanner(){
+    if(document.getElementById('pwaBanner'))return;
+    var b=document.createElement('div');
+    b.id='pwaBanner';
+    b.style.cssText='position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:800;width:calc(100% - 32px);max-width:398px;background:var(--surface2);border:1px solid var(--gold-a30);border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:slideUp 0.3s ease';
+    b.innerHTML=
+      '<div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#d4a843,#f0c55a);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">⚖️</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:13px;font-weight:700;color:var(--text)">تثبيت التطبيق</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px">يعمل بدون إنترنت على جهازك</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:7px;flex-shrink:0">'+
+        '<button onclick="doInstall()" style="background:var(--gold);color:#0a0905;border:none;border-radius:9px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">تثبيت</button>'+
+        '<button onclick="hideInstallBanner()" style="background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:12px;cursor:pointer">✕</button>'+
+      '</div>';
+    document.body.appendChild(b);
+  }
+
+  function hideInstallBanner(){var b=document.getElementById('pwaBanner');if(b)b.remove();}
+
+  window.doInstall=function(){
+    if(!deferredPrompt){showIOSInstructions();return;}
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(r){
+      if(r.outcome==='accepted')toast('🎉 جارٍ تثبيت التطبيق...');
+      deferredPrompt=null;
+      hideInstallBanner();
+    });
+  };
+
+  function showIOSInstructions(){
+    var isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+    var isSafari=/Safari/.test(navigator.userAgent)&&!/Chrome/.test(navigator.userAgent);
+    var modal=document.createElement('div');
+    modal.style.cssText='position:fixed;inset:0;z-index:900;display:flex;align-items:flex-end;justify-content:center';
+    var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px)';
+    bg.onclick=function(){modal.remove();};
+    var box=document.createElement('div');
+    box.style.cssText='position:relative;background:var(--surface2);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:24px 20px;padding-bottom:max(24px,env(safe-area-inset-bottom))';
+    var steps=isIOS&&isSafari
+      ? [['1','اضغط زر المشاركة','⬆️ في شريط Safari السفلي'],['2','اختر "إضافة للشاشة الرئيسية"','📱 من القائمة'],['3','اضغط "إضافة"','✅ التطبيق سيظهر على شاشتك']]
+      : [['1','افتح قائمة المتصفح','⋮ في الزاوية اليمنى'],['2','اختر "تثبيت التطبيق" أو "إضافة للشاشة"','📱 من القائمة'],['3','اضغط تثبيت','✅ جاهز!']];
+    var stepsHtml=steps.map(function(s){
+      return'<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">'+
+        '<div style="width:28px;height:28px;border-radius:50%;background:var(--gold-a20);color:var(--gold2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0">'+s[0]+'</div>'+
+        '<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+s[1]+'</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+s[2]+'</div></div>'+
+      '</div>';
+    }).join('');
+    box.innerHTML=
+      '<div style="text-align:center;margin-bottom:18px">'+
+        '<div style="font-size:38px;margin-bottom:8px">📱</div>'+
+        '<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">تثبيت التطبيق</div>'+
+        '<div style="font-size:11px;color:var(--text3);margin-top:4px">اتبع الخطوات التالية</div>'+
+      '</div>'+
+      stepsHtml+
+      '<button onclick="this.closest(\'div[style]\').parentNode.removeChild(this.closest(\'div[style]\'))" style="width:100%;background:var(--gold);color:#0a0905;border:none;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:14px;cursor:pointer;margin-top:16px;font-family:Tajawal,sans-serif">فهمت 👍</button>';
+    modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+  }
+
+  // ── 4. PWA Install button in header area ──
+  var isPWA=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
+  if(!isPWA){
+    // Add install button to header
+    setTimeout(function(){
+      var hdrActs=document.querySelector('.hdr-actions');
+      if(hdrActs&&!document.getElementById('pwaInstallBtn')){
+        var btn=document.createElement('button');
+        btn.id='pwaInstallBtn';
+        btn.className='btn-icon';
+        btn.title='تثبيت التطبيق';
+        btn.innerHTML='📲';
+        btn.onclick=function(){if(deferredPrompt)doInstall();else showIOSInstructions();};
+        hdrActs.insertBefore(btn,hdrActs.firstChild);
+      }
+    },500);
+    // Show banner after 3 seconds if not dismissed before
+    var dismissed=localStorage.getItem('pwa_dismissed');
+    if(!dismissed){
+      setTimeout(function(){
+        if(deferredPrompt)showInstallBanner();
+        else{
+          // iOS or other — show after delay
+          var isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+          var isSafari=/Safari/.test(navigator.userAgent)&&!/Chrome/.test(navigator.userAgent);
+          if(isIOS&&isSafari)showInstallBanner();
+        }
+      },3500);
+    }
+  }
+
+  // Track banner dismissal
+  var origHide=hideInstallBanner;
+  hideInstallBanner=function(){
+    origHide();
+    try{localStorage.setItem('pwa_dismissed','1');}catch(e){}
+  };
+
+  // ── 5. Offline indicator ──
+  function updOnline(){
+    var offline=!navigator.onLine;
+    var el=document.getElementById('offlineBar');
+    if(offline&&!el){
+      var bar=document.createElement('div');bar.id='offlineBar';
+      bar.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999;background:#e8a030;color:#0a0905;text-align:center;padding:6px;font-size:12px;font-weight:700;font-family:Tajawal,sans-serif';
+      bar.textContent='📵 أنت غير متصل بالإنترنت — التطبيق يعمل محلياً';
+      document.body.appendChild(bar);
+    } else if(!offline&&el){
+      el.remove();
+      toast('✅ عاد الاتصال بالإنترنت');
+    }
+  }
+  window.addEventListener('online',updOnline);
+  window.addEventListener('offline',updOnline);
+  updOnline();
+
+})();
+
+// ── Helper: generate PWA icon as PNG data URL ──
+function makePWAIcon(size,color){
+  try{
+    var c=document.createElement('canvas');c.width=size;c.height=size;
+    var ctx=c.getContext('2d');
+    // Background
+    ctx.fillStyle='#08090d';
+    var r=size*0.18;
+    ctx.beginPath();ctx.moveTo(r,0);ctx.lineTo(size-r,0);ctx.quadraticCurveTo(size,0,size,r);
+    ctx.lineTo(size,size-r);ctx.quadraticCurveTo(size,size,size-r,size);
+    ctx.lineTo(r,size);ctx.quadraticCurveTo(0,size,0,size-r);
+    ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.closePath();ctx.fill();
+    // Scales of justice emoji approximation
+    ctx.fillStyle=color||'#d4a843';
+    ctx.font='bold '+(size*0.55)+'px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('⚖',size/2,size/2);
+    return c.toDataURL('image/png');
+  }catch(e){return'data:image/png;base64,iVBORw0KGgo=';}
+}
 </script>
 </body>
 </html>
