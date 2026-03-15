@@ -439,8 +439,31 @@ option { background: var(--surface); }
   body { background: #fff !important; color: #000 !important; direction: rtl; }
   #app { display: none !important; }
   #pa { display: block !important; }
+  #lhPrintArea { display: block !important; }
 }
-#pa { display: none; }
+#lhPrintArea { display: none; }
+.lh-paper {
+  position: relative;
+  width: 100%;
+  background: #fff;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  min-height: 400px;
+}
+.lh-paper img.lh-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; pointer-events: none; user-select: none;
+}
+.lh-text-layer {
+  position: relative; z-index: 2;
+  width: 100%; min-height: 400px;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 14px; line-height: 1.9;
+  color: #000; direction: rtl; text-align: right;
+  background: transparent; border: none; resize: none;
+  outline: none; padding: 0;
+}
+#pa { display: none; direction: rtl; }
 </style>
 </head>
 <body>
@@ -474,8 +497,9 @@ option { background: var(--surface); }
       <button class="tab"    id="tb-fees"     onclick="go('fees')">💰 الأتعاب</button>
       <button class="tab"    id="tb-tools"    onclick="go('tools')">🛠️ أدوات</button>
       <button class="tab"    id="tb-live"     onclick="go('live')">🔴 مباشر</button>
-      <button class="tab"    id="tb-archive"  onclick="go('archive')">🗄️ الأرشيف</button>
-      <button class="tab"    id="tb-settings" onclick="go('settings')">⚙️ الإعدادات</button>
+      <button class="tab"    id="tb-archive"    onclick="go('archive')">🗄️ الأرشيف</button>
+      <button class="tab"    id="tb-letterhead" onclick="go('letterhead')">📄 الورق الرسمي</button>
+      <button class="tab"    id="tb-settings"   onclick="go('settings')">⚙️ الإعدادات</button>
     </div>
     <div style="height:1px;background:var(--border)"></div>
   </div>
@@ -1301,7 +1325,7 @@ function card(s){
    NAVIGATION & RENDER
 ═══════════════════════════════════════════════════════════ */
 function go(t){curTab=t;document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('on');});var tb=document.getElementById('tb-'+t);if(tb)tb.classList.add('on');render();}
-function render(){var el=document.getElementById('cnt');if(curTab==='home')el.innerHTML=rHome();else if(curTab==='list')el.innerHTML=rList();else if(curTab==='tasks')el.innerHTML=rTasks();else if(curTab==='contacts')el.innerHTML=rContacts();else if(curTab==='files')el.innerHTML=rFiles();else if(curTab==='ai')el.innerHTML=rAI();else if(curTab==='cal')el.innerHTML=rCal();else if(curTab==='stats')el.innerHTML=rStats();else if(curTab==='fees')el.innerHTML=rFees();else if(curTab==='tools'){el.innerHTML=rTools();setTimeout(renderToolCharts,100);}else if(curTab==='live'){el.innerHTML=rLive();startLiveTick();}else if(curTab==='archive')el.innerHTML=rArchive();else if(curTab==='settings')el.innerHTML=rSettings();applyHiddenTabs();startTick();}
+function render(){var el=document.getElementById('cnt');if(curTab==='home')el.innerHTML=rHome();else if(curTab==='list')el.innerHTML=rList();else if(curTab==='tasks')el.innerHTML=rTasks();else if(curTab==='contacts')el.innerHTML=rContacts();else if(curTab==='files')el.innerHTML=rFiles();else if(curTab==='ai')el.innerHTML=rAI();else if(curTab==='cal')el.innerHTML=rCal();else if(curTab==='stats')el.innerHTML=rStats();else if(curTab==='fees')el.innerHTML=rFees();else if(curTab==='tools'){el.innerHTML=rTools();setTimeout(renderToolCharts,100);}else if(curTab==='live'){el.innerHTML=rLive();startLiveTick();}else if(curTab==='archive')el.innerHTML=rArchive();else if(curTab==='letterhead')el.innerHTML=rLetterhead();else if(curTab==='settings')el.innerHTML=rSettings();applyHiddenTabs();startTick();}
 function secHdr(icon,title){return'<div class="sec-hdr"><span>'+icon+'</span>'+title+'</div>';}
 
 /* ═══════════════════════════════════════════════════════════
@@ -2787,6 +2811,193 @@ openDet=function(id){
     ar.appendChild(el);
   });
 };
+
+/* ═══════════════════════════════════════════════════════════
+   LETTERHEAD — الورق الرسمي
+═══════════════════════════════════════════════════════════ */
+var lhImage='';
+var lhMargins={top:140,right:60,bottom:100,left:60};
+var lhFontSize=14;
+var lhTemplates=[];
+
+function initLhTemplates(){
+  lhTemplates=[
+    {name:'مذكرة قانونية',text:'بسم الله الرحمن الرحيم\n\nمذكرة قانونية\n\nالموضوع: \n\nالسيد/ ...\nالمحترم\n\nالسلام عليكم ورحمة الله وبركاته،\n\nأتشرف بالإشارة إلى القضية رقم: ............\nوفيما يتعلق بـ:\n\n...\n\nوتفضلوا بقبول فائق التقدير والاحترام،\n\nالمحامي/ '+(lawyerProfile.name||'')},
+    {name:'خطاب رسمي',text:'بسم الله الرحمن الرحيم\n\nالتاريخ: '+today()+'\n\nالسيد المحترم،\n\nالسلام عليكم ورحمة الله وبركاته،\n\nيسعدني أن أتقدم إليكم بهذا الخطاب بخصوص ...\n\nوفي ختام هذا الخطاب أتقدم بخالص الشكر والتقدير،\n\nالمحامي/ '+(lawyerProfile.name||'')},
+    {name:'عريضة دعوى',text:'بسم الله الرحمن الرحيم\n\nعريضة دعوى\n\nإلى فضيلة قاضي ...\n\nالمدعي: \nالمدعى عليه: \n\nموضوع الدعوى:\n...\n\nالطلبات:\n١- \n٢- \n\nوالله يحفظكم،\nالمحامي/ '+(lawyerProfile.name||'')},
+    {name:'إفادة قانونية',text:'بسم الله الرحمن الرحيم\n\nإفادة قانونية\n\nأفيد بأن ...\n\nوهذه الإفادة تُقدَّم بناءً على طلب المعني للاستفادة منها فيما يلزم.\n\nالمحامي/ '+(lawyerProfile.name||'')+'\nرقم الترخيص: '+(lawyerProfile.license||'')}
+  ];
+}
+
+try{lhImage=localStorage.getItem('j_lh_image')||'';}catch(e){}
+try{lhMargins=JSON.parse(localStorage.getItem('j_lh_margins')||JSON.stringify(lhMargins));}catch(e){}
+try{lhFontSize=parseInt(localStorage.getItem('j_lh_fontsize'))||14;}catch(e){}
+
+function saveLhSettings(){
+  try{
+    if(lhImage)localStorage.setItem('j_lh_image',lhImage);
+    localStorage.setItem('j_lh_margins',JSON.stringify(lhMargins));
+    localStorage.setItem('j_lh_fontsize',String(lhFontSize));
+  }catch(e){toast('⚠️ مساحة التخزين ممتلئة — جرب صورة أصغر');}
+}
+
+function rLetterhead(){
+  initLhTemplates();
+  var hasImage=!!lhImage;
+  var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">📄 الورق الرسمي</div>';
+
+  // Upload section
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:12px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">🖼️ صورة الورق الرسمي</div>';
+  if(!hasImage){
+    h+='<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:28px;background:var(--surface3);border:2px dashed var(--gold-a30);border-radius:var(--r-md);cursor:pointer;text-align:center">';
+    h+='<div style="font-size:40px">📄</div>';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--gold2)">ارفع صورة ورقك الرسمي</div>';
+    h+='<div style="font-size:11px;color:var(--text3)">JPG أو PNG — يُفضّل A4 عمودي</div>';
+    h+='<input type="file" accept="image/*" style="display:none" onchange="uploadLetterhead(this)">';
+    h+='</label>';
+  } else {
+    h+='<div style="position:relative;border-radius:10px;overflow:hidden;margin-bottom:10px">';
+    h+='<img src="'+lhImage+'" style="width:100%;max-height:160px;object-fit:cover;display:block">';
+    h+='<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;gap:10px">';
+    h+='<label style="background:var(--gold);color:#0a0905;border-radius:9px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">🔄 تغيير<input type="file" accept="image/*" style="display:none" onchange="uploadLetterhead(this)"></label>';
+    h+='<button onclick="removeLhImage()" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:9px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ حذف</button>';
+    h+='</div></div>';
+  }
+  h+='</div>';
+
+  if(hasImage){
+    // Margins & font size
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:12px">';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">📐 ضبط الهوامش وحجم الخط</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+    [{k:'top',l:'هامش أعلى'},{k:'bottom',l:'هامش أسفل'},{k:'right',l:'هامش يمين'},{k:'left',l:'هامش يسار'}].forEach(function(m){
+      h+='<div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px"><span>'+m.l+'</span><span id="lhm_'+m.k+'" style="color:var(--gold2);font-weight:700">'+lhMargins[m.k]+'</span></div>';
+      h+='<input type="range" min="0" max="300" value="'+lhMargins[m.k]+'" oninput="lhMargins[\''+m.k+'\']=parseInt(this.value);document.getElementById(\'lhm_'+m.k+'\').textContent=this.value;updateLhPreview()" style="width:100%"></div>';
+    });
+    h+='</div>';
+    h+='<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px"><span>حجم الخط</span><span id="lhFsVal" style="color:var(--gold2);font-weight:700">'+lhFontSize+' px</span></div>';
+    h+='<input type="range" min="10" max="24" value="'+lhFontSize+'" oninput="lhFontSize=parseInt(this.value);document.getElementById(\'lhFsVal\').textContent=this.value+\' px\';updateLhPreview()" style="width:100%"></div>';
+    h+='<button onclick="saveLhSettings();toast(\'✅ تم الحفظ\')" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:9px;padding:8px;font-size:12px;cursor:pointer;margin-top:10px;font-family:Tajawal,sans-serif">💾 حفظ الإعدادات</button>';
+    h+='</div>';
+
+    // Templates
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📝 قوالب جاهزة</div>';
+    h+='<div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">';
+    lhTemplates.forEach(function(t,i){
+      h+='<button onclick="loadLhTemplate('+i+')" style="flex-shrink:0;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:Tajawal,sans-serif">'+t.name+'</button>';
+    });
+    h+='</div>';
+
+    // Paper + textarea
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">✏️ منطقة الكتابة</div>';
+    h+='<div id="lhPaperWrap" style="position:relative;width:100%;background:#fff;border-radius:var(--r-md);overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.45);margin-bottom:14px">';
+    h+='<img src="'+lhImage+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none" alt="">';
+    h+='<textarea id="lhTextArea" placeholder="ابدأ الكتابة هنا..." dir="rtl"';
+    h+=' style="position:relative;z-index:2;width:100%;min-height:580px;background:transparent;border:none;resize:none;outline:none;font-family:Tajawal,sans-serif;font-size:'+lhFontSize+'px;line-height:1.9;color:#111;text-align:right;';
+    h+='padding:'+lhMargins.top+'px '+lhMargins.right+'px '+lhMargins.bottom+'px '+lhMargins.left+'px"';
+    h+=' oninput="autoResizeLh(this)"></textarea>';
+    h+='</div>';
+
+    // Action buttons
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+    h+='<button onclick="printLetterhead()" style="background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:Tajawal,sans-serif">🖨️ طباعة</button>';
+    h+='<button onclick="saveLhAsPDF()" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:Tajawal,sans-serif">📥 PDF</button>';
+    h+='</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    h+='<button onclick="clearLhText()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ مسح النص</button>';
+    h+='<button onclick="copyLhText()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">📋 نسخ النص</button>';
+    h+='</div>';
+  }
+
+  return h;
+}
+
+function uploadLetterhead(input){
+  var file=input.files[0];if(!file)return;
+  if(!file.type.startsWith('image/')){toast('⚠️ يُقبل صور فقط');return;}
+  if(file.size>10*1024*1024){toast('⚠️ الصورة أكبر من 10MB');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement('canvas');
+      var maxW=1240,maxH=1754;
+      var ratio=Math.min(maxW/img.width,maxH/img.height,1);
+      canvas.width=Math.round(img.width*ratio);
+      canvas.height=Math.round(img.height*ratio);
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      lhImage=canvas.toDataURL('image/jpeg',0.92);
+      saveLhSettings();
+      toast('✅ تم رفع الورق الرسمي');
+      render();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeLhImage(){
+  if(!confirm('حذف صورة الورق الرسمي؟'))return;
+  lhImage='';
+  try{localStorage.removeItem('j_lh_image');}catch(e){}
+  render();toast('🗑️ تم الحذف');
+}
+
+function updateLhPreview(){
+  var ta=document.getElementById('lhTextArea');if(!ta)return;
+  ta.style.padding=lhMargins.top+'px '+lhMargins.right+'px '+lhMargins.bottom+'px '+lhMargins.left+'px';
+  ta.style.fontSize=lhFontSize+'px';
+  autoResizeLh(ta);
+}
+
+function autoResizeLh(ta){
+  ta.style.height='auto';
+  ta.style.height=Math.max(580,ta.scrollHeight)+'px';
+}
+
+function loadLhTemplate(idx){
+  initLhTemplates();
+  var t=lhTemplates[idx];if(!t)return;
+  var ta=document.getElementById('lhTextArea');if(!ta)return;
+  if(ta.value.trim()&&!confirm('استبدال النص الحالي بالقالب؟'))return;
+  ta.value=t.text;autoResizeLh(ta);
+  toast('📝 تم تحميل: '+t.name);
+}
+
+function clearLhText(){
+  var ta=document.getElementById('lhTextArea');
+  if(!ta||!ta.value.trim())return;
+  if(!confirm('مسح النص؟'))return;
+  ta.value='';autoResizeLh(ta);
+}
+
+function copyLhText(){
+  var ta=document.getElementById('lhTextArea');
+  if(!ta||!ta.value.trim()){toast('⚠️ لا يوجد نص');return;}
+  if(navigator.clipboard){navigator.clipboard.writeText(ta.value).then(function(){toast('📋 تم النسخ');});}
+  else{ta.select();document.execCommand('copy');toast('📋 تم النسخ');}
+}
+
+function printLetterhead(){
+  var ta=document.getElementById('lhTextArea');
+  var text=ta?ta.value:'';
+  var pa=document.getElementById('pa');
+  pa.innerHTML=
+    '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;font-family:Tajawal,sans-serif;direction:rtl;background:#fff">'+
+    '<img src="'+lhImage+'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0" alt="">'+
+    '<div style="position:relative;z-index:1;padding:'+lhMargins.top+'px '+lhMargins.right+'px '+lhMargins.bottom+'px '+lhMargins.left+'px;font-size:'+lhFontSize+'px;line-height:1.9;color:#111;white-space:pre-wrap;text-align:right">'+
+    text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+
+    '</div></div>';
+  setTimeout(function(){window.print();},120);
+  toast('🖨️ جارٍ الطباعة...');
+}
+
+function saveLhAsPDF(){
+  toast('💡 في نافذة الطباعة اختر "حفظ كـ PDF"');
+  setTimeout(printLetterhead,600);
+}
+
 (function(){
   // ── 1. Inject Web App Manifest as blob ──
   var goldColor=getComputedStyle(document.documentElement).getPropertyValue('--gold').trim()||'#d4a843';
