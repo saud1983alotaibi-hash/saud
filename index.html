@@ -238,6 +238,7 @@ option { background:var(--ink2); }
       <div class="ha">
         <button class="bi" id="btnTheme" onclick="toggleTheme()">🌙</button>
         <button class="bi" onclick="showColorPicker()" title="تخصيص الألوان">🎨</button>
+        <button class="bi" onclick="showBackupModal()" title="حفظ واسترداد">💾</button>
         <button class="bi" id="btnNotif" onclick="toggleNotif()">🔔</button>
         <button class="bn" onclick="openAdd()"><span style="font-size:15px;line-height:1">+</span>جديدة</button>
       </div>
@@ -248,6 +249,8 @@ option { background:var(--ink2); }
       <button class="tp" id="tb-list" onclick="go('list')"><span class="dot"></span>الجلسات</button>
       <button class="tp" id="tb-tasks" onclick="go('tasks')"><span class="dot"></span>المهمات</button>
       <button class="tp" id="tb-contacts" onclick="go('contacts')"><span class="dot"></span>الأطراف</button>
+      <button class="tp" id="tb-files" onclick="go('files')"><span class="dot"></span>الملفات</button>
+      <button class="tp" id="tb-ai" onclick="go('ai')"><span class="dot"></span>المستشار</button>
       <button class="tp" id="tb-cal" onclick="go('cal')"><span class="dot"></span>التقويم</button>
       <button class="tp" id="tb-stats" onclick="go('stats')"><span class="dot"></span>التقارير</button>
     </div>
@@ -575,6 +578,8 @@ function render() {
   else if (curTab==='list') el.innerHTML = rList();
   else if (curTab==='tasks') el.innerHTML = rTasks();
   else if (curTab==='contacts') el.innerHTML = rContacts();
+  else if (curTab==='files') el.innerHTML = rFiles();
+  else if (curTab==='ai') el.innerHTML = rAI();
   else if (curTab==='cal') el.innerHTML = rCal();
   else if (curTab==='stats') el.innerHTML = rStats();
   startTick();
@@ -771,10 +776,7 @@ function rStats() {
   });
   h += '</div>';
   h += '<button class="bpdf" onclick="expPDF()">🖨️ تصدير تقرير PDF</button>';
-  h += '<div style="display:flex;gap:8px;margin-top:8px">';
-  h += '<button class="bpdf" style="flex:1;background:rgba(16,185,129,.1);color:#34d399;border-color:rgba(16,185,129,.3)" onclick="exportData()">💾 تصدير البيانات</button>';
-  h += '<label class="bpdf" style="flex:1;background:rgba(59,130,246,.1);color:#60a5fa;border-color:rgba(59,130,246,.3);cursor:pointer"><input type="file" accept=".json" style="display:none" onchange="importData(this)">📂 استيراد البيانات</label>';
-  h += '</div>';
+  h += '<button class="bpdf" style="margin-top:8px;background:rgba(16,185,129,.1);color:#34d399;border-color:rgba(16,185,129,.3)" onclick="showBackupModal()">💾 حفظ واسترداد البيانات</button>';
   return h;
 }
 
@@ -1288,6 +1290,426 @@ function showColorPicker() {
   box.innerHTML = h;
   modal.appendChild(bg); modal.appendChild(box);
   document.body.appendChild(modal);
+}
+
+// ── BACKUP & RESTORE ──
+function fullBackup() {
+  var payload = {
+    version: 2,
+    date: new Date().toISOString(),
+    sessions: data,
+    tasks: tasks,
+    contacts: contacts,
+    theme: localStorage.getItem('j_theme') || 'night',
+    ctheme: localStorage.getItem('j_ctheme') || '0'
+  };
+  var json = JSON.stringify(payload, null, 2);
+  var blob = new Blob([json], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'جلسات_backup_' + today() + '.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('💾 تم حفظ النسخة الاحتياطية');
+}
+
+function fullRestore(input) {
+  var file = input.files[0]; if (!file) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    try {
+      var p = JSON.parse(e.target.result);
+      if (!p.sessions) { toast('⚠️ ملف غير صالح'); return; }
+      var msg = 'سيتم استعادة:\n' +
+        '• ' + (p.sessions||[]).length + ' جلسة\n' +
+        '• ' + (p.tasks||[]).length + ' مهمة\n' +
+        '• ' + (p.contacts||[]).length + ' طرف\n\n' +
+        'هل تريد المتابعة؟';
+      if (!confirm(msg)) return;
+      data = p.sessions || [];
+      tasks = p.tasks || [];
+      contacts = p.contacts || [];
+      if (p.theme) localStorage.setItem('j_theme', p.theme);
+      if (p.ctheme) localStorage.setItem('j_ctheme', p.ctheme);
+      Promise.all(data.map(function(s){return dbPut(s);})).then(function() {
+        saveTasks();
+        saveContacts();
+        toast('✅ تم الاسترداد: ' + data.length + ' جلسة، ' + tasks.length + ' مهمة');
+        applyTheme();
+        render();
+      });
+    } catch(err) {
+      toast('⚠️ خطأ في قراءة الملف');
+    }
+  };
+  r.readAsText(file);
+}
+
+function showBackupModal() {
+  var modal = document.createElement('div');
+  modal.id = 'bkModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:500;display:flex;align-items:flex-end;justify-content:center';
+  var bg = document.createElement('div');
+  bg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px)';
+  bg.onclick = function(){modal.remove();};
+  var box = document.createElement('div');
+  box.style.cssText = 'position:relative;background:var(--card);border-radius:22px 22px 0 0;border-top:1px solid var(--rim2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom))';
+  box.innerHTML =
+    '<div style="font-family:Amiri,serif;font-size:18px;color:var(--gold2);margin-bottom:6px">💾 حفظ واسترداد البيانات</div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:16px">احفظ نسخة احتياطية من جميع بياناتك أو استردها</div>' +
+
+    '<div style="background:var(--ink3);border:1px solid var(--green-rim);border-radius:14px;padding:14px;margin-bottom:10px">' +
+    '<div style="font-size:12px;font-weight:700;color:#34d399;margin-bottom:6px">📤 حفظ نسخة احتياطية</div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">يحفظ جميع الجلسات والمهمات والأطراف والإعدادات</div>' +
+    '<button onclick="fullBackup();document.getElementById(\'bkModal\').remove();" style="width:100%;background:rgba(16,185,129,.15);color:#34d399;border:1px solid var(--green-rim);border-radius:11px;padding:12px;font-weight:700;font-size:13px;cursor:pointer">💾 حفظ الآن</button></div>' +
+
+    '<div style="background:var(--ink3);border:1px solid var(--blue-rim);border-radius:14px;padding:14px;margin-bottom:10px">' +
+    '<div style="font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:6px">📥 استرداد من ملف</div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">استرداد البيانات من نسخة احتياطية سابقة</div>' +
+    '<label style="width:100%;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid var(--blue-rim);border-radius:11px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;display:block;text-align:center">' +
+    '📂 اختر ملف الاسترداد<input type="file" accept=".json" style="display:none" onchange="fullRestore(this);document.getElementById(\'bkModal\').remove();"></label></div>' +
+
+    '<div style="background:var(--ink3);border:1px solid var(--red-rim);border-radius:14px;padding:14px;margin-bottom:14px">' +
+    '<div style="font-size:12px;font-weight:700;color:#f87171;margin-bottom:6px">⚠️ مسح جميع البيانات</div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">حذف جميع الجلسات والمهمات والأطراف نهائياً</div>' +
+    '<button onclick="clearAllData();document.getElementById(\'bkModal\').remove();" style="width:100%;background:rgba(239,68,68,.12);color:#f87171;border:1px solid var(--red-rim);border-radius:11px;padding:12px;font-weight:700;font-size:13px;cursor:pointer">🗑️ مسح الكل</button></div>' +
+
+    '<button onclick="document.getElementById(\'bkModal\').remove()" style="width:100%;background:none;color:var(--text3);padding:10px;font-size:13px;cursor:pointer">إغلاق</button>';
+  modal.appendChild(bg); modal.appendChild(box);
+  document.body.appendChild(modal);
+}
+
+function clearAllData() {
+  if (!confirm('هل أنت متأكد؟ سيتم حذف جميع البيانات نهائياً!')) return;
+  data = []; tasks = []; contacts = [];
+  saveTasks(); saveContacts();
+  dbAll().then(function(rows){
+    return Promise.all(rows.map(function(s){return dbDelete(s.id);}));
+  }).then(function(){
+    toast('🗑️ تم مسح جميع البيانات');
+    render();
+  });
+}
+
+// ── FOLDERS & FILES ──
+var wordFiles = [];
+var folders = [];
+var curFolder = null; // null = عرض المجلدات، string = داخل مجلد
+
+try { wordFiles = JSON.parse(localStorage.getItem('j_wordfiles') || '[]'); } catch(e) { wordFiles = []; }
+try { folders = JSON.parse(localStorage.getItem('j_folders') || '["عام","عقود","أحكام","مذكرات","صور"]'); } catch(e) { folders = ["عام","عقود","أحكام","مذكرات","صور"]; }
+
+function saveWordFiles() { try { localStorage.setItem('j_wordfiles', JSON.stringify(wordFiles)); } catch(e) { toast('⚠️ المساحة ممتلئة'); } }
+function saveFolders() { try { localStorage.setItem('j_folders', JSON.stringify(folders)); } catch(e) {} }
+
+function uploadWordFile(input) {
+  var file = input.files[0]; if (!file) return;
+  var allowed = ['.doc','.docx','.pdf','.txt','.xls','.xlsx','.png','.jpg','.jpeg'];
+  var ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+  if (allowed.indexOf(ext) === -1) { toast('⚠️ صيغة غير مدعومة'); return; }
+  if (file.size > 10*1024*1024) { toast('⚠️ الحجم أكبر من 10MB'); return; }
+  var r = new FileReader();
+  r.onload = function(e) {
+    wordFiles.unshift({
+      id: Date.now(),
+      name: file.name,
+      size: file.size,
+      type: ext,
+      date: new Date().toLocaleDateString('ar-SA'),
+      folder: curFolder || 'عام',
+      data: e.target.result
+    });
+    saveWordFiles();
+    toast('✅ تم رفع: ' + file.name + ' في ' + (curFolder||'عام'));
+    render();
+  };
+  r.readAsDataURL(file);
+}
+
+function downloadWordFile(id) {
+  var f = wordFiles.find(function(x){return x.id===id;}); if (!f) return;
+  var a = document.createElement('a');
+  a.href = f.data; a.download = f.name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('📥 جاري تحميل: ' + f.name);
+}
+
+function deleteWordFile(id) {
+  if (!confirm('حذف الملف نهائياً؟')) return;
+  wordFiles = wordFiles.filter(function(x){return x.id!==id;});
+  saveWordFiles(); toast('🗑️ تم الحذف'); render();
+}
+
+function moveFile(id, folder) {
+  var f = wordFiles.find(function(x){return x.id===id;}); if (!f) return;
+  f.folder = folder;
+  saveWordFiles(); toast('📂 تم النقل إلى: ' + folder); render();
+}
+
+function addFolder() {
+  var name = prompt('اسم المجلد الجديد:');
+  if (!name || !name.trim()) return;
+  if (folders.indexOf(name.trim()) > -1) { toast('⚠️ المجلد موجود'); return; }
+  folders.push(name.trim()); saveFolders();
+  toast('📂 تم إنشاء مجلد: ' + name.trim()); render();
+}
+
+function deleteFolder(name) {
+  if (name === 'عام') { toast('⚠️ لا يمكن حذف المجلد العام'); return; }
+  var count = wordFiles.filter(function(f){return f.folder===name;}).length;
+  if (count > 0) {
+    if (!confirm('المجلد يحتوي على '+count+' ملف. سيتم نقلها للمجلد العام. متابعة؟')) return;
+    wordFiles.forEach(function(f){if(f.folder===name)f.folder='عام';});
+    saveWordFiles();
+  }
+  folders = folders.filter(function(x){return x!==name;});
+  saveFolders(); if (curFolder===name) curFolder=null;
+  toast('🗑️ تم حذف المجلد'); render();
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function fileIcon(ext) {
+  var icons = {'.doc':'📄','.docx':'📄','.pdf':'📕','.txt':'📝','.xls':'📊','.xlsx':'📊','.png':'🖼️','.jpg':'🖼️','.jpeg':'🖼️'};
+  return icons[ext] || '📎';
+}
+
+function folderColor(name) {
+  var colors = {'عام':'#60a5fa','عقود':'#fbbf24','أحكام':'#f87171','مذكرات':'#34d399','صور':'#a78bfa'};
+  return colors[name] || '#94a3c0';
+}
+
+function rFiles() {
+  var h = '';
+
+  if (curFolder === null) {
+    // ── عرض المجلدات ──
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+      '<div style="font-family:Amiri,serif;font-size:17px;color:var(--gold2)">📁 ملفاتي القانونية</div>' +
+      '<button onclick="addFolder()" style="background:var(--gold);color:var(--ink);border-radius:11px;padding:7px 14px;font-weight:700;font-size:12px;cursor:pointer">+ مجلد</button></div>';
+
+    // إحصائيات
+    var totalSize = wordFiles.reduce(function(s,f){return s+f.size;},0);
+    h += '<div class="sg" style="margin-bottom:14px">' +
+      '<div class="sc" style="--ac:#3b82f6"><div class="se">📁</div><div class="sn" style="color:#60a5fa">'+wordFiles.length+'</div><div class="sl">إجمالي الملفات</div></div>' +
+      '<div class="sc" style="--ac:#10b981"><div class="se">💽</div><div class="sn" style="color:#34d399;font-size:18px">'+fmtSize(totalSize)+'</div><div class="sl">الحجم الكلي</div></div></div>';
+
+    // المجلدات
+    h += shdr('📂','المجلدات');
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+    folders.forEach(function(name) {
+      var count = wordFiles.filter(function(f){return f.folder===name;}).length;
+      var clr = folderColor(name);
+      var sz = wordFiles.filter(function(f){return f.folder===name;}).reduce(function(s,f){return s+f.size;},0);
+      h += '<div onclick="curFolder=\''+name+'\';render()" style="background:var(--card);border:1px solid var(--rim);border-radius:16px;padding:14px;cursor:pointer;position:relative;transition:border-color .15s" onmouseover="this.style.borderColor=\''+clr+'\'" onmouseout="this.style.borderColor=\'var(--rim)\'">' +
+        '<div style="font-size:32px;margin-bottom:8px">📂</div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">'+name+'</div>' +
+        '<div style="font-size:10px;color:var(--text3)">'+count+' ملف · '+fmtSize(sz)+'</div>' +
+        (name!=='عام'?'<button onclick="event.stopPropagation();deleteFolder(\''+name+'\')" style="position:absolute;top:8px;left:8px;background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer">✕</button>':'') +
+        '<div style="width:100%;height:3px;border-radius:2px;background:'+clr+';opacity:.5;margin-top:8px"></div></div>';
+    });
+    h += '</div>';
+
+    // صيغ مدعومة
+    h += '<div style="background:var(--ink3);border:1px solid var(--rim2);border-radius:13px;padding:11px">' +
+      '<div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:7px">الصيغ المدعومة:</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
+      ['📄 Word','📕 PDF','📝 TXT','📊 Excel','🖼️ صور'].map(function(t){
+        return '<span style="font-size:10px;background:var(--card);border:1px solid var(--rim2);border-radius:7px;padding:2px 8px;color:var(--text3)">'+t+'</span>';
+      }).join('')+'</div></div>';
+
+  } else {
+    // ── داخل مجلد ──
+    var clr = folderColor(curFolder);
+    var folderFiles = wordFiles.filter(function(f){return f.folder===curFolder;});
+
+    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+      '<button onclick="curFolder=null;render()" style="width:34px;height:34px;border-radius:10px;background:var(--ink3);border:1px solid var(--rim2);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">‹</button>' +
+      '<div style="font-family:Amiri,serif;font-size:17px;color:var(--gold2)">📂 '+curFolder+'</div>' +
+      '<span style="font-size:11px;color:var(--text3);margin-right:auto">'+folderFiles.length+' ملف</span>' +
+      '<label style="background:var(--gold);color:var(--ink);border-radius:11px;padding:7px 12px;font-weight:700;font-size:12px;cursor:pointer">' +
+      '+ رفع<input type="file" accept=".doc,.docx,.pdf,.txt,.xls,.xlsx,.png,.jpg,.jpeg" style="display:none" onchange="uploadWordFile(this)"></label></div>';
+
+    // شريط بحث
+    h += '<div class="si" style="margin-bottom:10px"><span class="ico">🔍</span><input type="search" placeholder="بحث في '+curFolder+'..." dir="rtl" oninput="filterFiles(this.value,\''+curFolder+'\')" id="fileSearch"></div>';
+
+    if (!folderFiles.length) {
+      h += '<div class="empty"><div class="ei">📂</div><div class="et">المجلد فارغ</div><div class="es">ارفع ملفاً للبدء</div></div>';
+    } else {
+      h += '<div id="filesList">' + renderFilesList(folderFiles) + '</div>';
+    }
+  }
+  return h;
+}
+
+function renderFilesList(files) {
+  if (!files.length) return '<div class="empty"><div class="ei">🔍</div><div class="et">لا توجد نتائج</div></div>';
+  return files.map(function(f) {
+    var moveOptions = folders.filter(function(x){return x!==f.folder;}).map(function(folder){
+      return '<option value="'+folder+'">📂 '+folder+'</option>';
+    }).join('');
+    return '<div style="background:var(--card);border:1px solid var(--rim);border-radius:14px;padding:13px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+      '<div style="width:44px;height:44px;border-radius:11px;background:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+fileIcon(f.type)+'</div>' +
+      '<div style="flex:1;min-width:0">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+f.name+'</div>' +
+      '<div style="display:flex;gap:8px;margin-top:3px">' +
+      '<span style="font-size:10px;color:var(--text3)">📅 '+f.date+'</span>' +
+      '<span style="font-size:10px;color:var(--text3)">💽 '+fmtSize(f.size)+'</span></div></div>' +
+      '<div style="display:flex;gap:5px;flex-shrink:0">' +
+      '<button onclick="downloadWordFile('+f.id+')" style="width:32px;height:32px;border-radius:8px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-rim);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">📥</button>' +
+      '<button onclick="deleteWordFile('+f.id+')" style="width:32px;height:32px;border-radius:8px;background:var(--red-bg);color:#f87171;border:1px solid var(--red-rim);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">🗑️</button>' +
+      '</div></div>' +
+      (moveOptions ? '<div style="margin-top:8px;display:flex;align-items:center;gap:7px"><span style="font-size:10px;color:var(--text3)">نقل إلى:</span><select onchange="moveFile('+f.id+',this.value)" style="flex:1;background:var(--ink3);border:1px solid var(--rim2);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--text)"><option value="">اختر مجلد...</option>'+moveOptions+'</select></div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function filterFiles(q, folder) {
+  var filtered = wordFiles.filter(function(f){return f.folder===folder && f.name.toLowerCase().includes(q.toLowerCase());});
+  var el = document.getElementById('filesList');
+  if (el) el.innerHTML = renderFilesList(filtered);
+}
+
+// ── AI LEGAL ASSISTANT ──
+var aiMessages = [];
+try { aiMessages = JSON.parse(localStorage.getItem('j_aimsg') || '[]'); } catch(e) { aiMessages = []; }
+var aiLoading = false;
+
+function saveAIMsgs() { try { localStorage.setItem('j_aimsg', JSON.stringify(aiMessages.slice(-50))); } catch(e) {} }
+
+var AI_SYSTEM = 'اسمك سعود، مستشار قانوني ذكي متخصص في القانون السعودي والخليجي. تساعد المحامين والمتقاضين في الأسئلة القانونية. أجب بشكل واضح ومختصر باللغة العربية. عرّف نفسك دائماً باسم سعود. نبّه دائماً أن إجاباتك للتوجيه العام وليست استشارة قانونية رسمية. إذا كان السؤال خارج نطاق القانون أجب بأدب.';
+
+var AI_QUICK = [
+  'ما هي مدة التقادم في القضايا المدنية؟',
+  'كيف أرفع دعوى تجارية؟',
+  'ما هي شروط صحة العقد؟',
+  'ما الفرق بين الاستئناف والنقض؟',
+  'كيف أُنفّذ حكماً قضائياً؟',
+  'ما هي حقوق المتهم في القانون السعودي؟'
+];
+
+function rAI() {
+  var h = '<div style="display:flex;flex-direction:column;height:calc(100vh - 140px - var(--safe-top) - var(--safe-bottom))">';
+
+  // Header
+  h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+    '<div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🤖</div>' +
+    '<div><div style="font-family:Amiri,serif;font-size:17px;color:var(--gold2)">المستشار القانوني الذكي</div>' +
+    '<div style="font-size:10px;color:var(--text3)">مدعوم بالذكاء الاصطناعي · للتوجيه العام فقط</div></div>' +
+    '<button onclick="clearAI()" style="margin-right:auto;background:none;color:var(--text3);font-size:11px;cursor:pointer;border:1px solid var(--rim2);border-radius:8px;padding:5px 9px">مسح</button></div>';
+
+  // Chat area
+  h += '<div id="ai-chat" style="flex:1;overflow-y:auto;padding:4px 0;-webkit-overflow-scrolling:touch">';
+
+  if (!aiMessages.length) {
+    h += '<div style="text-align:center;padding:20px 0">' +
+      '<div style="font-size:40px;margin-bottom:10px">🟢</div>' +
+      '<div style="font-size:14px;font-weight:700;color:var(--text2);margin-bottom:6px">مرحباً! أنا سعود مستشارك القانوني</div>' +
+      '<div style="font-size:11px;color:#10a37f;margin-bottom:16px">مدعوم بـ ChatGPT-4o من OpenAI</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:center">';
+    AI_QUICK.forEach(function(q) {
+      h += '<button onclick="sendAI(\''+q+'\')" style="background:var(--gold-dim);color:var(--gold2);border:1px solid var(--gold-rim);border-radius:18px;padding:7px 12px;font-size:11px;cursor:pointer">'+q+'</button>';
+    });
+    h += '</div></div>';
+  } else {
+    aiMessages.forEach(function(m) {
+      if (m.role === 'user') {
+        h += '<div style="display:flex;justify-content:flex-start;margin-bottom:10px">' +
+          '<div style="background:var(--gold-dim);border:1px solid var(--gold-rim);border-radius:16px 16px 4px 16px;padding:10px 13px;max-width:82%;font-size:12px;color:var(--text);line-height:1.5">'+m.content+'</div></div>';
+      } else {
+        h += '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:7px">' +
+          '<div style="background:var(--card);border:1px solid var(--rim2);border-radius:16px 16px 16px 4px;padding:10px 13px;max-width:86%;font-size:12px;color:var(--text);line-height:1.6">'+m.content.replace(/\n/g,'<br>')+'</div>' +
+          '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#10a37f,#1a7f5a);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:auto">🟢</div></div>';
+      }
+    });
+    if (aiLoading) {
+      h += '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:7px">' +
+        '<div style="background:var(--card);border:1px solid var(--rim2);border-radius:16px;padding:12px 16px;font-size:18px">💭 ...</div>' +
+        '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:auto">🤖</div></div>';
+    }
+  }
+  h += '</div>';
+
+  // Quick suggestions (when has messages)
+  if (aiMessages.length > 0 && !aiLoading) {
+    h += '<div style="display:flex;gap:6px;overflow-x:auto;padding:8px 0;-webkit-overflow-scrolling:touch">';
+    AI_QUICK.slice(0,3).forEach(function(q) {
+      h += '<button onclick="sendAI(\''+q+'\')" style="flex-shrink:0;background:var(--ink3);color:var(--text3);border:1px solid var(--rim2);border-radius:16px;padding:6px 10px;font-size:10px;cursor:pointer;white-space:nowrap">'+q+'</button>';
+    });
+    h += '</div>';
+  }
+
+  // Input
+  h += '<div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--rim)">' +
+    '<textarea id="ai-input" placeholder="اسأل سؤالاً قانونياً..." dir="rtl" rows="2" style="flex:1;background:var(--ink3);border:1.5px solid var(--rim2);border-radius:13px;padding:10px 12px;font-size:13px;color:var(--text);resize:none;line-height:1.5" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendAIInput();}"></textarea>' +
+    '<button onclick="sendAIInput()" style="width:44px;height:44px;border-radius:13px;background:var(--gold);color:var(--ink);font-size:18px;cursor:pointer;flex-shrink:0;align-self:flex-end;display:flex;align-items:center;justify-content:center;font-weight:700">↑</button></div>';
+
+  h += '</div>';
+  return h;
+}
+
+function sendAIInput() {
+  var inp = document.getElementById('ai-input');
+  if (!inp || !inp.value.trim()) return;
+  sendAI(inp.value.trim());
+  inp.value = '';
+}
+
+function sendAI(msg) {
+  if (aiLoading) return;
+  aiMessages.push({role:'user', content:msg});
+  aiLoading = true;
+  render();
+  setTimeout(function() {
+    var chat = document.getElementById('ai-chat');
+    if (chat) chat.scrollTop = chat.scrollHeight;
+  }, 50);
+
+  var msgs = [{role:'user', content:msg}];
+  if (aiMessages.length > 1) {
+    msgs = aiMessages.slice(-6).map(function(m){return {role:m.role,content:m.content};});
+  }
+
+  fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer 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'
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-2024-11-20',
+      max_tokens: 1000,
+      messages: [{role:'system', content:AI_SYSTEM}].concat(msgs)
+    })
+  }).then(function(r){return r.json();}).then(function(d){
+    var reply = d.choices && d.choices[0] ? d.choices[0].message.content : 'عذراً، حدث خطأ في الاتصال.';
+    aiMessages.push({role:'assistant', content:reply});
+    saveAIMsgs();
+    aiLoading = false;
+    render();
+    setTimeout(function() {
+      var chat = document.getElementById('ai-chat');
+      if (chat) chat.scrollTop = chat.scrollHeight;
+    }, 50);
+  }).catch(function(){
+    aiMessages.push({role:'assistant', content:'⚠️ تعذّر الاتصال. تأكد من اتصالك بالإنترنت وحاول مجدداً.'});
+    aiLoading = false;
+    render();
+  });
+}
+
+function clearAI() {
+  if (!confirm('مسح سجل المحادثة؟')) return;
+  aiMessages = [];
+  saveAIMsgs();
+  render();
 }
 
 // ── BOOT ──
