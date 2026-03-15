@@ -1340,7 +1340,68 @@ function rCal(){var yr=calD.getFullYear(),mo=calD.getMonth();var days=new Date(y
 /* ═══════════════════════════════════════════════════════════
    ATTACHMENTS & PROGRESS & MEMO
 ═══════════════════════════════════════════════════════════ */
-function attHTML(s){var atts=s.attachments||[];var h='<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px;margin:10px 0"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📎 المرفقات ('+atts.length+')</div>';atts.forEach(function(a,i){h+='<div class="att-item"><span style="font-size:15px">'+(a.type==='image'?'🖼️':'📄')+'</span><span class="att-name">'+a.name+'</span><span onclick="delAtt('+s.id+','+i+')" style="color:#f87171;cursor:pointer;font-size:14px">✕</span></div>';});h+='<label style="display:flex;align-items:center;gap:7px;padding:9px;background:var(--gold-a10);border:1px dashed var(--gold-a30);border-radius:9px;cursor:pointer;font-size:11px;color:var(--gold2);font-weight:600"><input type="file" style="display:none" onchange="addAtt('+s.id+',this)" accept="image/*,.pdf,.doc,.docx">➕ إضافة مرفق</label></div>';return h;}
+function downloadAtt(sid,idx){
+  var s=data.find(function(x){return x.id===sid;});
+  if(!s||!s.attachments||!s.attachments[idx])return;
+  var a=s.attachments[idx];
+  if(!a.data){toast('⚠️ بيانات المرفق غير متوفرة');return;}
+  var link=document.createElement('a');
+  link.href=a.data;
+  link.download=a.name||('مرفق_'+(idx+1));
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  toast('📥 جارٍ تحميل: '+a.name);
+}
+
+function attHTML(s){
+  var atts=s.attachments||[];
+  var h='<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px;margin:10px 0">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📎 المرفقات ('+atts.length+')</div>';
+  atts.forEach(function(a,i){
+    var icon=a.type==='image'?'🖼️':'📄';
+    var size=a.data?Math.round(a.data.length*0.75/1024)+'KB':'';
+    h+='<div class="att-item" style="border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:6px;background:var(--surface3)">';
+    h+='<div style="width:36px;height:36px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+icon+'</div>';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div class="att-name" style="font-size:12px;font-weight:600;color:var(--text)">'+a.name+'</div>';
+    if(size)h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+size+'</div>';
+    h+='</div>';
+    h+='<div style="display:flex;gap:6px;flex-shrink:0">';
+    // Download button
+    h+='<button onclick="downloadAtt('+s.id+','+i+')" style="width:32px;height:32px;border-radius:8px;background:var(--blue-a);color:#60a5fa;border:1px solid rgba(74,144,217,.3);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="تحميل">📥</button>';
+    // Preview button for images
+    if(a.type==='image'&&a.data){
+      h+='<button onclick="previewAtt('+s.id+','+i+')" style="width:32px;height:32px;border-radius:8px;background:rgba(139,111,212,.1);color:#a78bfa;border:1px solid rgba(139,111,212,.3);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="معاينة">🔍</button>';
+    }
+    // Delete button
+    h+='<button onclick="delAtt('+s.id+','+i+')" style="width:32px;height:32px;border-radius:8px;background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="حذف">🗑️</button>';
+    h+='</div></div>';
+  });
+  h+='<label style="display:flex;align-items:center;gap:7px;padding:10px;background:var(--gold-a10);border:1px dashed var(--gold-a30);border-radius:9px;cursor:pointer;font-size:12px;color:var(--gold2);font-weight:600;margin-top:4px">';
+  h+='<input type="file" style="display:none" onchange="addAtt('+s.id+',this)" accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls">➕ إضافة مرفق</label>';
+  h+='</div>';
+  return h;
+}
+
+function previewAtt(sid,idx){
+  var s=data.find(function(x){return x.id===sid;});
+  if(!s||!s.attachments||!s.attachments[idx])return;
+  var a=s.attachments[idx];
+  if(!a.data)return;
+  var modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.9)';
+  modal.onclick=function(){modal.remove();};
+  var img=document.createElement('img');
+  img.src=a.data;
+  img.style.cssText='max-width:100%;max-height:90vh;border-radius:12px;box-shadow:0 0 40px rgba(0,0,0,0.5)';
+  var name=document.createElement('div');
+  name.style.cssText='position:absolute;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;padding:7px 16px;border-radius:20px;font-size:12px;font-family:Tajawal,sans-serif';
+  name.textContent=a.name;
+  modal.appendChild(img);
+  modal.appendChild(name);
+  document.body.appendChild(modal);
+}
 function addAtt(sid,input){var file=input.files[0];if(!file)return;var s=data.find(function(x){return x.id===sid;});if(!s)return;var r=new FileReader();r.onload=function(e){if(!s.attachments)s.attachments=[];s.attachments.push({name:file.name,type:file.type.startsWith('image')?'image':'doc',data:e.target.result});dbPut(s).then(function(){toast('📎 تم إضافة المرفق');openDet(sid);});};r.readAsDataURL(file);}
 function delAtt(sid,idx){var s=data.find(function(x){return x.id===sid;});if(!s)return;s.attachments.splice(idx,1);dbPut(s).then(function(){toast('✅ تم الحذف');openDet(sid);});}
 function saveProgress(sid,stage){var s=data.find(function(x){return x.id===sid;});if(!s)return;s.stage=stage;dbPut(s).then(function(){toast('📈 تم التحديث');openDet(sid);});}
