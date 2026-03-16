@@ -4989,36 +4989,65 @@ function buildStageTrackerHTML(s){
   var currentStage=s.stage||'';
   var stageIdx=CASE_STAGES.indexOf(currentStage);
   var pct=stageIdx>=0?Math.round(((stageIdx+1)/CASE_STAGES.length)*100):0;
-  var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px;margin:10px 0">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-  h+='<div style="font-size:11px;font-weight:700;color:var(--text2)">&#x1F5C2;&#xFE0F; &#x645;&#x631;&#x627;&#x62D;&#x644; &#x627;&#x644;&#x642;&#x636;&#x64A;&#x629;</div>';
-  if(stageIdx>=0)h+='<div style="font-size:12px;font-weight:900;color:var(--gold2)">'+pct+'%</div>';
+
+  var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin:10px 0">';
+  // Header
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2)">&#x1F4CB; &#x645;&#x631;&#x627;&#x62D;&#x644; &#x627;&#x644;&#x642;&#x636;&#x64A;&#x629;</div>';
+  if(stageIdx>=0)h+='<div style="background:var(--gold-a10);border:1px solid var(--gold-a20);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--gold2)">'+pct+'%</div>';
   h+='</div>';
+
+  // Progress bar
   if(stageIdx>=0){
-    h+='<div style="background:var(--surface3);border-radius:4px;height:7px;overflow:hidden;margin-bottom:10px">';
-    h+='<div style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;width:'+pct+'%;transition:width .5s"></div></div>';
+    h+='<div style="background:var(--surface3);border-radius:6px;height:6px;overflow:hidden;margin-bottom:16px">';
+    h+='<div style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:6px;width:'+pct+'%;transition:width .6s ease"></div></div>';
   }
-  h+='<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">';
-  CASE_STAGES.forEach(function(st,i){
-    var done=i<stageIdx;
-    var active=i===stageIdx;
-    var rowBg=active?'var(--gold-a10)':done?'rgba(48,184,128,0.06)':'var(--surface3)';
-    var rowBorder=active?'var(--gold-a30)':done?'rgba(48,184,128,0.25)':'var(--border)';
-    var dotBg=active?'var(--gold)':done?'var(--green)':'var(--surface2)';
-    var dotBorder=active?'var(--gold)':done?'var(--green)':'var(--border2)';
-    var dotTxt=done?'&#x2713;':active?'&#x25CF;':(i+1);
-    var dotColor=done?'#fff':active?'#0a0905':'var(--text3)';
-    var lblColor=active?'var(--gold2)':done?'var(--green)':'var(--text2)';
-    var lblWeight=active?'700':'500';
-    h+='<button onclick="saveStage('+s.id+',\''+st+'\')" style="display:flex;align-items:center;gap:8px;background:'+rowBg+';border:1px solid '+rowBorder+';border-radius:9px;padding:7px 10px;cursor:pointer;text-align:right;width:100%;font-family:Tajawal,sans-serif;transition:all .15s">';
-    h+='<div style="width:20px;height:20px;border-radius:50%;background:'+dotBg+';border:2px solid '+dotBorder+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;font-weight:700;color:'+dotColor+'">'+dotTxt+'</div>';
-    h+='<div style="flex:1;font-size:12px;font-weight:'+lblWeight+';color:'+lblColor+'">'+st+'</div>';
-    if(active)h+='<div style="font-size:9px;color:var(--gold2);font-weight:700;background:var(--gold-a10);padding:2px 6px;border-radius:6px">&#x62C;&#x627;&#x631;&#x64A;</div>';
-    else if(done)h+='<div style="font-size:10px;color:var(--green)">&#x2713;</div>';
-    h+='</button>';
+
+  // Stepper circles - wrap every 4 items
+  var rows=[];
+  for(var i=0;i<CASE_STAGES.length;i+=4) rows.push(CASE_STAGES.slice(i,i+4));
+
+  rows.forEach(function(row,rowIdx){
+    h+='<div style="display:flex;align-items:flex-start;justify-content:center;margin-bottom:18px">';
+    row.forEach(function(st,colIdx){
+      var i=rowIdx*4+colIdx;
+      var done=i<stageIdx;
+      var active=i===stageIdx;
+      var upcoming=i>stageIdx;
+
+      var circleBg=active
+        ?'linear-gradient(135deg,var(--gold),#a07030)'
+        :done?'linear-gradient(135deg,var(--green),#1a8060)'
+        :'var(--surface3)';
+      var circleBorder=active?'var(--gold)':done?'var(--green)':'var(--border2)';
+      var circleColor=active||done?'#fff':'var(--text3)';
+      var labelColor=active?'var(--gold2)':done?'var(--green)':'var(--text3)';
+      var shadow=active?'0 2px 12px rgba(200,160,80,0.45)':done?'0 2px 8px rgba(48,184,128,0.3)':'none';
+
+      h+='<div style="display:flex;flex:1;align-items:flex-start">';
+      // Node
+      h+='<div style="display:flex;flex-direction:column;align-items:center;flex:1">';
+      h+='<button onclick="saveStage('+s.id+',\''+st+'\')" style="width:36px;height:36px;border-radius:50%;background:'+circleBg+';border:2px solid '+circleBorder+';display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:'+shadow+';transition:all .2s;flex-shrink:0;font-size:'+(done?'13':'11')+'px;color:'+circleColor+';font-weight:700">'+(done?'&#x2713;':active?'&#x25CF;':(i+1))+'</button>';
+      h+='<div style="font-size:9px;font-weight:'+(active?'700':'500')+';color:'+labelColor+';margin-top:5px;text-align:center;line-height:1.35;max-width:56px">'+st+'</div>';
+      if(active)h+='<div style="width:5px;height:5px;border-radius:50%;background:var(--gold);margin-top:3px;animation:pulse 1.5s infinite"></div>';
+      h+='</div>';
+
+      // Connector line (between nodes, not after last)
+      if(colIdx<row.length-1){
+        var lineIdx=rowIdx*4+colIdx;
+        var lineDone=lineIdx<stageIdx;
+        var lineActive=lineIdx===stageIdx-1;
+        h+='<div style="flex:none;width:0;position:relative;top:17px">';
+        h+='<div style="width:100%;min-width:8px"></div></div>';
+        // Actually draw line in flex gap
+        h+='<div style="flex:0 0 auto;height:2px;width:20px;margin-top:17px;background:'+(lineDone||lineActive?'var(--gold)':'var(--border2)')+';border-radius:1px;transition:background .4s"></div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
   });
-  h+='</div>';
-  h+='<div style="font-size:10px;color:var(--text3);text-align:center">'+(stageIdx>=0?'&#x627;&#x644;&#x645;&#x631;&#x62D;&#x644;&#x629; '+(stageIdx+1)+' &#x645;&#x646; '+CASE_STAGES.length:'&#x627;&#x636;&#x63A;&#x637; &#x639;&#x644;&#x649; &#x623;&#x64A; &#x645;&#x631;&#x62D;&#x644;&#x629; &#x644;&#x62A;&#x62D;&#x62F;&#x64A;&#x62F;&#x647;&#x627;')+'</div>';
+
+  h+='<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px">'+(stageIdx>=0?'&#x627;&#x644;&#x645;&#x631;&#x62D;&#x644;&#x629; '+(stageIdx+1)+' &#x645;&#x646; '+CASE_STAGES.length+' &mdash; '+currentStage:'&#x627;&#x636;&#x63A;&#x637; &#x639;&#x644;&#x649; &#x623;&#x64A; &#x645;&#x631;&#x62D;&#x644;&#x629; &#x644;&#x62A;&#x62D;&#x62F;&#x64A;&#x62F;&#x647;&#x627;')+'</div>';
   h+='</div>';
   return h;
 }
