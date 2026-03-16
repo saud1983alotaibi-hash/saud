@@ -1313,7 +1313,7 @@ function delDeadline(sid){
 function startTick(){
   if(tick)clearInterval(tick);
   tick=setInterval(function(){
-    // Update session countdowns
+    // ── Session countdowns ──
     data.forEach(function(s){
       var i=cdInfo(s);if(!i)return;
       var el=document.getElementById('cdt-'+s.id);
@@ -1321,12 +1321,45 @@ function startTick(){
       var el2=document.getElementById('cdtL-'+s.id);
       if(el2&&detId===s.id)el2.textContent=i.time;
     });
-    // Update deadline counters on home
+    // ── Deadline full countdown (days + HH:MM:SS) ──
+    var now=Date.now();
     Object.keys(sessionDeadlines).forEach(function(sid){
-      var el=document.getElementById('dlcd-'+sid);if(!el)return;
-      var info=getDeadlineInfo(parseInt(sid));if(!info)return;
-      el.textContent=info.remaining<0?Math.abs(info.remaining)+'—':info.remaining;
-      el.style.color=info.clr;
+      var d=sessionDeadlines[sid];if(!d)return;
+      // Deadline at end of the deadline day (23:59:59)
+      var target=new Date(d.deadlineDate+'T23:59:59').getTime();
+      var diff=target-now;
+      if(diff<0)return; // expired — no ticking needed
+
+      var totalSec=Math.floor(diff/1000);
+      var days=Math.floor(totalSec/86400);
+      var hours=Math.floor((totalSec%86400)/3600);
+      var mins=Math.floor((totalSec%3600)/60);
+      var secs=totalSec%60;
+
+      function p(n){return n<10?'0'+n:String(n);}
+
+      var elD=document.getElementById('dlcd-'+sid);
+      var elH=document.getElementById('dlch-'+sid);
+      var elM=document.getElementById('dlcm-'+sid);
+      var elS=document.getElementById('dlcs-'+sid);
+
+      if(elD)elD.textContent=days;
+      if(elH)elH.textContent=p(hours);
+      if(elM)elM.textContent=p(mins);
+      if(elS)elS.textContent=p(secs);
+
+      // Update progress bar
+      var info=getDeadlineInfo(parseInt(sid));
+      if(info){
+        var elPb=document.getElementById('dlcpb-'+sid);
+        var elPct=document.getElementById('dlcpct-'+sid);
+        var pct=Math.min(100,Math.round(((d.days-(diff/86400000))/d.days)*100));
+        if(elPb)elPb.style.width=pct+'%';
+        if(elPct)elPct.textContent=pct+'%';
+        // Color update if urgency changed
+        var clr=info.clr;
+        [elD,elH,elM,elS].forEach(function(el){if(el)el.style.color=clr;});
+      }
     });
   },1000);
 }
@@ -1397,50 +1430,76 @@ function rHome(){
     var info=getDeadlineInfo(parseInt(sid));
     if(!info)return null;
     return{sid:parseInt(sid),s:s,info:info};
-  }).filter(function(x){return x&&x.info.remaining>=-7;}) // show up to 7 days after expiry
+  }).filter(function(x){return x&&x.info.remaining>=-3;})
     .sort(function(a,b){return a.info.remaining-b.info.remaining;});
 
   if(deadlineEntries.length){
     h+=secHdr('⏰','مواعيد الطعن والاستئناف');
     h+='<div id="deadlinesSection" style="margin-bottom:14px">';
     deadlineEntries.forEach(function(entry){
-      var info=entry.info,s=entry.s;
-      var sid=entry.sid;
-      var dlDate=new Date(info.deadlineDate+'T23:59:59');
+      var info=entry.info,s=entry.s,sid=entry.sid;
       var remaining=info.remaining;
-      var bg,border,clr=info.clr;
-      if(remaining<0){bg='rgba(232,80,80,0.06)';border='rgba(232,80,80,0.2)';}
-      else if(remaining<=3){bg='rgba(232,80,80,0.08)';border='rgba(232,80,80,0.25)';}
-      else if(remaining<=7){bg='rgba(251,191,36,0.08)';border='rgba(251,191,36,0.2)';}
-      else{bg='var(--surface2)';border='var(--border)';}
+      var expired=remaining<0;
+      var bg,border,clr=info.clr,glowClr;
+      if(expired||remaining===0){bg='rgba(232,80,80,0.07)';border='rgba(232,80,80,0.28)';glowClr='rgba(232,80,80,0.15)';}
+      else if(remaining<=7){bg='rgba(251,191,36,0.07)';border='rgba(251,191,36,0.28)';glowClr='rgba(251,191,36,0.12)';}
+      else{bg='var(--surface2)';border='var(--border)';glowClr='transparent';}
 
-      h+='<div style="background:'+bg+';border:1px solid '+border+';border-radius:var(--r-md);padding:13px;margin-bottom:8px;cursor:pointer" onclick="'+(s?'openDet('+sid+')':'')+'\">';
-      h+='<div style="display:flex;align-items:flex-start;gap:10px">';
-      // Icon + countdown
-      h+='<div style="flex-shrink:0;text-align:center;min-width:52px">';
-      h+='<div style="font-size:22px">'+info.icon+'</div>';
-      h+='<div id="dlcd-'+sid+'" style="font-size:18px;font-weight:900;color:'+clr+';line-height:1.1;margin-top:2px">'+(remaining<0?Math.abs(remaining)+'—':remaining)+'</div>';
-      h+='<div style="font-size:8px;color:var(--text3);font-weight:700">يوم</div>';
+      h+='<div style="background:'+bg+';border:1px solid '+border+';border-radius:var(--r-lg);margin-bottom:10px;overflow:hidden;cursor:pointer;box-shadow:0 0 0 0 '+glowClr+'" onclick="'+(s?'openDet('+sid+')':'')+'\">';
+
+      // Header row: case info + delete
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px 0">';
+      h+='<div>';
+      h+='<div style="font-size:12px;font-weight:700;color:var(--text)">'+(s?s.num+' · '+s.type:'قضية')+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+info.typeName.split('(')[0].trim()+(s&&s.court?' · '+s.court:'')+'</div>';
       h+='</div>';
-      // Details
-      h+='<div style="flex:1;min-width:0">';
-      h+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">'+(s?s.num+' · '+s.type:'قضية محذوفة')+'</div>';
-      h+='<div style="font-size:10px;color:var(--text3);margin-bottom:5px">'+info.typeName.split('(')[0].trim()+'</div>';
-      h+='<div style="font-size:11px;font-weight:600;color:'+clr+'">'+
-        (remaining<0?'⚠️ انتهى الموعد منذ '+Math.abs(remaining)+' يوم':
-         remaining===0?'⚡ اليوم آخر يوم للتقديم!':
-         '📅 '+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{weekday:'short',month:'short',day:'numeric'}))+
-      '</div>';
-      // Progress bar (only for active)
-      if(remaining>=0){
+      h+='<div style="display:flex;align-items:center;gap:8px">';
+      h+='<span style="font-size:18px">'+(expired?'🔴':remaining===0?'⚡':remaining<=7?'⚠️':'⏳')+'</span>';
+      h+='<button onclick="event.stopPropagation();delDeadline('+sid+')" style="background:none;color:var(--text3);font-size:14px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid var(--border2)">✕</button>';
+      h+='</div></div>';
+
+      // BIG countdown display
+      h+='<div style="padding:12px 14px">';
+      if(expired){
+        h+='<div style="text-align:center;padding:10px 0">';
+        h+='<div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:4px">⛔ انتهى الموعد</div>';
+        h+='<div style="font-size:11px;color:var(--text3)">منذ '+Math.abs(remaining)+' يوم · '+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'})+'</div>';
+        h+='</div>';
+      } else {
+        // Digital clock style: DD HH:MM:SS
+        h+='<div id="dlc-'+sid+'" style="display:flex;gap:6px;justify-content:center;align-items:flex-end;direction:ltr">';
+        // Days
+        h+='<div style="text-align:center">';
+        h+='<div id="dlcd-'+sid+'" style="background:var(--surface3);border:1px solid '+border+';border-radius:10px;padding:6px 10px;min-width:52px;font-size:28px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
+        h+='<div style="font-size:9px;color:var(--text3);margin-top:4px;font-weight:700">يوم</div>';
+        h+='</div>';
+        h+='<div style="font-size:24px;font-weight:900;color:var(--text3);padding-bottom:18px">:</div>';
+        // Hours
+        h+='<div style="text-align:center">';
+        h+='<div id="dlch-'+sid+'" style="background:var(--surface3);border:1px solid '+border+';border-radius:10px;padding:6px 10px;min-width:46px;font-size:28px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
+        h+='<div style="font-size:9px;color:var(--text3);margin-top:4px;font-weight:700">ساعة</div>';
+        h+='</div>';
+        h+='<div style="font-size:24px;font-weight:900;color:var(--text3);padding-bottom:18px">:</div>';
+        // Minutes
+        h+='<div style="text-align:center">';
+        h+='<div id="dlcm-'+sid+'" style="background:var(--surface3);border:1px solid '+border+';border-radius:10px;padding:6px 10px;min-width:46px;font-size:28px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
+        h+='<div style="font-size:9px;color:var(--text3);margin-top:4px;font-weight:700">دقيقة</div>';
+        h+='</div>';
+        h+='<div style="font-size:24px;font-weight:900;color:var(--text3);padding-bottom:18px">:</div>';
+        // Seconds
+        h+='<div style="text-align:center">';
+        h+='<div id="dlcs-'+sid+'" style="background:var(--surface3);border:1px solid '+border+';border-radius:10px;padding:6px 10px;min-width:46px;font-size:28px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
+        h+='<div style="font-size:9px;color:var(--text3);margin-top:4px;font-weight:700">ثانية</div>';
+        h+='</div>';
+        h+='</div>';
+        // Deadline date label
+        h+='<div style="text-align:center;margin-top:8px;font-size:11px;color:var(--text3)">📅 الموعد النهائي: <strong style="color:'+clr+'">'+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</strong></div>';
+        // Progress bar
         var pct=Math.min(100,Math.round(((info.days-remaining)/info.days)*100));
-        h+='<div style="margin-top:7px;background:var(--surface3);border-radius:3px;height:4px;overflow:hidden">';
-        h+='<div style="height:100%;background:'+clr+';border-radius:3px;width:'+pct+'%"></div></div>';
-        h+='<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text3);margin-top:2px"><span>البداية</span><span>اليوم '+( info.days-remaining)+'/'+info.days+'</span><span>النهاية</span></div>';
+        h+='<div style="margin-top:10px;background:var(--surface3);border-radius:4px;height:5px;overflow:hidden">';
+        h+='<div id="dlcpb-'+sid+'" style="height:100%;background:'+clr+';border-radius:4px;width:'+pct+'%;transition:width 1s linear"></div></div>';
+        h+='<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px"><span>بداية المدة</span><span id="dlcpct-'+sid+'">'+pct+'%</span><span>الموعد النهائي</span></div>';
       }
-      h+='</div>';
-      // Delete button
-      h+='<button onclick="event.stopPropagation();delDeadline('+sid+')" style="flex-shrink:0;background:none;color:var(--text3);font-size:16px;cursor:pointer;padding:2px 6px;align-self:flex-start">✕</button>';
       h+='</div></div>';
     });
     h+='</div>';
