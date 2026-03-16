@@ -1566,6 +1566,9 @@ function openDet(id){
   // Ask AI about this session
   b+='<button onclick="askAIAboutSession('+s.id+')" style="width:100%;background:rgba(16,163,127,0.1);color:#2ecc9a;border:1px solid rgba(16,163,127,0.25);border-radius:var(--r-md);padding:11px;font-weight:700;font-size:12px;cursor:pointer;margin:12px 0;display:flex;align-items:center;justify-content:center;gap:7px">⚖️ اسأل سعود عن هذه القضية</button>';
 
+  // ── Deadline Calculator inside session ──
+  b+=buildDeadlineCalcHTML(s);
+
   b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--border2)"><div class="note-box-hdr" style="color:var(--text2)">💬 ملاحظة سريعة</div><textarea id="qn-'+s.id+'" class="note-box textarea" placeholder="ملاحظة سريعة..." dir="rtl" rows="2">'+(s.quickNote||'')+'</textarea><button onclick="saveQuickNote('+s.id+')" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ</button></div>';
   b+=progressHTML(s);
   b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--gold-a20)"><div class="note-box-hdr" style="color:var(--gold2)">🔒 مذكرة سرية</div><textarea id="memo-'+s.id+'" placeholder="ملاحظاتك السرية..." dir="rtl" rows="4" style="width:100%;background:transparent;font-size:12px;color:var(--text);resize:none;min-height:72px;line-height:1.6">'+(s.memo||'')+'</textarea><button onclick="saveMemo('+s.id+')" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ المذكرة</button></div>';
@@ -2074,6 +2077,106 @@ function rTools(){
   h+='</div>';
 
   return h;
+}
+
+function buildDeadlineCalcHTML(s){
+  // Auto-fill date from session date
+  var sessionDate=s.date||'';
+  var b='<div style="background:var(--surface2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:13px;margin:10px 0">';
+  b+='<div style="font-size:11px;font-weight:700;color:var(--gold2);margin-bottom:10px">⏰ حاسبة مواعيد الطعن</div>';
+  b+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">';
+  b+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">تاريخ الحكم / الإجراء</label>';
+  b+='<input type="date" id="dlcDate_'+s.id+'" value="'+sessionDate+'" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:12px;color:var(--text);color-scheme:dark"></div>';
+  b+='<div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">نوع الإجراء</label>';
+  b+='<select id="dlcType_'+s.id+'" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:11px;color:var(--text)" dir="rtl">';
+  [['30','استئناف حكم ابتدائي (30 يوم)'],
+   ['30','طعن بالنقض (30 يوم)'],
+   ['5','تقديم رد على المذكرة (5 أيام)'],
+   ['15','تقديم دفوع (15 يوم)'],
+   ['30','استئناف (30 يوم)'],
+   ['30','نقض (30 يوم)'],
+   ['30','تنفيذ الحكم (30 يوم)'],
+   ['30','اعتراض على حكم غيابي (30 يوم)'],
+   ['10','استئناف جنائي (10 أيام)'],
+   ['60','انتهاء / سقوط الدعوى (60 يوم)'],
+   ['7','طلب تأجيل (7 أيام)'],
+  ].forEach(function(o){b+='<option value="'+o[0]+'">'+o[1]+'</option>';});
+  b+='</select></div></div>';
+  b+='<button onclick="calcDeadlineInSession(\''+s.id+'\')" style="width:100%;background:var(--gold);color:#0a0905;border-radius:8px;padding:9px;font-weight:700;font-size:12px;cursor:pointer;margin-bottom:8px;font-family:Tajawal,sans-serif">احسب الموعد النهائي</button>';
+  b+='<div id="dlcResult_'+s.id+'" style="display:none;background:var(--surface3);border-radius:9px;padding:11px;font-size:13px"></div>';
+  b+='</div>';
+  return b;
+}
+
+function calcDeadlineInSession(sid){
+  var dateEl=document.getElementById('dlcDate_'+sid);
+  var typeEl=document.getElementById('dlcType_'+sid);
+  var resEl=document.getElementById('dlcResult_'+sid);
+  if(!dateEl||!dateEl.value){toast('⚠️ اختر تاريخ الحكم أولاً');return;}
+  var days=parseInt(typeEl.value)||30;
+  var typeName=typeEl.options[typeEl.selectedIndex].text;
+  var base=new Date(dateEl.value+'T00:00:00');
+  var deadline=new Date(base);
+  deadline.setDate(deadline.getDate()+days);
+  var now=new Date();
+  now.setHours(0,0,0,0);
+  var remaining=Math.ceil((deadline-now)/86400000);
+
+  var clr,icon,status,bg,border;
+  if(remaining<0){
+    clr='#f87171';icon='🔴';bg='rgba(232,80,80,0.08)';border='rgba(232,80,80,0.25)';
+    status='انتهى منذ '+Math.abs(remaining)+' يوم';
+  } else if(remaining===0){
+    clr='#f87171';icon='⚡';bg='rgba(232,80,80,0.1)';border='rgba(232,80,80,0.3)';
+    status='اليوم هو آخر يوم!';
+  } else if(remaining<=7){
+    clr='#fbbf24';icon='⚠️';bg='rgba(251,191,36,0.08)';border='rgba(251,191,36,0.25)';
+    status='متبقي '+remaining+' يوم فقط';
+  } else if(remaining<=14){
+    clr='#f59e0b';icon='🟡';bg='rgba(245,158,11,0.08)';border='rgba(245,158,11,0.2)';
+    status='متبقي '+remaining+' يوم';
+  } else {
+    clr='#34d399';icon='✅';bg='rgba(52,211,153,0.08)';border='rgba(52,211,153,0.2)';
+    status='متبقي '+remaining+' يوم';
+  }
+
+  var deadlineStr=deadline.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  var baseDateStr=base.toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+
+  resEl.style.display='block';
+  resEl.innerHTML=
+    '<div style="background:'+bg+';border:1px solid '+border+';border-radius:10px;padding:12px">' +
+    // Top: icon + status
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+    '<div style="font-size:22px">'+icon+'</div>'+
+    '<div style="font-size:13px;font-weight:900;color:'+clr+'">'+status+'</div>'+
+    '</div>'+
+    // Details
+    '<div style="display:flex;flex-direction:column;gap:5px">'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px">'+
+    '<span style="color:var(--text3)">نوع الإجراء</span>'+
+    '<span style="color:var(--text);font-weight:600">'+typeName+'</span>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px">'+
+    '<span style="color:var(--text3)">تاريخ البداية</span>'+
+    '<span style="color:var(--text);font-weight:600">'+baseDateStr+'</span>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px">'+
+    '<span style="color:var(--text3)">المدة القانونية</span>'+
+    '<span style="color:var(--text);font-weight:600">'+days+' يوم</span>'+
+    '</div>'+
+    '<div style="border-top:1px solid '+border+';margin-top:5px;padding-top:7px;display:flex;justify-content:space-between;align-items:center">'+
+    '<span style="font-size:10px;color:var(--text3);font-weight:700">الموعد النهائي</span>'+
+    '<span style="font-size:13px;font-weight:900;color:'+clr+'">'+deadlineStr+'</span>'+
+    '</div>'+
+    '</div>'+
+    // Progress bar
+    (remaining>=0?
+    '<div style="margin-top:10px;background:var(--surface3);border-radius:4px;height:6px;overflow:hidden">'+
+    '<div style="height:100%;background:'+clr+';border-radius:4px;width:'+Math.min(100,Math.round((remaining/days)*100))+'%;transition:width .4s"></div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px">'+
+    '<span>يوم 0</span><span>يوم '+days+'</span></div>':'')+'</div>';
 }
 
 function calcDeadline(){
@@ -3175,37 +3278,44 @@ var LEGAL_DB={
   ],
 };
 var legalSearch='',legalCat='';
+var legalUserDocs=[];
+try{legalUserDocs=JSON.parse(localStorage.getItem('j_legal_docs')||'[]');}catch(e){}
+function saveLegalDocs(){try{localStorage.setItem('j_legal_docs',JSON.stringify(legalUserDocs));}catch(e){toast('⚠️ مساحة ممتلئة');}}
 
 function rLegal(){
-  var cats=Object.keys(LEGAL_DB);
-  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">📚 المكتبة القانونية</div><button onclick="askAILegal()" style="background:rgba(16,163,127,.1);color:#10a37f;border:1px solid rgba(16,163,127,.25);border-radius:9px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">⚖️ اسأل سعود</button></div>';
+  var allCats=Object.keys(LEGAL_DB);
+  var userCats=legalUserDocs.map(function(d){return d.title;});
+  var cats=allCats.concat(userCats);
+
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+  h+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">📚 المكتبة القانونية</div>';
+  h+='<div style="display:flex;gap:6px">';
+  h+='<label style="display:flex;align-items:center;gap:5px;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:9px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">📥 استيراد<input type="file" accept=".pdf,.docx,.doc,.txt" style="display:none" onchange="importLegalDoc(this)"></label>';
+  h+='<button onclick="askAILegal()" style="background:rgba(16,163,127,.1);color:#10a37f;border:1px solid rgba(16,163,127,.25);border-radius:9px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">⚖️ سعود</button>';
+  h+='</div></div>';
 
   // Search
   h+='<div style="position:relative;margin-bottom:10px"><span style="position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;color:var(--text3)">🔍</span>';
-  h+='<input type="search" id="legalSearch" value="'+legalSearch+'" placeholder="ابحث عن مادة أو نص قانوني..." dir="rtl" oninput="legalSearch=this.value;render()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px 40px 11px 14px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif"></div>';
+  h+='<input type="search" id="legalSearch" value="'+legalSearch+'" placeholder="ابحث في المواد والنصوص..." dir="rtl" oninput="legalSearch=this.value;render()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px 40px 11px 14px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif"></div>';
 
   // Categories
   h+='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">';
   h+='<button onclick="legalCat=\'\';render()" style="flex-shrink:0;padding:6px 14px;border-radius:18px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;background:'+(legalCat===''?'var(--gold-a10)':'var(--surface3)')+';color:'+(legalCat===''?'var(--gold2)':'var(--text3)')+';border-color:'+(legalCat===''?'var(--gold-a30)':'var(--border2)')+';font-family:Tajawal,sans-serif">الكل</button>';
   cats.forEach(function(c){
     var a=legalCat===c;
-    h+='<button onclick="legalCat=\''+c+'\';render()" style="flex-shrink:0;padding:6px 14px;border-radius:18px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;background:'+(a?'var(--gold-a10)':'var(--surface3)')+';color:'+(a?'var(--gold2)':'var(--text3)')+';border-color:'+(a?'var(--gold-a30)':'var(--border2)')+';font-family:Tajawal,sans-serif">'+c+'</button>';
+    var isUser=userCats.indexOf(c)>-1;
+    h+='<button onclick="legalCat=\''+c+'\';render()" style="flex-shrink:0;padding:6px 14px;border-radius:18px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;background:'+(a?'var(--gold-a10)':'var(--surface3)')+';color:'+(a?'var(--gold2)':'var(--text3)')+';border-color:'+(a?'var(--gold-a30)':'var(--border2)')+';font-family:Tajawal,sans-serif">'+(isUser?'📄 ':'')+c+'</button>';
   });
   h+='</div>';
 
-  // Deadline calc shortcut
-  h+='<div style="background:rgba(212,168,67,.08);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">';
-  h+='<div style="font-size:24px">⏰</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--gold2)">حاسبة مواعيد الطعن</div><div style="font-size:10px;color:var(--text3);margin-top:2px">احسب آخر موعد للطعن أو الاستئناف</div></div>';
-  h+='<button onclick="go(\'tools\')" style="background:var(--gold);color:#0a0905;border-radius:9px;padding:7px 13px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">فتح</button>';
-  h+='</div>';
+  var q=legalSearch.trim().toLowerCase();
 
-  // Articles
-  var q=legalSearch.trim();
-  cats.forEach(function(cat){
+  // Built-in articles
+  allCats.forEach(function(cat){
     if(legalCat&&legalCat!==cat)return;
     var arts=LEGAL_DB[cat].filter(function(a){
       if(!q)return true;
-      return a.art.includes(q)||a.text.includes(q);
+      return a.art.toLowerCase().includes(q)||a.text.includes(q);
     });
     if(!arts.length)return;
     h+=secHdr('📋',cat);
@@ -3214,15 +3324,162 @@ function rLegal(){
       h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">';
       h+='<span style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:7px;padding:3px 10px;font-size:11px;font-weight:700">'+a.art+'</span>';
       h+='<button onclick="copyLegalArt(\''+a.art+': '+a.text.replace(/'/g,"\\'")+'\')" style="background:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">📋 نسخ</button>';
-      h+='</div>';
-      h+='<div style="font-size:12px;color:var(--text);line-height:1.7;direction:rtl">'+a.text+'</div>';
-      h+='</div>';
+      h+='</div><div style="font-size:12px;color:var(--text);line-height:1.7;direction:rtl">'+a.text+'</div></div>';
     });
   });
-  if(q&&!cats.some(function(c){return LEGAL_DB[c].some(function(a){return a.art.includes(q)||a.text.includes(q);});})){
-    h+='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">لا توجد نتائج</div><div class="empty-sub">جرب كلمات مختلفة</div></div>';
+
+  // User-imported docs
+  legalUserDocs.forEach(function(doc,di){
+    if(legalCat&&legalCat!==doc.title)return;
+    // Filter paragraphs by search
+    var paras=doc.paragraphs.filter(function(p){
+      if(!q)return true;
+      return p.toLowerCase().includes(q);
+    });
+    if(!paras.length)return;
+    h+=secHdr('📄',doc.title);
+    h+='<div style="margin-bottom:4px;display:flex;justify-content:flex-end">';
+    h+='<button onclick="deleteLegalDoc('+di+')" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:7px;padding:3px 10px;font-size:10px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ حذف</button></div>';
+    paras.slice(0,50).forEach(function(p,pi){
+      if(!p.trim())return;
+      // Highlight search term
+      var display=p;
+      if(q){
+        var re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+        display=p.replace(re,'<mark style="background:var(--gold-a20);color:var(--gold2)">$1</mark>');
+      }
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;direction:rtl">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
+      h+='<div style="font-size:12px;color:var(--text);line-height:1.7;flex:1">'+display+'</div>';
+      h+='<button onclick="copyLegalArt(\''+p.replace(/'/g,"\\'")+'\')" style="background:none;color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0;font-family:Tajawal,sans-serif">📋</button>';
+      h+='</div></div>';
+    });
+    if(paras.length>50)h+='<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:8px">... و'+(paras.length-50)+' فقرة أخرى — ضيّق البحث لعرض المزيد</div>';
+  });
+
+  if(q&&!cats.some(function(c){
+    if(allCats.indexOf(c)>-1)return LEGAL_DB[c].some(function(a){return a.art.toLowerCase().includes(q)||a.text.includes(q);});
+    var ud=legalUserDocs.find(function(d){return d.title===c;});
+    return ud&&ud.paragraphs.some(function(p){return p.toLowerCase().includes(q);});
+  })){
+    h+='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">لا توجد نتائج</div><div class="empty-sub">جرب كلمات أخرى</div></div>';
   }
   return h;
+}
+
+function importLegalDoc(input){
+  var file=input.files[0];if(!file)return;
+  input.value='';
+  var name=file.name.replace(/\.(pdf|docx?|txt)$/i,'').trim();
+  toast('⏳ جارٍ استيراد: '+name+'...');
+
+  function addDoc(text){
+    // Split into paragraphs (non-empty lines)
+    var paras=text.split(/\n+/).map(function(l){return l.trim();}).filter(function(l){return l.length>10;});
+    if(!paras.length){toast('⚠️ لم يُعثر على نص قابل للقراءة');return;}
+    // Check duplicate title
+    var title=name;
+    var existing=legalUserDocs.findIndex(function(d){return d.title===title;});
+    if(existing>-1){
+      if(!confirm('يوجد مستند بنفس الاسم. استبداله؟'))return;
+      legalUserDocs[existing]={title:title,paragraphs:paras,date:today()};
+    } else {
+      legalUserDocs.push({title:title,paragraphs:paras,date:today()});
+    }
+    saveLegalDocs();
+    legalCat=title;
+    toast('✅ تم استيراد '+paras.length+' فقرة من: '+title);
+    render();
+  }
+
+  var fname=file.name.toLowerCase();
+
+  if(fname.endsWith('.txt')){
+    var r=new FileReader();
+    r.onload=function(e){addDoc(e.target.result);};
+    r.readAsText(file,'UTF-8');
+    return;
+  }
+
+  // DOCX or PDF — need libraries
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var buf=e.target.result;
+    if(fname.endsWith('.pdf')){
+      loadPDFJS(function(){extractPDFText(buf,addDoc);});
+    } else {
+      // DOCX via mammoth
+      if(typeof mammoth!=='undefined'){doMammothExtract(buf,addDoc);return;}
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js';
+      s.onload=function(){doMammothExtract(buf,addDoc);};
+      s.onerror=function(){doRawDocxExtract(buf,addDoc);};
+      document.head.appendChild(s);
+    }
+  };
+  reader.onerror=function(){toast('⚠️ فشل قراءة الملف');};
+  reader.readAsArrayBuffer(file);
+}
+
+function doMammothExtract(buf,cb){
+  mammoth.extractRawText({arrayBuffer:buf})
+    .then(function(r){cb(r.value||'');})
+    .catch(function(){doRawDocxExtract(buf,cb);});
+}
+
+function doRawDocxExtract(buf,cb){
+  try{
+    var bytes=new Uint8Array(buf);var str='';
+    for(var i=0;i<bytes.length;i++)str+=String.fromCharCode(bytes[i]);
+    var paras=str.split(/<\/w:p>/);
+    var text=paras.map(function(p){
+      var t=[];var re=/<w:t[^>]*>([^<]*)<\/w:t>/g;var m;
+      while((m=re.exec(p))!==null)t.push(m[1]);
+      return t.join('');
+    }).filter(Boolean).join('\n');
+    cb(text);
+  }catch(e){toast('⚠️ فشل استخراج النص: '+e.message);}
+}
+
+function loadPDFJS(cb){
+  if(typeof pdfjsLib!=='undefined'){cb();return;}
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload=function(){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    cb();
+  };
+  s.onerror=function(){toast('⚠️ فشل تحميل مكتبة PDF');};
+  document.head.appendChild(s);
+}
+
+function extractPDFText(buf,cb){
+  pdfjsLib.getDocument({data:buf}).promise.then(function(pdf){
+    var pages=[];
+    var total=pdf.numPages;
+    var done=0;
+    for(var i=1;i<=total;i++){
+      (function(pageNum){
+        pdf.getPage(pageNum).then(function(page){
+          page.getTextContent().then(function(content){
+            var text=content.items.map(function(item){return item.str;}).join(' ');
+            pages[pageNum-1]=text;
+            done++;
+            if(done===total){cb(pages.join('\n'));}
+          });
+        });
+      })(i);
+    }
+  }).catch(function(e){toast('⚠️ خطأ في قراءة PDF: '+e.message);});
+}
+
+function deleteLegalDoc(idx){
+  if(!confirm('حذف هذا المستند من المكتبة؟'))return;
+  var title=legalUserDocs[idx]&&legalUserDocs[idx].title;
+  legalUserDocs.splice(idx,1);
+  saveLegalDocs();
+  if(legalCat===title)legalCat='';
+  toast('🗑️ تم الحذف');render();
 }
 
 function copyLegalArt(txt){
