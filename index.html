@@ -530,6 +530,10 @@ option { background: var(--surface); }
       <button class="tab"    id="tb-settings"   onclick="go('settings')">⚙️ الإعدادات</button>
     </div>
     <div style="height:1px;background:var(--border)"></div>
+    <div id="hiddenTabsBar" style="display:none;background:rgba(251,191,36,0.1);border-bottom:1px solid rgba(251,191,36,0.3);padding:6px 14px;text-align:center">
+      <span style="font-size:11px;color:#fbbf24">بعض التبويبات مخفية — </span>
+      <button onclick="hiddenTabs=[];saveHiddenTabs();applyHiddenTabs();document.getElementById('hiddenTabsBar').style.display='none';toast('✅ تم إظهار جميع التبويبات')" style="background:none;color:#f0c55a;font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline;font-family:Tajawal,sans-serif">إظهار الكل</button>
+    </div>
   </div>
   <div id="cnt"></div>
 
@@ -741,6 +745,10 @@ try{apiKey=localStorage.getItem('j_apikey')||'';}catch(e){}
 try{pinEnabled=localStorage.getItem('j_pin_enabled')==='1';pinCode=localStorage.getItem('j_pin_code')||'';}catch(e){}
 try{caseLinks=JSON.parse(localStorage.getItem('j_case_links')||'[]');}catch(e){caseLinks=[];}
 try{hiddenTabs=JSON.parse(localStorage.getItem('j_hidden_tabs')||'[]');}catch(e){hiddenTabs=[];}
+// Fix: remove any tabs from hiddenTabs that are new/valid tabs (migration safety)
+var validTabs=['list','tasks','contacts','files','ai','cal','stats','fees','tools','live','archive','letterhead','legal','reports','share'];
+hiddenTabs=hiddenTabs.filter(function(t){return validTabs.indexOf(t)>-1;});
+try{localStorage.setItem('j_hidden_tabs',JSON.stringify(hiddenTabs));}catch(e){}
 try{lawyerProfile=JSON.parse(localStorage.getItem('j_lawyer_profile')||'{}');lawyerProfile=Object.assign({name:'',title:'محامٍ',license:'',phone:'',email:''},lawyerProfile);}catch(e){}
 try{archivedSessions=JSON.parse(localStorage.getItem('j_archive')||'[]');}catch(e){archivedSessions=[];}
 try{var si=parseInt(localStorage.getItem('j_ctheme'));if(!isNaN(si)&&COLOR_THEMES[si]){curTheme=si;var ct=COLOR_THEMES[si];var rs=document.documentElement.style;rs.setProperty('--gold',ct.gold);rs.setProperty('--gold2',ct.gold2);rs.setProperty('--gold-a10',ct.gold+'1a');rs.setProperty('--gold-a20',ct.gold+'33');rs.setProperty('--gold-a30',ct.gold+'4d');if(!isDay){rs.setProperty('--bg',ct.ink);rs.setProperty('--surface',ct.card);}}}catch(e){}
@@ -3250,6 +3258,9 @@ function applyHiddenTabs(){
     var el=document.getElementById('tb-'+t);if(!el)return;
     el.style.display=(hiddenTabs.indexOf(t)>-1&&forceShow.indexOf(t)===-1)?'none':'';
   });
+  // Show warning bar if any tabs are hidden
+  var bar=document.getElementById('hiddenTabsBar');
+  if(bar)bar.style.display=hiddenTabs.length>0?'block':'none';
 }
 
 function rSettings(){
