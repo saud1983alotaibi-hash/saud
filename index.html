@@ -753,6 +753,17 @@ function today(){return new Date().toISOString().split('T')[0];}
 function fmtS(d){return new Date(d+'T00:00:00').toLocaleDateString('ar-SA',{day:'numeric',month:'short'});}
 function fmtL(d){return new Date(d+'T00:00:00').toLocaleDateString('ar-SA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
 function fmtLD(d){return new Date(d+'T00:00:00').toLocaleDateString('ar-SA',{weekday:'short',year:'numeric',month:'long',day:'numeric'});}
+function fmtHijri(d){
+  // Returns short Hijri date for a Gregorian YYYY-MM-DD
+  try{
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic',{day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00'));
+  }catch(e){return'';}
+}
+function fmtHijriFull(d){
+  try{
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(d+'T12:00:00'));
+  }catch(e){return'';}
+}
 function bdg(s){var c=ST[s];return'<span class="status-badge" style="color:'+c.clr+';background:'+c.bg+';border-color:'+c.rim+'">'+c.lbl+'</span>';}
 function ptag(p){var pt=PT[p||'none'];return'<span class="prio-badge '+pt.cls+'">'+pt.icon+' '+pt.lbl+'</span>';}
 function tagsHTML(tags){if(!tags||!tags.length)return'';return'<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">'+tags.map(function(t){return'<span class="tag">🏷️ '+t+'</span>';}).join('')+'</div>';}
@@ -1507,7 +1518,7 @@ function card(s){
     '<div class="s-card-accent" style="background:'+c.clr+'"></div>'+
     '<div class="s-card-top"><div><div class="s-card-num">'+s.num+'</div>'+
     '<div class="s-card-meta">'+s.type+(s.room?' · '+s.room:'')+'&nbsp;&nbsp;'+ptag(p)+'</div></div>'+
-    '<div class="s-card-time"><div class="s-card-timestr">'+s.time+'</div><div class="s-card-date">'+fmtS(s.date)+'</div></div></div>'+
+    '<div class="s-card-time"><div class="s-card-timestr">'+s.time+'</div><div class="s-card-date">'+(s.hijriDate?s.hijriDate.split(' ').slice(0,2).join(' '):fmtS(s.date))+'</div></div></div>'+
     '<div class="s-card-parties"><span style="opacity:.4">👤</span> '+(s.plnt||'—')+' <span style="color:var(--text3)">↔</span> '+(s.dfnd||'—')+'</div>'+
     '<div class="s-card-footer"><div class="s-card-court">🏛️ '+(s.court||'—')+'</div>'+
     '<div class="s-card-actions">'+bdg(s.status)+'<button onclick="cycleStatus('+s.id+',event)" class="btn-cycle">🔁</button></div></div>'+
@@ -2064,7 +2075,7 @@ function openDet(id){
   detId=id;
   document.getElementById('detNum').textContent=s.num;
   document.getElementById('detBadge').innerHTML=bdg(s.status);
-  var rows=[['نوع القضية',s.type],['الأهمية',ptag(s.priority||'none')],['🏛️ المحكمة',s.court||'—'],['المدعي',s.plnt||'—'],['المدعى عليه',s.dfnd||'—'],['التاريخ',fmtLD(s.date)],['الوقت',s.time],['القاعة',s.room||'—']];
+  var rows=[['نوع القضية',s.type],['الأهمية',ptag(s.priority||'none')],['🏛️ المحكمة',s.court||'—'],['المدعي',s.plnt||'—'],['المدعى عليه',s.dfnd||'—'],['التاريخ الميلادي',fmtLD(s.date)],['التاريخ الهجري',s.hijriDate||fmtHijri(s.date)],['الوقت',s.time],['القاعة',s.room||'—']];
   if(s.notes)rows.push(['ملاحظات',s.notes]);
   if(s.tags&&s.tags.length)rows.push(['الوسوم',tagsHTML(s.tags)]);
   if(s.meetUrl)rows.push(['🎥 الاجتماع',meetBadge(s)]);
@@ -3233,10 +3244,10 @@ function saveLawyerProfile(){try{localStorage.setItem('j_lawyer_profile',JSON.st
 function saveHiddenTabs(){try{localStorage.setItem('j_hidden_tabs',JSON.stringify(hiddenTabs));}catch(e){}}
 
 function applyHiddenTabs(){
-  var allTabs=['home','list','tasks','contacts','files','ai','cal','stats','fees','tools','live','archive','settings'];
+  var allTabs=['home','list','tasks','contacts','files','ai','cal','stats','fees','tools','live','archive','letterhead','legal','reports','share','settings'];
+  var forceShow=['home','settings'];
   allTabs.forEach(function(t){
     var el=document.getElementById('tb-'+t);if(!el)return;
-    var forceShow=['home','settings'];
     el.style.display=(hiddenTabs.indexOf(t)>-1&&forceShow.indexOf(t)===-1)?'none':'';
   });
 }
@@ -3289,17 +3300,26 @@ function rSettings(){
   // ── Hide/Show Tabs ──
   h+=secHdr('🎨','تخصيص التبويبات');
   h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
-  var tabLabels={home:'🏠 الرئيسية',list:'⚖️ الجلسات',tasks:'📋 المهمات',contacts:'👤 الأطراف',files:'📁 الملفات',ai:'🤖 سعود AI',cal:'📅 التقويم',stats:'📊 التقارير',fees:'💰 الأتعاب',tools:'🛠️ أدوات',live:'🔴 مباشر',archive:'🗄️ الأرشيف',letterhead:'📝 المستندات',legal:'📚 المكتبة',reports:'📈 التقارير',share:'🤝 المشاركة'};
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  h+='<div style="font-size:11px;color:var(--text3)">اختر التبويبات الظاهرة في شريط التنقل</div>';
+  h+='<button onclick="hiddenTabs=[];saveHiddenTabs();applyHiddenTabs();toast(\'✅ تم إظهار جميع التبويبات\')" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;flex-shrink:0">إظهار الكل</button>';
+  h+='</div>';
+  var tabLabels={home:'🏠 الرئيسية',list:'⚖️ الجلسات',tasks:'📋 المهمات',contacts:'👤 الأطراف',files:'📁 الملفات',ai:'🤖 سعود AI',cal:'📅 التقويم',stats:'📊 التقارير',fees:'💰 الأتعاب',tools:'🛠️ أدوات',live:'🔴 مباشر',archive:'🗄️ الأرشيف',letterhead:'📝 المستندات',legal:'📚 المكتبة',reports:'📈 تقارير متقدمة',share:'🤝 المشاركة'};
   Object.entries(tabLabels).forEach(function(e){
     var isHidden=hiddenTabs.indexOf(e[0])>-1;
+    var isCurrent=curTab===e[0];
     h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">';
-    h+='<span style="font-size:13px;color:var(--text)">'+e[1]+'</span>';
+    h+='<div style="display:flex;align-items:center;gap:8px">';
+    h+='<span style="font-size:13px;color:'+(isCurrent?'var(--gold2)':'var(--text)')+'">'+e[1]+'</span>';
+    if(isHidden)h+='<span style="font-size:9px;background:var(--red-a);color:#f87171;border-radius:4px;padding:1px 5px">مخفي</span>';
+    h+='</div>';
     h+='<label style="position:relative;display:inline-block;width:40px;height:22px">';
     h+='<input type="checkbox" '+(isHidden?'':'checked')+' onchange="toggleTabVis(\''+e[0]+'\',this.checked)" style="opacity:0;width:0;height:0">';
     h+='<span style="position:absolute;inset:0;background:'+(isHidden?'var(--surface3)':'var(--gold)')+';border-radius:22px;cursor:pointer;transition:.3s"></span>';
     h+='<span style="position:absolute;height:16px;width:16px;background:#fff;border-radius:50%;bottom:3px;'+(isHidden?'left:3px':'right:3px')+';transition:.3s"></span>';
     h+='</label></div>';
   });
+  h+='<button onclick="hiddenTabs=[];saveHiddenTabs();applyHiddenTabs();toast(\'✅ تم إظهار جميع التبويبات\')" style="width:100%;background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:12px;cursor:pointer;margin-top:10px;font-family:Tajawal,sans-serif">🔄 إعادة تعيين — إظهار جميع التبويبات</button>';
   h+='</div>';
 
   // ── App Info ──
@@ -5443,6 +5463,54 @@ function showPinSetupModal(){
 /* ═══════════════════════════════════════════════════════════
    🔗 استيراد من نظام ناجز
 ═══════════════════════════════════════════════════════════ */
+/* ── Accurate Hijri ↔ Gregorian conversion using Intl API ── */
+function hijriToGregorian(hy,hm,hd){
+  // Use Intl.DateTimeFormat to find the Gregorian date matching a Hijri date
+  // Approximate Gregorian start date, then search within ±2 days
+  var approxG=new Date(Math.round((hy-1)*354.367+hm*29.53+hd-15+622*365.25));
+  for(var offset=-3;offset<=3;offset++){
+    var candidate=new Date(approxG);
+    candidate.setDate(candidate.getDate()+offset);
+    try{
+      var parts=new Intl.DateTimeFormat('en-u-ca-islamic',{
+        year:'numeric',month:'numeric',day:'numeric'
+      }).formatToParts(candidate);
+      var cy={},cm={},cd={};
+      parts.forEach(function(p){
+        if(p.type==='year')cy=parseInt(p.value);
+        if(p.type==='month')cm=parseInt(p.value);
+        if(p.type==='day')cd=parseInt(p.value);
+      });
+      if(cy===hy&&cm===hm&&cd===hd){
+        var y=candidate.getFullYear();
+        var mo=candidate.getMonth()+1;
+        var d=candidate.getDate();
+        return y+'-'+(mo<10?'0'+mo:mo)+'-'+(d<10?'0'+d:d);
+      }
+    }catch(e){}
+  }
+  // Fallback: use formula if Intl fails
+  var jd=Math.floor((11*hy+3)/30)+354*hy+30*hm-Math.floor((hm-1)/2)+hd+1948440-385;
+  var l=jd+68569;var n=Math.floor(4*l/146097);
+  l=l-Math.floor((146097*n+3)/4);var i=Math.floor(4000*(l+1)/1461001);
+  l=l-Math.floor(1461*i/4)+31;var j=Math.floor(80*l/2447);
+  var dd=l-Math.floor(2447*j/80);var k=Math.floor(j/11);
+  var mm=j+2-12*k;var yy=100*(n-49)+i+k;
+  return yy+'-'+(mm<10?'0'+mm:mm)+'-'+(dd<10?'0'+dd:dd);
+}
+
+function gregorianToHijri(gDate){
+  // Convert YYYY-MM-DD to Hijri display string
+  if(!gDate)return'';
+  try{
+    var d=new Date(gDate+'T12:00:00');
+    var parts=new Intl.DateTimeFormat('ar-SA-u-ca-islamic',{
+      year:'numeric',month:'long',day:'numeric'
+    }).formatToParts(d);
+    return parts.map(function(p){return p.value;}).join('');
+  }catch(e){return'';}
+}
+
 function showNajizImportModal(){
   var existing=document.getElementById('najizModal');if(existing)existing.remove();
   var modal=document.createElement('div');modal.id='najizModal';
@@ -5516,17 +5584,33 @@ function parseAndImportNajiz(){
     // Extract date - Hijri or Gregorian
     // Gregorian: 2024-08-15 or 15/08/2024
     var dateG=block.match(/(\d{4}[-\/]\d{2}[-\/]\d{2})/);
-    // Hijri: 15/08/1446 هـ or 1446/08/15
-    var dateH=block.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](14\d{2})/);
-    if(dateG){
+    // Hijri: 15/08/1446 or 1446/08/15 or 15-08-1446 (year starts with 14xx)
+    var dateH=block.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](14\d{2})/) ||
+              block.match(/(14\d{2})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    // Hijri written in Arabic: ١٥ شعبان ١٤٤٦ or 15 شعبان 1446
+    var hijriMonths={'\u064a\u0646\u0627\u064a\u0631':1,'\u0641\u0628\u0631\u0627\u064a\u0631':2,'\u0645\u0627\u0631\u0633':3,'\u0623\u0628\u0631\u064a\u0644':4,'\u0645\u0627\u064a\u0648':5,'\u064a\u0648\u0646\u064a\u0648':6,'\u064a\u0648\u0644\u064a\u0648':7,'\u0623\u063a\u0633\u0637\u0633':8,'\u0633\u0628\u062a\u0645\u0628\u0631':9,'\u0623\u0643\u062a\u0648\u0628\u0631':10,'\u0646\u0648\u0641\u0645\u0628\u0631':11,'\u062f\u064a\u0633\u0645\u0628\u0631':12,'\u0645\u062d\u0631\u0645':1,'\u0635\u0641\u0631':2,'\u0631\u0628\u064a\u0639 \u0627\u0644\u0623\u0648\u0644':3,'\u0631\u0628\u064a\u0639 \u0627\u0644\u062b\u0627\u0646\u064a':4,'\u062c\u0645\u0627\u062f\u0649 \u0627\u0644\u0623\u0648\u0644\u0649':5,'\u062c\u0645\u0627\u062f\u0649 \u0627\u0644\u062b\u0627\u0646\u064a\u0629':6,'\u0631\u062c\u0628':7,'\u0634\u0639\u0628\u0627\u0646':8,'\u0631\u0645\u0636\u0627\u0646':9,'\u0634\u0648\u0627\u0644':10,'\u0630\u0648 \u0627\u0644\u0642\u0639\u062f\u0629':11,'\u0630\u0648 \u0627\u0644\u062d\u062c\u0629':12};
+    var dateTextH=block.match(/(\d{1,2})\s+([\u0600-\u06ff\s]+?)\s+(14\d{2})/);
+
+    if(dateG && !dateG[1].startsWith('14')){
+      // Pure Gregorian
       s.date=dateG[1].replace(/\//g,'-');
+      s.hijriDate='';
     } else if(dateH){
-      // Convert Hijri to Gregorian approximately
-      var hYear=parseInt(dateH[3]),hMonth=parseInt(dateH[2]),hDay=parseInt(dateH[1]);
-      var gYear=Math.round(hYear-hYear/33.7+622);
-      var gMonth=Math.round(hMonth*0.97);
-      var gDay=hDay;
-      s.date=gYear+'-'+(gMonth<10?'0'+gMonth:gMonth)+'-'+(gDay<10?'0'+gDay:gDay);
+      // Numeric Hijri date — convert accurately using Intl API
+      var hd,hm,hy;
+      // Check format: is first group the year (14xx) or the day?
+      if(parseInt(dateH[1])>1400){hy=parseInt(dateH[1]);hm=parseInt(dateH[2]);hd=parseInt(dateH[3]);}
+      else{hd=parseInt(dateH[1]);hm=parseInt(dateH[2]);hy=parseInt(dateH[3]);}
+      s.hijriDate=hd+'/'+hm+'/'+hy+' هـ';
+      s.date=hijriToGregorian(hy,hm,hd);
+    } else if(dateTextH){
+      // Arabic month name date
+      var hd2=parseInt(dateTextH[1]);
+      var monthName=dateTextH[2].trim();
+      var hm2=hijriMonths[monthName]||1;
+      var hy2=parseInt(dateTextH[3]);
+      s.hijriDate=hd2+' '+monthName+' '+hy2+' هـ';
+      s.date=hijriToGregorian(hy2,hm2,hd2);
     }
 
     // Extract time
@@ -5598,7 +5682,7 @@ function parseAndImportNajiz(){
     ph+='<div style="font-weight:700;color:var(--gold2)">'+s.num+'</div>';
     ph+='<button onclick="najizSessions.splice('+i+',1);parseAndImportNajiz()" style="background:none;color:#f87171;font-size:12px;cursor:pointer">✕</button>';
     ph+='</div>';
-    ph+='<div style="color:var(--text3);margin-top:3px">'+s.type+(s.court?' · '+s.court:'')+(s.date?' · '+s.date:'')+(s.time?' '+s.time:'')+'</div>';
+    ph+='<div style="color:var(--text3);margin-top:3px">'+s.type+(s.court?' · '+s.court:'')+(s.hijriDate?' · <span style="color:var(--gold2)">'+s.hijriDate+'</span>':s.date?' · '+s.date:'')+(s.time?' '+s.time:'')+'</div>';
     ph+='</div>';
   });
   ph+='<button onclick="confirmNajizImport()" style="width:100%;background:var(--gold);color:#0a0905;border-radius:8px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;margin-top:8px;font-family:Tajawal,sans-serif">✅ استيراد '+sessions.length+' جلسة</button>';
@@ -5615,7 +5699,7 @@ function confirmNajizImport(){
     // Check no duplicate
     var dup=data.find(function(x){return x.num===s.num&&x.date===s.date;});
     if(dup)return Promise.resolve();
-    var newS=Object.assign({id:Date.now()+Math.random(),num:s.num||'جلسة ناجز',type:s.type||'مدنية',court:s.court||'',date:s.date||today(),time:s.time||'09:00',status:s.status||'scheduled',priority:s.priority||'med',plnt:s.plnt||'',dfnd:s.dfnd||'',notes:s.notes||'مستورد من ناجز',tags:['ناجز']},s);
+    var newS=Object.assign({id:Date.now()+Math.random(),num:s.num||'جلسة ناجز',type:s.type||'مدنية',court:s.court||'',date:s.date||today(),time:s.time||'09:00',status:s.status||'scheduled',priority:s.priority||'med',plnt:s.plnt||'',dfnd:s.dfnd||'',notes:s.notes||'مستورد من ناجز',tags:['ناجز'],hijriDate:s.hijriDate||''},s);
     newS.id=Date.now()+(added++);
     data.push(newS);
     return dbPut(newS);
