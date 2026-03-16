@@ -75,6 +75,25 @@ input[type=date], input[type=time] { -webkit-appearance: none; color: var(--text
 .tab.on { background: var(--surface); color: var(--gold2); border-color: var(--border); }
 .tab.on::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--surface); }
 
+/* ── Bottom Navigation Bar (mobile) ── */
+#bottomNav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; background: var(--surface); border-top: 1px solid var(--border2); padding: 6px 4px; padding-bottom: max(6px,env(safe-area-inset-bottom)); flex-direction: row; justify-content: space-around; align-items: center; }
+.bnav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 8px; border-radius: 10px; cursor: pointer; transition: all .15s; min-width: 48px; border: none; background: none; color: var(--text3); font-family: Tajawal, sans-serif; }
+.bnav-btn.on { color: var(--gold2); background: var(--gold-a10); }
+.bnav-btn .bnav-ico { font-size: 20px; line-height: 1; }
+.bnav-btn .bnav-lbl { font-size: 9px; font-weight: 600; white-space: nowrap; }
+.bnav-fab { width: 50px; height: 50px; border-radius: 50%; background: var(--gold); color: #0a0905; font-size: 24px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 14px rgba(212,168,67,.45); transition: transform .15s; flex-shrink: 0; }
+.bnav-fab:active { transform: scale(.92); }
+@media (max-width: 600px) {
+  #bottomNav { display: flex; }
+  #cnt { padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important; }
+  .tabs-scroll { display: none; }
+}
+
+/* ── Drag & Drop Calendar ── */
+.cal-cell.drag-over { background: var(--gold-a20) !important; border-color: var(--gold-a30) !important; outline: 2px dashed var(--gold) !important; }
+.s-card[draggable="true"] { cursor: grab; }
+.s-card[draggable="true"]:active { cursor: grabbing; opacity: .8; }
+
 #cnt { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px calc(20px + var(--safe-bottom)); background: var(--surface); }
 
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
@@ -512,7 +531,15 @@ option { background: var(--surface); }
     <div style="height:1px;background:var(--border)"></div>
   </div>
   <div id="cnt"></div>
-</div>
+
+  <!-- Bottom Navigation (mobile) -->
+  <div id="bottomNav">
+    <button class="bnav-btn" id="bn-home" onclick="go('home')"><span class="bnav-ico">🏠</span><span class="bnav-lbl">الرئيسية</span></button>
+    <button class="bnav-btn" id="bn-list" onclick="go('list')"><span class="bnav-ico">⚖️</span><span class="bnav-lbl">الجلسات</span></button>
+    <button class="bnav-fab" onclick="openAdd()" title="جلسة جديدة">＋</button>
+    <button class="bnav-btn" id="bn-ai" onclick="go('ai')"><span class="bnav-ico">🤖</span><span class="bnav-lbl">سعود</span></button>
+    <button class="bnav-btn" id="bn-settings" onclick="go('settings')"><span class="bnav-ico">⚙️</span><span class="bnav-lbl">المزيد</span></button>
+  </div>
 
 <div id="pa"></div>
 <div class="toast" id="toast"></div>
@@ -1455,7 +1482,15 @@ function card(s){
 /* ═══════════════════════════════════════════════════════════
    NAVIGATION & RENDER
 ═══════════════════════════════════════════════════════════ */
-function go(t){curTab=t;document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('on');});var tb=document.getElementById('tb-'+t);if(tb)tb.classList.add('on');render();}
+function go(t){
+  curTab=t;
+  document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('on');});
+  var tb=document.getElementById('tb-'+t);if(tb)tb.classList.add('on');
+  // Sync bottom nav
+  document.querySelectorAll('.bnav-btn').forEach(function(b){b.classList.remove('on');});
+  var bn=document.getElementById('bn-'+t);if(bn)bn.classList.add('on');
+  render();
+}
 function render(){var el=document.getElementById('cnt');if(curTab==='home')el.innerHTML=rHome();else if(curTab==='list')el.innerHTML=rList();else if(curTab==='tasks')el.innerHTML=rTasks();else if(curTab==='contacts')el.innerHTML=rContacts();else if(curTab==='files')el.innerHTML=rFiles();else if(curTab==='ai')el.innerHTML=rAI();else if(curTab==='cal')el.innerHTML=rCal();else if(curTab==='stats')el.innerHTML=rStats();else if(curTab==='fees')el.innerHTML=rFees();else if(curTab==='tools'){el.innerHTML=rTools();setTimeout(renderToolCharts,100);}else if(curTab==='live'){el.innerHTML=rLive();startLiveTick();}else if(curTab==='archive')el.innerHTML=rArchive();else if(curTab==='letterhead')el.innerHTML=rLetterhead();else if(curTab==='legal')el.innerHTML=rLegal();else if(curTab==='reports')el.innerHTML=rReports();else if(curTab==='share')el.innerHTML=rShare();else if(curTab==='settings')el.innerHTML=rSettings();applyHiddenTabs();startTick();}
 function secHdr(icon,title){return'<div class="sec-hdr"><span>'+icon+'</span>'+title+'</div>';}
 
@@ -1736,7 +1771,87 @@ function rStats(){
 /* ═══════════════════════════════════════════════════════════
    CALENDAR
 ═══════════════════════════════════════════════════════════ */
-function rCal(){var yr=calD.getFullYear(),mo=calD.getMonth();var days=new Date(yr,mo+1,0).getDate(),first=new Date(yr,mo,1).getDay();var byDate={};data.forEach(function(s){if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});var tod=today(),selStr=selD?selD.toISOString().split('T')[0]:null;function ds(d){return yr+'-'+pad(mo+1)+'-'+pad(d);}var h='<div class="cal-wrap"><div class="cal-nav"><button class="cal-btn-nav" onclick="calPrev()">›</button><div class="cal-month">'+MO[mo]+' '+yr+'</div><button class="cal-btn-nav" onclick="calNext()">‹</button></div><div class="cal-days-hdr">';DY.forEach(function(d){h+='<div class="cal-day-name">'+d+'</div>';});h+='</div><div class="cal-grid">';for(var i=0;i<first;i++)h+='<div></div>';for(var d=1;d<=days;d++){var dstr=ds(d),has=!!(byDate[dstr]&&byDate[dstr].length),isT=dstr===tod,isSel=dstr===selStr;var bg=isSel?'var(--gold-a20)':isT?'var(--blue-a)':'transparent';var bdr=isSel?'var(--gold-a30)':isT?'rgba(74,144,217,.35)':'transparent';var nc=isSel?'var(--gold2)':isT?'var(--blue)':'var(--text2)';var dotC=has?(isSel?'var(--gold)':ST[byDate[dstr][0].status].clr):'';h+='<div class="cal-cell" onclick="selDay(\''+dstr+'\')" style="background:'+bg+';border-color:'+bdr+'"><div class="cal-cell-num" style="color:'+nc+'">'+d+'</div>'+(has?'<div class="cal-dot" style="background:'+dotC+'"></div>':'')+'</div>';}h+='</div></div>';if(selD){var ss=byDate[selStr]||[];h+=secHdr('📌',fmtL(selStr||tod));if(!ss.length)h+='<div class="empty" style="padding:22px 0"><div style="font-size:28px;opacity:.3;margin-bottom:7px">📭</div><div class="empty-sub">لا توجد جلسات في هذا اليوم</div></div>';else{h+='<div class="stagger">';ss.forEach(function(s){h+=card(s);});h+='</div>';}}return h;}
+function rCal(){
+  var yr=calD.getFullYear(),mo=calD.getMonth();
+  var days=new Date(yr,mo+1,0).getDate(),first=new Date(yr,mo,1).getDay();
+  var byDate={};
+  data.forEach(function(s){if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
+  var tod=today(),selStr=selD?selD.toISOString().split('T')[0]:null;
+  function ds(d){return yr+'-'+pad(mo+1)+'-'+pad(d);}
+
+  var h='<div class="cal-wrap">';
+  h+='<div class="cal-nav"><button class="cal-btn-nav" onclick="calPrev()">›</button><div class="cal-month">'+MO[mo]+' '+yr+'</div><button class="cal-btn-nav" onclick="calNext()">‹</button></div>';
+  h+='<div style="font-size:10px;color:var(--text3);text-align:center;margin-bottom:6px">💡 اسحب أي جلسة وأفلتها على يوم آخر لتغيير التاريخ</div>';
+  h+='<div class="cal-days-hdr">';DY.forEach(function(d){h+='<div class="cal-day-name">'+d+'</div>';});h+='</div>';
+  h+='<div class="cal-grid">';
+  for(var i=0;i<first;i++)h+='<div></div>';
+  for(var d=1;d<=days;d++){
+    var dstr=ds(d),has=!!(byDate[dstr]&&byDate[dstr].length);
+    var isT=dstr===tod,isSel=dstr===selStr;
+    var bg=isSel?'var(--gold-a20)':isT?'var(--blue-a)':'transparent';
+    var bdr=isSel?'var(--gold-a30)':isT?'rgba(74,144,217,.35)':'transparent';
+    var nc=isSel?'var(--gold2)':isT?'var(--blue)':'var(--text2)';
+    var dotC=has?(isSel?'var(--gold)':ST[byDate[dstr][0].status].clr):'';
+    var cnt=has?byDate[dstr].length:0;
+    h+='<div class="cal-cell" id="calcell-'+dstr+'" onclick="selDay(\''+dstr+'\')"'+
+      ' ondragover="event.preventDefault();this.classList.add(\'drag-over\')"'+
+      ' ondragleave="this.classList.remove(\'drag-over\')"'+
+      ' ondrop="dropOnCalDay(event,\''+dstr+'\')"'+
+      ' style="background:'+bg+';border-color:'+bdr+'">';
+    h+='<div class="cal-cell-num" style="color:'+nc+'">'+d+'</div>';
+    if(cnt>1){
+      h+='<div style="position:absolute;bottom:2px;right:2px;background:var(--gold);color:#0a0905;border-radius:6px;font-size:7px;font-weight:700;padding:1px 4px;line-height:1.4">'+cnt+'</div>';
+    } else if(has){
+      h+='<div class="cal-dot" style="background:'+dotC+'"></div>';
+    }
+    h+='</div>';
+  }
+  h+='</div></div>';
+
+  if(selD){
+    var ss=byDate[selStr]||[];
+    h+=secHdr('📌',fmtL(selStr||tod));
+    if(!ss.length){
+      h+='<div class="empty" style="padding:22px 0"><div style="font-size:28px;opacity:.3;margin-bottom:7px">📭</div><div class="empty-sub">لا توجد جلسات في هذا اليوم</div>';
+      h+='<button onclick="openAdd();document.getElementById(\'fDate\').value=\''+selStr+'\'" style="background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:10px 18px;font-weight:700;font-size:12px;cursor:pointer;margin-top:10px">+ إضافة جلسة في هذا اليوم</button>';
+      h+='</div>';
+    } else {
+      h+='<div class="stagger">';
+      ss.forEach(function(s){
+        // Make cards draggable
+        var c=card(s);
+        c=c.replace('<div class="s-card"','<div class="s-card" draggable="true" ondragstart="calDragStart(event,'+s.id+')"');
+        h+=c;
+      });
+      h+='</div>';
+    }
+  }
+  return h;
+}
+
+var _calDragId=null;
+function calDragStart(e,id){
+  _calDragId=id;
+  e.dataTransfer.setData('text/plain',String(id));
+  e.dataTransfer.effectAllowed='move';
+}
+
+function dropOnCalDay(e,newDate){
+  e.preventDefault();
+  document.querySelectorAll('.cal-cell').forEach(function(el){el.classList.remove('drag-over');});
+  var id=_calDragId||parseInt(e.dataTransfer.getData('text/plain'));
+  _calDragId=null;
+  if(!id)return;
+  var s=data.find(function(x){return x.id===id;});
+  if(!s||s.date===newDate)return;
+  var oldDate=s.date;
+  s.date=newDate;
+  dbPut(s).then(function(){
+    toast('📅 نُقلت الجلسة '+s.num+' إلى '+newDate);
+    selD=new Date(newDate+'T00:00:00');
+    render();
+  });
+}
 
 /* ═══════════════════════════════════════════════════════════
    ATTACHMENTS & PROGRESS & MEMO
@@ -1816,7 +1931,78 @@ function saveQuickNote(sid){var s=data.find(function(x){return x.id===sid;});if(
 ═══════════════════════════════════════════════════════════ */
 function copyS(id){var s=data.find(function(x){return x.id===id;});if(!s)return;var txt='جلسة قضائية\nرقم القضية: '+s.num+'\nالنوع: '+s.type+'\nالمحكمة: '+(s.court||'—')+'\nالمدعي: '+(s.plnt||'—')+'\nالمدعى عليه: '+(s.dfnd||'—')+'\nالتاريخ: '+s.date+'\nالوقت: '+s.time+'\nالقاعة: '+(s.room||'—')+'\nالحالة: '+ST[s.status].lbl;if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){toast('📋 تم النسخ');}).catch(function(){fbCopy(txt);});else fbCopy(txt);}
 function fbCopy(txt){var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('📋 تم النسخ');}
-function shareWA(id){var s=data.find(function(x){return x.id===id;});if(!s)return;var txt='⚖️ *جلسة قضائية*\n\n📋 رقم القضية: '+s.num+'\n🏛️ المحكمة: '+(s.court||'—')+'\n👤 المدعي: '+(s.plnt||'—')+'\n👤 المدعى عليه: '+(s.dfnd||'—')+'\n📅 التاريخ: '+s.date+'\n⏰ الوقت: '+s.time+'\n📊 الحالة: '+ST[s.status].lbl;window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');}
+function shareWA(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  var txt='⚖️ *جلسة قضائية*\n\n📋 رقم القضية: '+s.num+'\n🏛️ المحكمة: '+(s.court||'—')+'\n👤 المدعي: '+(s.plnt||'—')+'\n👤 المدعى عليه: '+(s.dfnd||'—')+'\n📅 التاريخ: '+s.date+'\n⏰ الوقت: '+s.time+'\n📊 الحالة: '+ST[s.status].lbl;
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+}
+
+function showWAReminderModal(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  var modal=document.createElement('div');modal.id='waReminderModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));font-family:Tajawal,sans-serif;direction:rtl';
+  var p=lawyerProfile;
+  var templates=[
+    {
+      label:'تذكير عادي 📩',
+      icon:'📅',
+      msg:'السلام عليكم ورحمة الله\nالمحترم / '+( s.plnt||'الموكل الكريم')+'\nتحية طيبة،\n\nنُذكّركم بموعد جلستكم القضائية:\n\n📋 *رقم القضية:* '+s.num+'\n🏛️ *المحكمة:* '+(s.court||'—')+'\n📅 *التاريخ:* '+s.date+'\n⏰ *الوقت:* '+s.time+'\n\nيُرجى الحضور قبل الموعد بـ 15 دقيقة.\n\nمع التقدير،\n'+(p.name||'المحامي')
+    },
+    {
+      label:'تذكير عاجل ⚡',
+      icon:'⚠️',
+      msg:'⚠️ *تنبيه عاجل*\n\nالسيد / '+(s.plnt||'الموكل')+'\n\nجلستكم *غداً* في:\n🏛️ '+(s.court||'المحكمة')+'\n⏰ الساعة '+s.time+'\n📋 قضية رقم: '+s.num+'\n\nالرجاء التأكد من حضوركم في الموعد المحدد.\n\n'+(p.name||'المحامي')+(p.phone?' 📞 '+p.phone:'')
+    },
+    {
+      label:'موعد غد 🌅',
+      icon:'🌅',
+      msg:'مساء الخير،\n\nتذكير بجلسة الغد:\n• المحكمة: '+(s.court||'—')+'\n• الوقت: '+s.time+'\n• القضية: '+s.num+'\n\nهل تحتاج أي مستندات إضافية؟\n'+(p.name||'المحامي')
+    },
+    {
+      label:'تأجيل الجلسة 📣',
+      icon:'📣',
+      msg:'السلام عليكم،\n\nنُعلمكم بأن جلسة القضية رقم *'+s.num+'* المقررة بتاريخ '+s.date+' تم *تأجيلها*.\n\nسيتم إعلامكم بالموعد الجديد فور تحديده.\n\nنعتذر عن الإزعاج.\n'+(p.name||'المحامي')
+    }
+  ];
+
+  var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
+  h+='<div style="width:36px;height:36px;border-radius:50%;background:rgba(37,211,102,.15);display:flex;align-items:center;justify-content:center;font-size:20px">💬</div>';
+  h+='<div><div style="font-size:14px;font-weight:700;color:#25d366">تذكير واتساب للموكل</div>';
+  h+='<div style="font-size:10px;color:var(--text3)">'+s.num+' · '+(s.plnt||'—')+'</div></div></div>';
+
+  // Phone input
+  h+='<label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">رقم واتساب الموكل</label>';
+  h+='<div style="display:flex;gap:7px;margin-bottom:14px">';
+  h+='<input type="tel" id="waPhone" placeholder="966XXXXXXXXX" dir="ltr" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:9px;padding:10px;font-size:13px;color:var(--text)">';
+  h+='</div>';
+
+  templates.forEach(function(t,i){
+    h+='<button onclick="sendWAReminder('+i+')" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px 14px;margin-bottom:8px;text-align:right;cursor:pointer;display:flex;align-items:center;gap:10px">';
+    h+='<span style="font-size:20px">'+t.icon+'</span>';
+    h+='<span style="font-size:13px;font-weight:700;color:var(--text)">'+t.label+'</span>';
+    h+='</button>';
+  });
+
+  h+='<button onclick="document.getElementById(\'waReminderModal\').remove()" style="width:100%;background:none;color:var(--text3);padding:10px;font-size:13px;cursor:pointer;margin-top:4px">إغلاق</button>';
+
+  // Store templates on window for onclick access
+  window._waReminderTpls=templates;
+  box.innerHTML=h;modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function sendWAReminder(idx){
+  var t=window._waReminderTpls[idx];if(!t)return;
+  var phoneEl=document.getElementById('waPhone');
+  var phone=phoneEl?phoneEl.value.trim().replace(/\D/g,''):'';
+  var url='https://wa.me/'+(phone?phone:'')+( phone?'?text=':'?text=')+encodeURIComponent(t.msg);
+  window.open(url,'_blank');
+  document.getElementById('waReminderModal').remove();
+  toast('💬 تم فتح واتساب');
+}
 function printS(id){var s=data.find(function(x){return x.id===id;});if(!s)return;var pa=document.getElementById('pa');var rows=[['رقم القضية',s.num],['نوع القضية',s.type],['المحكمة',s.court||'—'],['المدعي',s.plnt||'—'],['المدعى عليه',s.dfnd||'—'],['التاريخ',fmtLD(s.date)],['الوقت',s.time],['القاعة',s.room||'—'],['الحالة',ST[s.status].lbl]];if(s.notes)rows.push(['ملاحظات',s.notes]);pa.innerHTML='<div style="font-family:Arial,sans-serif;direction:rtl;padding:36px;color:#000;max-width:580px;margin:0 auto"><div style="text-align:center;border-bottom:3px solid #d4a843;padding-bottom:18px;margin-bottom:26px"><h1 style="font-size:22px">⚖️ بيان جلسة قضائية</h1></div><table style="width:100%;border-collapse:collapse;font-size:13px">'+rows.map(function(r,i){return'<tr><td style="padding:9px;'+(i%2===0?'background:#f8f8f8;':'')+'font-weight:bold;border:1px solid #ddd;width:140px">'+r[0]+'</td><td style="padding:9px;border:1px solid #ddd">'+r[1]+'</td></tr>';}).join('')+'</table></div>';setTimeout(function(){window.print();},100);toast('🖨️ جاري الطباعة...');}
 function expPDF(){var pa=document.getElementById('pa');var td=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});var rows=data.slice().sort(function(a,b){return(a.date+a.time).localeCompare(b.date+b.time);}).map(function(s){return'<tr><td>'+s.num+'</td><td>'+s.type+'</td><td>'+(s.court||'—')+'</td><td>'+(s.plnt||'—')+'</td><td>'+(s.dfnd||'—')+'</td><td>'+s.date+'</td><td>'+s.time+'</td><td>'+ST[s.status].lbl+'</td></tr>';}).join('');pa.innerHTML='<div style="font-family:Arial,sans-serif;direction:rtl;padding:28px;color:#000"><div style="text-align:center;margin-bottom:26px;border-bottom:3px solid #d4a843;padding-bottom:18px"><h1>⚖️ تقرير الجلسات القضائية</h1><p style="color:#666;font-size:12px">'+td+' | إجمالي: '+data.length+' جلسة</p></div><table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr style="background:#08090d;color:#f0c55a"><th style="padding:7px;border:1px solid #333">رقم القضية</th><th style="padding:7px;border:1px solid #333">النوع</th><th style="padding:7px;border:1px solid #333">المحكمة</th><th style="padding:7px;border:1px solid #333">المدعي</th><th style="padding:7px;border:1px solid #333">المدعى عليه</th><th style="padding:7px;border:1px solid #333">التاريخ</th><th style="padding:7px;border:1px solid #333">الوقت</th><th style="padding:7px;border:1px solid #333">الحالة</th></tr></thead><tbody>'+rows+'</tbody></table></div>';setTimeout(function(){window.print();},100);toast('🖨️ جاري التصدير...');}
 
@@ -1887,7 +2073,7 @@ function openDet(id){
     '<button class="action-btn" onclick="copyS('+id+')" style="background:var(--blue-a);color:#60a5fa;border-color:rgba(74,144,217,.3)">📋 نسخ</button>'+
     '<button class="action-btn" onclick="dupSession('+id+')" style="background:rgba(139,111,212,.1);color:#a78bfa;border-color:rgba(139,111,212,.3)">🔄 استنساخ</button>'+
     '<button class="action-btn" onclick="printS('+id+')" style="background:var(--green-a);color:#34d399;border-color:rgba(58,184,130,.3)">🖨️ طباعة</button>'+
-    '<button class="action-btn" onclick="shareWA('+id+')" style="background:rgba(37,211,102,.1);color:#25d366;border-color:rgba(37,211,102,.25)">💬 واتساب</button>'+
+    '<button class="action-btn" onclick="showWAReminderModal('+id+')" style="background:rgba(37,211,102,.1);color:#25d366;border-color:rgba(37,211,102,.25)">💬 واتساب</button>'+
     '<button class="action-btn" onclick="confDel()" style="background:var(--red-a);color:#f87171;border-color:rgba(232,80,80,.3)">🗑️ حذف</button>'+
   '</div>';
   document.getElementById('detBody').innerHTML=b;
