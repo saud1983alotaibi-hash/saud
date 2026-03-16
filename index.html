@@ -2948,8 +2948,11 @@ function rLetterhead(){
     h+='</div>';
     h+='</div>';
 
-    // Templates
-    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">\ud83d\udcdd \u0642\u0648\u0627\u0644\u0628 \u062c\u0627\u0647\u0632\u0629</div>';
+    // Templates + Import
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2)">📝 قوالب جاهزة</div>';
+    h+='<label style="display:flex;align-items:center;gap:5px;background:rgba(74,144,217,.12);color:#60a5fa;border:1px solid rgba(74,144,217,.3);border-radius:9px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">📂 استيراد Word<input type="file" accept=".docx,.doc" style="display:none" onchange="importWordToLetterhead(this)"></label>';
+    h+='</div>';
     h+='<div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">';
     lhTemplates.forEach(function(t,i){
       h+='<button onclick="loadLhTemplate('+i+')" style="flex-shrink:0;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:Tajawal,sans-serif">'+t.name+'</button>';
@@ -3194,6 +3197,97 @@ function doExportToWord(text){
     console.error('Word export:',e);
     toast('⚠️ خطأ في إنشاء الملف: '+e.message);
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   IMPORT WORD TO LETTERHEAD
+═══════════════════════════════════════════════════════════ */
+function importWordToLetterhead(input){
+  var file=input.files[0];
+  if(!file)return;
+  input.value='';
+  if(!file.name.match(/\.(docx|doc)$/i)){toast('⚠️ يُقبل ملفات .docx فقط');return;}
+  toast('⏳ جارٍ قراءة ملف Word...');
+
+  // Load mammoth.js for docx text extraction
+  function doImport(arrayBuffer){
+    if(typeof mammoth!=='undefined'){extractWithMammoth(arrayBuffer);return;}
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js';
+    s.onload=function(){extractWithMammoth(arrayBuffer);};
+    s.onerror=function(){
+      // Fallback: try raw XML extraction
+      extractRawText(arrayBuffer);
+    };
+    document.head.appendChild(s);
+  }
+
+  function extractWithMammoth(arrayBuffer){
+    mammoth.extractRawText({arrayBuffer:arrayBuffer})
+      .then(function(result){
+        var text=result.value||'';
+        text=text.trim();
+        if(!text){toast('⚠️ الملف فارغ أو لا يحتوي نصاً قابلاً للقراءة');return;}
+        loadTextIntoLetterhead(text,file.name);
+        if(result.messages&&result.messages.length>0){
+          console.log('Mammoth warnings:',result.messages);
+        }
+      })
+      .catch(function(e){
+        console.error('Mammoth error:',e);
+        extractRawText(arrayBuffer);
+      });
+  }
+
+  function extractRawText(arrayBuffer){
+    // Fallback: unzip and read document.xml directly
+    try{
+      var bytes=new Uint8Array(arrayBuffer);
+      var str=String.fromCharCode.apply(null,bytes);
+      // Find document.xml content between <w:body> tags
+      var bodyMatch=str.match(/<w:body[^>]*>([\s\S]*?)<\/w:body>/);
+      if(!bodyMatch){toast('⚠️ تعذّرت قراءة الملف');return;}
+      var xml=bodyMatch[1];
+      // Extract text from <w:t> tags
+      var texts=[];
+      var re=/<w:t[^>]*>([^<]*)<\/w:t>/g;
+      var m;
+      while((m=re.exec(xml))!==null){texts.push(m[1]);}
+      // Paragraph breaks at </w:p>
+      var paras=xml.split(/<\/w:p>/);
+      var result=paras.map(function(p){
+        var t=[];var r=/<w:t[^>]*>([^<]*)<\/w:t>/g;var mm;
+        while((mm=r.exec(p))!==null)t.push(mm[1]);
+        return t.join('');
+      }).filter(function(p){return p.trim();}).join('\n');
+      if(!result.trim()){toast('⚠️ لم يُعثر على نص في الملف');return;}
+      loadTextIntoLetterhead(result,file.name);
+    }catch(e){
+      toast('⚠️ فشل استيراد الملف: '+e.message);
+    }
+  }
+
+  function loadTextIntoLetterhead(text,filename){
+    var ta=document.getElementById('lhTextArea');
+    if(!ta){
+      // Re-render if needed
+      if(curTab==='letterhead')render();
+      setTimeout(function(){
+        var ta2=document.getElementById('lhTextArea');
+        if(ta2){ta2.value=text;autoResizeLh(ta2);}
+      },300);
+    } else {
+      if(ta.value.trim()&&!confirm('استبدال النص الحالي بمحتوى الملف "'+filename+'"؟'))return;
+      ta.value=text;
+      autoResizeLh(ta);
+    }
+    toast('✅ تم استيراد: '+filename.substring(0,30)+(filename.length>30?'...':''));
+  }
+
+  var reader=new FileReader();
+  reader.onload=function(e){doImport(e.target.result);};
+  reader.onerror=function(){toast('⚠️ فشل قراءة الملف');};
+  reader.readAsArrayBuffer(file);
 }
 
 (function(){
