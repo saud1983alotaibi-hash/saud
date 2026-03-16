@@ -1478,65 +1478,57 @@ function rHome(){
       var info=entry.info,s=entry.s,sid=entry.sid;
       var remaining=info.remaining;
       var expired=remaining<0;
-      var bg,border,clr=info.clr,glowClr;
-      if(expired||remaining===0){bg='rgba(232,80,80,0.07)';border='rgba(232,80,80,0.28)';glowClr='rgba(232,80,80,0.15)';}
-      else if(remaining<=7){bg='rgba(251,191,36,0.07)';border='rgba(251,191,36,0.28)';glowClr='rgba(251,191,36,0.12)';}
-      else{bg='var(--surface2)';border='var(--border)';glowClr='transparent';}
 
-      h+='<div style="background:'+bg+';border:1px solid '+border+';border-radius:var(--r-lg);margin-bottom:10px;overflow:hidden;cursor:pointer;box-shadow:0 0 0 0 '+glowClr+'" onclick="'+(s?'openDet('+sid+')':'')+'\">';
+      // ── Gold theme for all deadline cards ──
+      var goldBase='#c8a84b';
+      var goldLight='rgba(200,168,75,0.13)';
+      var goldBorder='rgba(200,168,75,0.4)';
+      var goldGlow='rgba(200,168,75,0.18)';
+      var numClr,icon;
+      if(expired||remaining===0){numClr='#f87171';icon='🔴';}
+      else if(remaining<=3){numClr='#f87171';icon='⚡';}
+      else if(remaining<=7){numClr='#fbbf24';icon='⚠️';}
+      else{numClr=goldBase;icon='⏳';}
 
-      // Header row: case info + delete
-      h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px 0">';
+      h+='<div style="background:'+goldLight+';border:1.5px solid '+goldBorder+';border-radius:var(--r-lg);margin-bottom:10px;overflow:hidden;cursor:pointer;box-shadow:0 2px 12px '+goldGlow+'" onclick="'+(s?'openDet('+sid+')':'')+'\">';
+
+      // Gold accent bar at top
+      h+='<div style="height:3px;background:linear-gradient(90deg,#c8a84b,#f0c55a,#c8a84b)"></div>';
+
+      // Header row
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 0">';
       h+='<div>';
-      h+='<div style="font-size:12px;font-weight:700;color:var(--text)">'+(s?s.num+' · '+s.type:'قضية')+'</div>';
-      h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+info.typeName.split('(')[0].trim()+(s&&s.court?' · '+s.court:'')+'</div>';
-      h+='</div>';
-      h+='<div style="display:flex;align-items:center;gap:8px">';
-      h+='<span style="font-size:18px">'+(expired?'🔴':remaining===0?'⚡':remaining<=7?'⚠️':'⏳')+'</span>';
+      h+='<div style="display:flex;align-items:center;gap:7px">';
+      h+='<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#c8a84b,#f0c55a);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">⚖️</div>';
+      h+='<div><div style="font-size:12px;font-weight:700;color:var(--text)">'+(s?s.num+' · '+s.type:'قضية')+'</div>';
+      h+='<div style="font-size:10px;color:'+goldBase+';margin-top:1px;font-weight:600">'+info.typeName.split('(')[0].trim()+(s&&s.court?' · '+s.court:'')+'</div></div>';
+      h+='</div></div>';
+      h+='<div style="display:flex;align-items:center;gap:7px">';
+      h+='<span style="font-size:18px">'+icon+'</span>';
       h+='<button onclick="event.stopPropagation();delDeadline('+sid+')" style="background:none;color:var(--text3);font-size:14px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid var(--border2)">✕</button>';
       h+='</div></div>';
 
-      // BIG countdown display
-      h+='<div style="padding:12px 14px">';
+      // BIG countdown display with gold theme
+      h+='<div style="padding:10px 14px">';
       if(expired){
-        h+='<div style="text-align:center;padding:10px 0">';
+        h+='<div style="text-align:center;padding:8px 0">';
         h+='<div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:4px">⛔ انتهى الموعد</div>';
         h+='<div style="font-size:11px;color:var(--text3)">منذ '+Math.abs(remaining)+' يوم · '+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'})+'</div>';
         h+='</div>';
       } else {
-        // Digital clock style: DD HH:MM:SS
-        h+='<div id="dlc-'+sid+'" style="display:flex;gap:6px;justify-content:center;align-items:flex-end;direction:ltr">';
-        // Days
-        h+='<div style="text-align:center">';
-        h+='<div id="dlcd-'+sid+'" style="background:var(--surface3);border:1px solid '+border+';border-radius:10px;padding:6px 10px;min-width:52px;font-size:28px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
-        h+='<div style="font-size:9px;color:var(--text3);margin-top:4px;font-weight:700">يوم</div>';
+        h+='<div id="dlc-'+sid+'" style="display:flex;gap:5px;justify-content:center;align-items:flex-end;direction:ltr">';
+        [{id:'dlcd',lbl:'يوم',w:'52px'},{id:'dlch',lbl:'ساعة',w:'46px'},{id:'dlcm',lbl:'دقيقة',w:'46px'},{id:'dlcs',lbl:'ثانية',w:'46px'}].forEach(function(u,ui){
+          h+='<div style="text-align:center">';
+          h+='<div id="'+u.id+'-'+sid+'" style="background:rgba(200,168,75,0.15);border:1.5px solid rgba(200,168,75,0.4);border-radius:10px;padding:5px 8px;min-width:'+u.w+';font-size:26px;font-weight:900;color:'+numClr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
+          h+='<div style="font-size:9px;color:'+goldBase+';margin-top:3px;font-weight:700">'+u.lbl+'</div></div>';
+          if(ui<3)h+='<div style="font-size:22px;font-weight:900;color:'+goldBase+';padding-bottom:16px;opacity:.6">:</div>';
+        });
         h+='</div>';
-        h+='<div style="font-size:24px;font-weight:900;color:var(--text3);padding-bottom:18px">:</div>';
-        // Hours
-        h+='<div style="text-align:center">';
-        h+='<div id="dlch-'+sid+'" style="background:var(--surface3);border:1px solid '+border+';border-radius:10px;padding:6px 10px;min-width:46px;font-size:28px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
-        h+='<div style="font-size:9px;color:var(--text3);margin-top:4px;font-weight:700">ساعة</div>';
-        h+='</div>';
-        h+='<div style="font-size:24px;font-weight:900;color:var(--text3);padding-bottom:18px">:</div>';
-        // Minutes
-        h+='<div style="text-align:center">';
-        h+='<div id="dlcm-'+sid+'" style="background:var(--surface3);border:1px solid '+border+';border-radius:10px;padding:6px 10px;min-width:46px;font-size:28px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
-        h+='<div style="font-size:9px;color:var(--text3);margin-top:4px;font-weight:700">دقيقة</div>';
-        h+='</div>';
-        h+='<div style="font-size:24px;font-weight:900;color:var(--text3);padding-bottom:18px">:</div>';
-        // Seconds
-        h+='<div style="text-align:center">';
-        h+='<div id="dlcs-'+sid+'" style="background:var(--surface3);border:1px solid '+border+';border-radius:10px;padding:6px 10px;min-width:46px;font-size:28px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
-        h+='<div style="font-size:9px;color:var(--text3);margin-top:4px;font-weight:700">ثانية</div>';
-        h+='</div>';
-        h+='</div>';
-        // Deadline date label
-        h+='<div style="text-align:center;margin-top:8px;font-size:11px;color:var(--text3)">📅 الموعد النهائي: <strong style="color:'+clr+'">'+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</strong></div>';
-        // Progress bar
+        h+='<div style="text-align:center;margin-top:7px;font-size:11px;color:var(--text3)">📅 الموعد النهائي: <strong style="color:'+goldBase+'">'+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{weekday:'short',year:'numeric',month:'long',day:'numeric'})+'</strong></div>';
         var pct=Math.min(100,Math.round(((info.days-remaining)/info.days)*100));
-        h+='<div style="margin-top:10px;background:var(--surface3);border-radius:4px;height:5px;overflow:hidden">';
-        h+='<div id="dlcpb-'+sid+'" style="height:100%;background:'+clr+';border-radius:4px;width:'+pct+'%;transition:width 1s linear"></div></div>';
-        h+='<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px"><span>بداية المدة</span><span id="dlcpct-'+sid+'">'+pct+'%</span><span>الموعد النهائي</span></div>';
+        h+='<div style="margin-top:8px;background:rgba(200,168,75,0.15);border-radius:4px;height:5px;overflow:hidden">';
+        h+='<div id="dlcpb-'+sid+'" style="height:100%;background:linear-gradient(90deg,#c8a84b,#f0c55a);border-radius:4px;width:'+pct+'%;transition:width 1s linear"></div></div>';
+        h+='<div style="display:flex;justify-content:space-between;font-size:9px;color:'+goldBase+';margin-top:2px;opacity:.7"><span>بداية المدة</span><span id="dlcpct-'+sid+'">'+pct+'%</span><span>الموعد النهائي</span></div>';
       }
       h+='</div></div>';
     });
