@@ -3390,14 +3390,49 @@ function rSettings(){
 
   // ── Lawyer Profile ──
   h+=secHdr('👤','ملف المحامي');
-  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
-  ['name','title','license','phone','email'].forEach(function(k){
-    var labels={name:'الاسم الكامل',title:'اللقب المهني',license:'رقم الترخيص',phone:'رقم الجوال',email:'البريد الإلكتروني'};
-    var types={name:'text',title:'text',license:'text',phone:'tel',email:'email'};
-    h+='<div style="margin-bottom:10px"><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">'+labels[k]+'</label>';
-    h+='<input type="'+types[k]+'" value="'+sanitize(lawyerProfile[k]||'')+'" placeholder="'+labels[k]+'" dir="'+(k==='phone'||k==='email'?'ltr':'rtl')+'" oninput="lawyerProfile[\''+k+'\']=this.value" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif;display:block"></div>';
+
+  // Profile Card Preview
+  var hasProfile=lawyerProfile.name||lawyerProfile.license;
+  if(hasProfile){
+    h+='<div style="background:linear-gradient(135deg,#0a1120,#111d32);border:1px solid var(--gold-a30);border-radius:var(--r-lg);padding:18px;margin-bottom:12px;position:relative;overflow:hidden">';
+    h+='<div style="position:absolute;top:-20px;left:-20px;width:100px;height:100px;border-radius:50%;background:var(--gold-a10);filter:blur(30px)"></div>';
+    h+='<div style="position:absolute;bottom:0;right:0;width:80px;height:80px;opacity:0.04;font-size:70px;line-height:1">⚖️</div>';
+    h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
+    h+='<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#a07030);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 2px 12px rgba(200,160,80,0.3)">👤</div>';
+    h+='<div><div style="font-size:16px;font-weight:700;color:var(--gold2)">'+sanitize(lawyerProfile.name||'المحامي')+'</div>';
+    h+='<div style="font-size:11px;color:var(--text3);margin-top:2px">'+sanitize(lawyerProfile.title||'محامٍ')+'</div></div></div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    if(lawyerProfile.license)h+='<div style="background:rgba(255,255,255,0.04);border-radius:9px;padding:8px 10px"><div style="font-size:9px;color:var(--text3);margin-bottom:2px">رقم الترخيص</div><div style="font-size:12px;font-weight:700;color:var(--text)">'+sanitize(lawyerProfile.license)+'</div></div>';
+    if(lawyerProfile.phone)h+='<div style="background:rgba(255,255,255,0.04);border-radius:9px;padding:8px 10px"><div style="font-size:9px;color:var(--text3);margin-bottom:2px">الجوال</div><div style="font-size:12px;font-weight:700;color:var(--text)" dir="ltr">'+sanitize(lawyerProfile.phone)+'</div></div>';
+    if(lawyerProfile.email)h+='<div style="background:rgba(255,255,255,0.04);border-radius:9px;padding:8px 10px;grid-column:span 2"><div style="font-size:9px;color:var(--text3);margin-bottom:2px">البريد</div><div style="font-size:12px;font-weight:700;color:var(--text)" dir="ltr">'+sanitize(lawyerProfile.email)+'</div></div>';
+    h+='</div></div>';
+  }
+
+  // Form
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px" id="lawyerForm">';
+
+  var fields=[
+    {k:'name',lbl:'الاسم الكامل',type:'text',dir:'rtl',ph:'مثال: أحمد بن محمد العتيبي',icon:'👤'},
+    {k:'title',lbl:'اللقب المهني',type:'text',dir:'rtl',ph:'محامٍ / مستشار قانوني',icon:'⚖️'},
+    {k:'license',lbl:'رقم الترخيص',type:'text',dir:'ltr',ph:'مثال: 12345/و',icon:'📜'},
+    {k:'phone',lbl:'رقم الجوال',type:'tel',dir:'ltr',ph:'966XXXXXXXXX+',icon:'📱'},
+    {k:'email',lbl:'البريد الإلكتروني',type:'email',dir:'ltr',ph:'name@domain.com',icon:'📧'},
+  ];
+
+  fields.forEach(function(f){
+    h+='<div style="margin-bottom:12px">';
+    h+='<label style="font-size:10px;color:var(--text3);font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:5px;letter-spacing:0.05em"><span>'+f.icon+'</span>'+f.lbl+'</label>';
+    h+='<input type="'+f.type+'" id="lp_'+f.k+'" value="'+sanitize(lawyerProfile[f.k]||'')+'" placeholder="'+f.ph+'" dir="'+f.dir+'"'+
+      ' oninput="lawyerProfile[\''+f.k+'\']=this.value"'+
+      ' style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif;display:block;transition:border-color .15s"'+
+      ' onfocus="this.style.borderColor=\'var(--gold-a30)\'" onblur="this.style.borderColor=\'var(--border)\'">';
+    h+='</div>';
   });
-  h+='<button onclick="saveLawyerProfile();toast(\'✅ تم حفظ الملف\')" style="width:100%;background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:11px;font-weight:700;font-size:13px;cursor:pointer;font-family:Tajawal,sans-serif">💾 حفظ الملف</button>';
+
+  h+='<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:4px">';
+  h+='<button onclick="saveLawyerProfile();toast(\'✅ تم حفظ ملف المحامي\');render()" style="background:linear-gradient(135deg,var(--gold),#a07030);color:#0a0905;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif;display:flex;align-items:center;justify-content:center;gap:7px">💾 حفظ الملف</button>';
+  h+='<button onclick="if(confirm(\'إنشاء ملف محامٍ جديد؟ سيتم مسح البيانات الحالية.\')){lawyerProfile={name:\'\',title:\'محامٍ\',license:\'\',phone:\'\',email:\'\'};saveLawyerProfile();render();toast(\'📄 تم إنشاء ملف جديد\')}" style="background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px 14px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif;white-space:nowrap">📄 جديد</button>';
+  h+='</div>';
   h+='</div>';
 
   // ── PIN Lock ──
