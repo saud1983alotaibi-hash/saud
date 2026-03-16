@@ -676,6 +676,9 @@ var apiKey='';
 var pinEnabled=false,pinCode='',pinLocked=false,pinAttempts=0;
 // Linked cases
 var caseLinks=[];
+var sessionDeadlines={};
+try{sessionDeadlines=JSON.parse(localStorage.getItem('j_deadlines')||'{}');}catch(e){}
+function saveDeadlines(){try{localStorage.setItem('j_deadlines',JSON.stringify(sessionDeadlines));}catch(e){}}
 // Custom tabs
 var hiddenTabs=[];
 // Lawyer profile
@@ -1300,14 +1303,62 @@ function cdInfo(s){if(s.status==='completed'||s.status==='postponed')return null
 function cdInline(s){var i=cdInfo(s);if(!i)return'';return'<div class="countdown-bar" id="cdb-'+s.id+'"><div><div class="cd-label">'+(i.passed?'⏱ مضى':'⏳ المتبقي')+'</div><div class="cd-time cd-'+i.cls+(i.cls==='urgent'&&!i.passed?' pulse':'')+'" id="cdt-'+s.id+'">'+i.time+'</div></div><span style="font-size:18px">'+(i.passed?'🔴':i.cls==='urgent'?'🚨':i.cls==='soon'?'⚠️':'🟢')+'</span></div>';}
 function cdLarge(s){var i=cdInfo(s);if(!i)return'';var clr=i.cls==='urgent'?'#f87171':i.cls==='soon'?'#fbbf24':'#34d399';var bdr=i.cls==='urgent'?'rgba(232,80,80,.35)':i.cls==='soon'?'rgba(232,160,48,.35)':'rgba(58,184,130,.3)';return'<div style="background:var(--surface2);border:1px solid '+bdr+';border-radius:14px;padding:14px;margin:12px 0;text-align:center"><div style="font-size:11px;color:var(--text3);margin-bottom:6px">'+(i.passed?'⏱ مضى':'⏳ المتبقي')+'</div><div style="font-size:34px;font-weight:900;color:'+clr+';font-variant-numeric:tabular-nums" id="cdtL-'+s.id+'">'+i.time+'</div><div style="font-size:10px;color:var(--text3);margin-top:3px">'+(i.passed?'الجلسة بدأت':i.ts<3600?'أقل من ساعة':i.ts<86400?'اليوم':'قادمة')+'</div></div>';}
 
-function startTick(){if(tick)clearInterval(tick);tick=setInterval(function(){data.forEach(function(s){var i=cdInfo(s);if(!i)return;var el=document.getElementById('cdt-'+s.id);if(el){el.textContent=i.time;el.className='cd-time cd-'+i.cls+(i.cls==='urgent'&&!i.passed?' pulse':'');}var el2=document.getElementById('cdtL-'+s.id);if(el2&&detId===s.id)el2.textContent=i.time;});},1000);}
+function delDeadline(sid){
+  delete sessionDeadlines[sid];
+  saveDeadlines();
+  toast('🗑️ تم حذف الموعد');
+  if(curTab==='home')render();
+}
+
+function startTick(){
+  if(tick)clearInterval(tick);
+  tick=setInterval(function(){
+    // Update session countdowns
+    data.forEach(function(s){
+      var i=cdInfo(s);if(!i)return;
+      var el=document.getElementById('cdt-'+s.id);
+      if(el){el.textContent=i.time;el.className='cd-time cd-'+i.cls+(i.cls==='urgent'&&!i.passed?' pulse':'');}
+      var el2=document.getElementById('cdtL-'+s.id);
+      if(el2&&detId===s.id)el2.textContent=i.time;
+    });
+    // Update deadline counters on home
+    Object.keys(sessionDeadlines).forEach(function(sid){
+      var el=document.getElementById('dlcd-'+sid);if(!el)return;
+      var info=getDeadlineInfo(parseInt(sid));if(!info)return;
+      el.textContent=info.remaining<0?Math.abs(info.remaining)+'—':info.remaining;
+      el.style.color=info.clr;
+    });
+  },1000);
+}
 
 /* ═══════════════════════════════════════════════════════════
    SESSION CARD
 ═══════════════════════════════════════════════════════════ */
+/* ── Deadline helpers ── */
+function getDeadlineInfo(sid){
+  var d=sessionDeadlines[sid];if(!d)return null;
+  var deadline=new Date(d.deadlineDate+'T00:00:00');
+  var now=new Date();now.setHours(0,0,0,0);
+  var remaining=Math.ceil((deadline-now)/86400000);
+  var clr,icon,urgent=false;
+  if(remaining<0){clr='#f87171';icon='🔴';}
+  else if(remaining===0){clr='#f87171';icon='⚡';urgent=true;}
+  else if(remaining<=7){clr='#fbbf24';icon='⚠️';urgent=true;}
+  else if(remaining<=14){clr='#f59e0b';icon='🟡';}
+  else{clr='#34d399';icon='✅';}
+  return{remaining:remaining,clr:clr,icon:icon,urgent:urgent,days:d.days,typeName:d.typeName,deadlineDate:d.deadlineDate,sessionNum:d.sessionNum,sessionType:d.sessionType,court:d.court};
+}
+
+function deadlineBadge(s){
+  var info=getDeadlineInfo(s.id);if(!info)return'';
+  var label=info.remaining<0?'انتهى':info.remaining===0?'اليوم':info.remaining+' يوم';
+  return'<div style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;background:'+(info.remaining<=7?'rgba(251,191,36,0.1)':'rgba(52,211,153,0.08)')+';border:1px solid '+(info.remaining<=0?'rgba(232,80,80,.3)':info.remaining<=7?'rgba(251,191,36,.25)':'rgba(52,211,153,.2)')+';border-radius:12px;padding:3px 9px;font-size:10px;font-weight:700;color:'+info.clr+'">'+info.icon+' '+label+' · '+info.typeName.split('(')[0].trim()+'</div>';
+}
+
 function card(s){
   var c=ST[s.status],p=s.priority||'none';
   var att=(s.attachments||[]).length,hasMemo=s.memo&&s.memo.trim().length>0;
+  var dlBadge=deadlineBadge(s);
   return'<div class="s-card" onclick="openDet('+s.id+')">'+
     '<div class="s-card-accent" style="background:'+c.clr+'"></div>'+
     '<div class="s-card-top"><div><div class="s-card-num">'+s.num+'</div>'+
@@ -1318,6 +1369,7 @@ function card(s){
     '<div class="s-card-actions">'+bdg(s.status)+'<button onclick="cycleStatus('+s.id+',event)" class="btn-cycle">🔁</button></div></div>'+
     ((att>0||hasMemo)?'<div style="font-size:9px;color:var(--text3);margin-top:6px;display:flex;gap:8px">'+(att>0?'<span>📎 '+att+' مرفق</span>':'')+(hasMemo?'<span>📝 مذكرة</span>':'')+'</div>':'')+
     (s.meetUrl?'<div style="margin-top:8px">'+meetJoinBtn(s,'small')+'</div>':'')+
+    dlBadge+
     tagsHTML(s.tags||[])+cdInline(s)+'</div>';
 }
 
@@ -1338,6 +1390,61 @@ function rHome(){
   var statsData=[{e:'📋',l:'إجمالي',v:data.length,c:'var(--gold2)'},{e:'📅',l:'اليوم',v:todayS.length,c:'var(--amber)'},{e:'🔵',l:'مجدولة',v:data.filter(function(s){return s.status==='scheduled';}).length,c:'var(--blue)'},{e:'✅',l:'منتهية',v:data.filter(function(s){return s.status==='completed';}).length,c:'var(--green)'}];
   var h='<div class="stats-grid stagger">';statsData.forEach(function(s){h+='<div class="stat-card" style="--sc-clr:'+s.c+'"><div class="stat-icon">'+s.e+'</div><div class="stat-value">'+s.v+'</div><div class="stat-label">'+s.l+'</div></div>';});h+='</div>';
   if(high.length){h+=secHdr('🔴','عالية الأهمية')+'<div class="stagger">';high.slice(0,2).forEach(function(s){h+=card(s);});h+='</div>';}
+
+  // ── Deadlines section ──
+  var deadlineEntries=Object.keys(sessionDeadlines).map(function(sid){
+    var s=data.find(function(x){return x.id===parseInt(sid);})||archivedSessions.find(function(x){return x.id===parseInt(sid);});
+    var info=getDeadlineInfo(parseInt(sid));
+    if(!info)return null;
+    return{sid:parseInt(sid),s:s,info:info};
+  }).filter(function(x){return x&&x.info.remaining>=-7;}) // show up to 7 days after expiry
+    .sort(function(a,b){return a.info.remaining-b.info.remaining;});
+
+  if(deadlineEntries.length){
+    h+=secHdr('⏰','مواعيد الطعن والاستئناف');
+    h+='<div id="deadlinesSection" style="margin-bottom:14px">';
+    deadlineEntries.forEach(function(entry){
+      var info=entry.info,s=entry.s;
+      var sid=entry.sid;
+      var dlDate=new Date(info.deadlineDate+'T23:59:59');
+      var remaining=info.remaining;
+      var bg,border,clr=info.clr;
+      if(remaining<0){bg='rgba(232,80,80,0.06)';border='rgba(232,80,80,0.2)';}
+      else if(remaining<=3){bg='rgba(232,80,80,0.08)';border='rgba(232,80,80,0.25)';}
+      else if(remaining<=7){bg='rgba(251,191,36,0.08)';border='rgba(251,191,36,0.2)';}
+      else{bg='var(--surface2)';border='var(--border)';}
+
+      h+='<div style="background:'+bg+';border:1px solid '+border+';border-radius:var(--r-md);padding:13px;margin-bottom:8px;cursor:pointer" onclick="'+(s?'openDet('+sid+')':'')+'\">';
+      h+='<div style="display:flex;align-items:flex-start;gap:10px">';
+      // Icon + countdown
+      h+='<div style="flex-shrink:0;text-align:center;min-width:52px">';
+      h+='<div style="font-size:22px">'+info.icon+'</div>';
+      h+='<div id="dlcd-'+sid+'" style="font-size:18px;font-weight:900;color:'+clr+';line-height:1.1;margin-top:2px">'+(remaining<0?Math.abs(remaining)+'—':remaining)+'</div>';
+      h+='<div style="font-size:8px;color:var(--text3);font-weight:700">يوم</div>';
+      h+='</div>';
+      // Details
+      h+='<div style="flex:1;min-width:0">';
+      h+='<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">'+(s?s.num+' · '+s.type:'قضية محذوفة')+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3);margin-bottom:5px">'+info.typeName.split('(')[0].trim()+'</div>';
+      h+='<div style="font-size:11px;font-weight:600;color:'+clr+'">'+
+        (remaining<0?'⚠️ انتهى الموعد منذ '+Math.abs(remaining)+' يوم':
+         remaining===0?'⚡ اليوم آخر يوم للتقديم!':
+         '📅 '+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{weekday:'short',month:'short',day:'numeric'}))+
+      '</div>';
+      // Progress bar (only for active)
+      if(remaining>=0){
+        var pct=Math.min(100,Math.round(((info.days-remaining)/info.days)*100));
+        h+='<div style="margin-top:7px;background:var(--surface3);border-radius:3px;height:4px;overflow:hidden">';
+        h+='<div style="height:100%;background:'+clr+';border-radius:3px;width:'+pct+'%"></div></div>';
+        h+='<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text3);margin-top:2px"><span>البداية</span><span>اليوم '+( info.days-remaining)+'/'+info.days+'</span><span>النهاية</span></div>';
+      }
+      h+='</div>';
+      // Delete button
+      h+='<button onclick="event.stopPropagation();delDeadline('+sid+')" style="flex-shrink:0;background:none;color:var(--text3);font-size:16px;cursor:pointer;padding:2px 6px;align-self:flex-start">✕</button>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }
 
   // Remote sessions today
   var remoteSessions=data.filter(function(s){return s.date===td&&s.meetUrl&&(s.status==='scheduled'||s.status==='inProgress');});
@@ -2118,65 +2225,54 @@ function calcDeadlineInSession(sid){
   var base=new Date(dateEl.value+'T00:00:00');
   var deadline=new Date(base);
   deadline.setDate(deadline.getDate()+days);
-  var now=new Date();
-  now.setHours(0,0,0,0);
+  var deadlineStr=deadline.toISOString().split('T')[0];
+
+  // ── Save deadline for this session ──
+  var sid2=parseInt(sid);
+  var s=data.find(function(x){return x.id===sid2;});
+  sessionDeadlines[sid2]={
+    deadlineDate:deadlineStr,
+    baseDate:dateEl.value,
+    days:days,
+    typeName:typeName,
+    sessionNum:s?s.num:'',
+    sessionType:s?s.type:'',
+    court:s?s.court:''
+  };
+  saveDeadlines();
+
+  var now=new Date();now.setHours(0,0,0,0);
   var remaining=Math.ceil((deadline-now)/86400000);
-
   var clr,icon,status,bg,border;
-  if(remaining<0){
-    clr='#f87171';icon='🔴';bg='rgba(232,80,80,0.08)';border='rgba(232,80,80,0.25)';
-    status='انتهى منذ '+Math.abs(remaining)+' يوم';
-  } else if(remaining===0){
-    clr='#f87171';icon='⚡';bg='rgba(232,80,80,0.1)';border='rgba(232,80,80,0.3)';
-    status='اليوم هو آخر يوم!';
-  } else if(remaining<=7){
-    clr='#fbbf24';icon='⚠️';bg='rgba(251,191,36,0.08)';border='rgba(251,191,36,0.25)';
-    status='متبقي '+remaining+' يوم فقط';
-  } else if(remaining<=14){
-    clr='#f59e0b';icon='🟡';bg='rgba(245,158,11,0.08)';border='rgba(245,158,11,0.2)';
-    status='متبقي '+remaining+' يوم';
-  } else {
-    clr='#34d399';icon='✅';bg='rgba(52,211,153,0.08)';border='rgba(52,211,153,0.2)';
-    status='متبقي '+remaining+' يوم';
-  }
+  if(remaining<0){clr='#f87171';icon='🔴';bg='rgba(232,80,80,0.08)';border='rgba(232,80,80,0.25)';status='انتهى منذ '+Math.abs(remaining)+' يوم';}
+  else if(remaining===0){clr='#f87171';icon='⚡';bg='rgba(232,80,80,0.1)';border='rgba(232,80,80,0.3)';status='اليوم هو آخر يوم!';}
+  else if(remaining<=7){clr='#fbbf24';icon='⚠️';bg='rgba(251,191,36,0.08)';border='rgba(251,191,36,0.25)';status='متبقي '+remaining+' يوم فقط';}
+  else if(remaining<=14){clr='#f59e0b';icon='🟡';bg='rgba(245,158,11,0.08)';border='rgba(245,158,11,0.2)';status='متبقي '+remaining+' يوم';}
+  else{clr='#34d399';icon='✅';bg='rgba(52,211,153,0.08)';border='rgba(52,211,153,0.2)';status='متبقي '+remaining+' يوم';}
 
-  var deadlineStr=deadline.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  var baseDateStr=base.toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
-
+  var deadlineFmt=deadline.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  var baseDateFmt=base.toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
   resEl.style.display='block';
   resEl.innerHTML=
-    '<div style="background:'+bg+';border:1px solid '+border+';border-radius:10px;padding:12px">' +
-    // Top: icon + status
+    '<div style="background:'+bg+';border:1px solid '+border+';border-radius:10px;padding:12px">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
     '<div style="font-size:22px">'+icon+'</div>'+
     '<div style="font-size:13px;font-weight:900;color:'+clr+'">'+status+'</div>'+
     '</div>'+
-    // Details
     '<div style="display:flex;flex-direction:column;gap:5px">'+
-    '<div style="display:flex;justify-content:space-between;font-size:11px">'+
-    '<span style="color:var(--text3)">نوع الإجراء</span>'+
-    '<span style="color:var(--text);font-weight:600">'+typeName+'</span>'+
-    '</div>'+
-    '<div style="display:flex;justify-content:space-between;font-size:11px">'+
-    '<span style="color:var(--text3)">تاريخ البداية</span>'+
-    '<span style="color:var(--text);font-weight:600">'+baseDateStr+'</span>'+
-    '</div>'+
-    '<div style="display:flex;justify-content:space-between;font-size:11px">'+
-    '<span style="color:var(--text3)">المدة القانونية</span>'+
-    '<span style="color:var(--text);font-weight:600">'+days+' يوم</span>'+
-    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text3)">نوع الإجراء</span><span style="color:var(--text);font-weight:600">'+typeName+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text3)">تاريخ البداية</span><span style="color:var(--text);font-weight:600">'+baseDateFmt+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text3)">المدة القانونية</span><span style="color:var(--text);font-weight:600">'+days+' يوم</span></div>'+
     '<div style="border-top:1px solid '+border+';margin-top:5px;padding-top:7px;display:flex;justify-content:space-between;align-items:center">'+
     '<span style="font-size:10px;color:var(--text3);font-weight:700">الموعد النهائي</span>'+
-    '<span style="font-size:13px;font-weight:900;color:'+clr+'">'+deadlineStr+'</span>'+
-    '</div>'+
-    '</div>'+
-    // Progress bar
+    '<span style="font-size:13px;font-weight:900;color:'+clr+'">'+deadlineFmt+'</span>'+
+    '</div></div>'+
     (remaining>=0?
     '<div style="margin-top:10px;background:var(--surface3);border-radius:4px;height:6px;overflow:hidden">'+
-    '<div style="height:100%;background:'+clr+';border-radius:4px;width:'+Math.min(100,Math.round((remaining/days)*100))+'%;transition:width .4s"></div>'+
+    '<div style="height:100%;background:'+clr+';border-radius:4px;width:'+Math.min(100,Math.round(((days-remaining)/days)*100))+'%;transition:width .4s"></div>'+
     '</div>'+
-    '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px">'+
-    '<span>يوم 0</span><span>يوم '+days+'</span></div>':'')+'</div>';
+    '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px"><span>اليوم 0</span><span>يوم '+days+'</span></div>':'')+'</div>'+
+    '<div style="margin-top:8px;font-size:10px;color:var(--text3);text-align:center">💾 تم حفظ الموعد — يظهر في الرئيسية تلقائياً</div>';
 }
 
 function calcDeadline(){
