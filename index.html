@@ -553,10 +553,7 @@ option { background: var(--surface); }
       <button class="tab"    id="tb-settings"   onclick="go('settings')">⚙️ الإعدادات</button>
     </div>
     <div style="height:1px;background:var(--border)"></div>
-    <div id="hiddenTabsBar" style="display:none;background:rgba(251,191,36,0.1);border-bottom:1px solid rgba(251,191,36,0.3);padding:6px 14px;text-align:center">
-      <span style="font-size:11px;color:#fbbf24">بعض التبويبات مخفية — </span>
-      <button onclick="hiddenTabs=[];saveHiddenTabs();applyHiddenTabs();document.getElementById('hiddenTabsBar').style.display='none';toast('✅ تم إظهار جميع التبويبات')" style="background:none;color:#f0c55a;font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline;font-family:Tajawal,sans-serif">إظهار الكل</button>
-    </div>
+
   </div>
   <div id="cnt"></div>
 
@@ -767,9 +764,7 @@ try{notifOn=localStorage.getItem('j_notif')==='1';}catch(e){}
 try{apiKey=localStorage.getItem('j_apikey')||'';}catch(e){}
 try{pinEnabled=localStorage.getItem('j_pin_enabled')==='1';pinCode=localStorage.getItem('j_pin_code')||'';}catch(e){}
 try{caseLinks=JSON.parse(localStorage.getItem('j_case_links')||'[]');}catch(e){caseLinks=[];}
-hiddenTabs=[];
-try{localStorage.removeItem('j_hidden_tabs');}catch(e){}
-// hiddenTabs reset to empty — user can re-hide from settings
+try{hiddenTabs=JSON.parse(localStorage.getItem('j_hidden_tabs')||'[]');}catch(e){hiddenTabs=[];}
 try{lawyerProfile=JSON.parse(localStorage.getItem('j_lawyer_profile')||'{}');lawyerProfile=Object.assign({name:'',title:'محامٍ',license:'',phone:'',email:''},lawyerProfile);}catch(e){}
 try{archivedSessions=JSON.parse(localStorage.getItem('j_archive')||'[]');}catch(e){archivedSessions=[];}
 try{var si=parseInt(localStorage.getItem('j_ctheme'));if(!isNaN(si)&&COLOR_THEMES[si]){curTheme=si;var ct=COLOR_THEMES[si];var rs=document.documentElement.style;rs.setProperty('--gold',ct.gold);rs.setProperty('--gold2',ct.gold2);rs.setProperty('--gold-a10',ct.gold+'1a');rs.setProperty('--gold-a20',ct.gold+'33');rs.setProperty('--gold-a30',ct.gold+'4d');if(!isDay){rs.setProperty('--bg',ct.ink);rs.setProperty('--surface',ct.card);}}}catch(e){}
@@ -3331,10 +3326,10 @@ function rSettings(){
 
   // ── Hide/Show Tabs ──
   h+=secHdr('🎨','تخصيص التبويبات');
-  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
-  h+='<div style="font-size:11px;color:var(--text3)">'+hiddenTabs.length+' مخفية · '+(16-hiddenTabs.length)+' ظاهرة</div>';
-  h+='<button onclick="hiddenTabs=[];saveHiddenTabs();applyHiddenTabs();render();toast(\'✅ ظهرت جميع التبويبات\')" style="background:var(--gold);color:#0a0905;border-radius:9px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">🔓 إظهار الكل</button>';
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  h+='<div style="font-size:11px;color:var(--text3)">'+hiddenTabs.length+' مخفية · '+(17-hiddenTabs.length)+' ظاهرة</div>';
+  h+='<button onclick="hiddenTabs=[];saveHiddenTabs();applyHiddenTabs();render();toast(\'✅ ظهرت جميع التبويبات\')" style="background:var(--gold);color:#0a0905;border-radius:9px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">🔓 إظهار الكل</button>';
   h+='</div>';
 
   var tabData=[
@@ -3357,24 +3352,31 @@ function rSettings(){
     {k:'settings',icon:'⚙️',lbl:'الإعدادات',locked:true},
   ];
 
-  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+  // List view with open + toggle
   tabData.forEach(function(t){
-    var hidden=hiddenTabs.indexOf(t.k)>-1;
-    var locked=t.locked;
-    var active=curTab===t.k;
-    var bg=locked?'var(--surface3)':hidden?'var(--surface3)':'var(--gold-a10)';
-    var border=locked?'var(--border)':hidden?'var(--border)':'var(--gold-a30)';
-    var txtClr=locked?'var(--text3)':hidden?'var(--text3)':'var(--gold2)';
-    var opacity=hidden?'0.45':'1';
-    h+='<div onclick="'+(locked?'':'toggleTabVis(\''+t.k+'\','+(hidden?'true':'false')+')')+'" style="background:'+bg+';border:1.5px solid '+border+';border-radius:12px;padding:10px 8px;text-align:center;cursor:'+(locked?'default':'pointer')+';opacity:'+opacity+';transition:all .15s;position:relative" '+(locked?'':'onmousedown="this.style.transform=\'scale(.94)\'" onmouseup="this.style.transform=\'scale(1)\'"')+'>';
-    if(locked)h+='<div style="position:absolute;top:4px;left:4px;font-size:9px">🔒</div>';
-    h+='<div style="font-size:20px;margin-bottom:4px">'+t.icon+'</div>';
-    h+='<div style="font-size:10px;font-weight:700;color:'+txtClr+'">'+t.lbl+'</div>';
-    h+='<div style="font-size:8px;color:'+(hidden?'#f87171':'#34d399')+';margin-top:3px;font-weight:700">'+(locked?'ثابت':hidden?'مخفي':'ظاهر')+'</div>';
+    var hidden=!t.locked&&hiddenTabs.indexOf(t.k)>-1;
+    var isActive=curTab===t.k;
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)">';
+    // Icon
+    h+='<div style="width:32px;height:32px;border-radius:9px;background:'+(isActive?'var(--gold-a20)':'var(--surface3)')+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+t.icon+'</div>';
+    // Label
+    h+='<div style="flex:1"><div style="font-size:13px;font-weight:600;color:'+(isActive?'var(--gold2)':hidden?'var(--text3)':'var(--text)')+'">'+t.lbl+'</div>';
+    if(t.locked)h+='<div style="font-size:9px;color:var(--text3)">ثابت دائماً</div>';
+    else if(hidden)h+='<div style="font-size:9px;color:#f87171">مخفي من شريط التبويبات</div>';
+    h+='</div>';
+    // Open button - always accessible
+    h+='<button onclick="go(\''+t.k+'\')" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;flex-shrink:0">فتح</button>';
+    // Toggle switch (not for locked)
+    if(!t.locked){
+      h+='<label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0">';
+      h+='<input type="checkbox" '+(hidden?'':'checked')+' onchange="toggleTabVis(\''+t.k+'\',this.checked)" style="opacity:0;width:0;height:0">';
+      h+='<span style="position:absolute;inset:0;background:'+(hidden?'var(--surface3)':'var(--gold)')+';border-radius:22px;cursor:pointer;transition:.25s"></span>';
+      h+='<span style="position:absolute;height:16px;width:16px;background:#fff;border-radius:50%;bottom:3px;'+(hidden?'left:3px':'right:3px')+';transition:.25s"></span>';
+      h+='</label>';
+    }
     h+='</div>';
   });
-  h+='</div>';
-  h+='<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:12px">اضغط على أي تبويب لإخفائه أو إظهاره</div>';
+  h+='<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:10px">زر "فتح" يفتح التبويب مباشرة · المفتاح يخفيه/يُظهره في شريط التنقل</div>';
   h+='</div>';
 
   // ── App Info ──
