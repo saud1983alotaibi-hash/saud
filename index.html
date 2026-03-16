@@ -586,7 +586,7 @@ option { background: var(--surface); }
       </div>
       <div class="field"><label>ملاحظات</label><textarea id="fNotes" rows="3" placeholder="ملاحظات..." dir="rtl"></textarea></div>
       <button class="btn-primary" id="btnSave" onclick="saveS()" disabled>حفظ الجلسة</button>
-      <button class="btn-ghost" onclick="closeForm()">إلغاء</button>
+      <button class="btn-ghost" onclick="closeForm()" style="margin-top:8px">✕ إلغاء والعودة للجلسة</button>
     </div>
   </div>
 </div>
@@ -1876,7 +1876,7 @@ function openDet(id){
   document.getElementById('detSheet').classList.remove('hid');
 }
 function closeDet(){document.getElementById('detSheet').classList.add('hid');detId=null;}
-function editFD(){var s=data.find(function(x){return x.id===detId;});closeDet();openEdit(s);}
+function editFD(){var s=data.find(function(x){return x.id===detId;});window._editPrevDetId=detId;closeDet();openEdit(s);}
 function confDel(){delTgt=detId;document.getElementById('dlg').classList.remove('hid');}
 
 /* ═══════════════════════════════════════════════════════════
@@ -1884,7 +1884,12 @@ function confDel(){delTgt=detId;document.getElementById('dlg').classList.remove(
 ═══════════════════════════════════════════════════════════ */
 function openAdd(){editId=null;curPrio='none';curTags=[];document.getElementById('formTitle').textContent='جلسة جديدة';document.getElementById('btnSave').textContent='حفظ الجلسة';['fNum','fCourt','fRoom','fPlnt','fDfnd','fNotes','fMeetUrl'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('fType').value='جنائية';document.getElementById('fStatus').value='scheduled';document.getElementById('fDate').value='';document.getElementById('fTime').value='';document.getElementById('btnSave').disabled=true;setPrio('none');updMeetIcon('');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker([]);document.getElementById('formSheet').classList.remove('hid');}
 function openEdit(s){editId=s.id;curPrio=s.priority||'none';curTags=(s.tags||[]).slice();document.getElementById('formTitle').textContent='تعديل الجلسة';document.getElementById('btnSave').textContent='💾 حفظ التعديلات';document.getElementById('fNum').value=s.num;document.getElementById('fType').value=s.type;document.getElementById('fCourt').value=s.court||'';document.getElementById('fRoom').value=s.room||'';document.getElementById('fMeetUrl').value=s.meetUrl||'';document.getElementById('fPlnt').value=s.plnt||'';document.getElementById('fDfnd').value=s.dfnd||'';document.getElementById('fDate').value=s.date;document.getElementById('fTime').value=s.time;document.getElementById('fStatus').value=s.status;document.getElementById('fNotes').value=s.notes||'';document.getElementById('btnSave').disabled=false;setPrio(s.priority||'none');updMeetIcon(s.meetUrl||'');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker(s.tags||[]);document.getElementById('formSheet').classList.remove('hid');}
-function closeForm(){document.getElementById('formSheet').classList.add('hid');editId=null;}
+function closeForm(){
+  document.getElementById('formSheet').classList.add('hid');
+  var prevId=window._editPrevDetId;
+  editId=null;window._editPrevDetId=null;
+  if(prevId){setTimeout(function(){openDet(prevId);},60);}
+}
 function chkV(){var ok=document.getElementById('fNum').value.trim()&&document.getElementById('fCourt').value.trim()&&document.getElementById('fDate').value&&document.getElementById('fTime').value;document.getElementById('btnSave').disabled=!ok;}
 
 /* ── Meeting URL helpers ── */
