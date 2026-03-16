@@ -478,6 +478,9 @@ option { background: var(--surface); }
       <div class="hdr-actions">
         <button class="btn-icon" id="btnTheme" onclick="toggleTheme()" title="تبديل المظهر">🌙</button>
         <button class="btn-icon" onclick="showColorPicker()" title="تخصيص الألوان">🎨</button>
+        <button class="btn-icon" onclick="toggleVoiceSearch()" title="بحث صوتي" id="btnVoice">🎤</button>
+        <button class="btn-icon" onclick="printProfessionalReport()" title="تقرير PDF احترافي">🖨️</button>
+        <button class="btn-icon" onclick="exportAllToICS()" title="تصدير للتقويم">📅</button>
         <button class="btn-icon" onclick="showImportModal()" title="استيراد Excel/CSV">📤</button>
         <button class="btn-icon" onclick="showApiKeyModal()" title="مفتاح API" id="btnKey">🔑</button>
         <button class="btn-icon" onclick="showBackupModal()" title="نسخ احتياطي">💾</button>
@@ -759,8 +762,23 @@ function schedNotifs(){
       if(s.meetUrl)n.onclick=function(){window.open(s.meetUrl,'_blank');};
     },d0));
   });
+  // Smart deadline notifications
+  Object.keys(sessionDeadlines).forEach(function(sid){
+    var d=sessionDeadlines[sid];if(!d)return;
+    var deadline=new Date(d.deadlineDate+'T08:00:00');
+    [7,3,1,0].forEach(function(daysLeft){
+      var alertTime=new Date(deadline);alertTime.setDate(alertTime.getDate()-daysLeft);alertTime.setHours(8,0,0,0);
+      var diff=alertTime-now;
+      if(diff>0&&diff<8*86400000){
+        notifTimers.push(setTimeout(function(){
+          var msg=daysLeft===0?'اليوم آخر يوم للطعن!':daysLeft===1?'غداً آخر موعد للطعن':'متبقي '+daysLeft+' أيام على موعد الطعن';
+          new Notification('⚖️ تنبيه موعد طعن',{body:msg+' — '+d.typeName.split('(')[0].trim()+(d.sessionNum?' ('+d.sessionNum+')':''),requireInteraction:daysLeft<=1});
+        },diff));
+      }
+    });
+  });
 }
-function schedDaily(){var now=new Date(),nxt=new Date(now);nxt.setHours(8,0,0,0);if(nxt<=now)nxt.setDate(nxt.getDate()+1);setTimeout(function(){if(notifOn&&Notification.permission==='granted'){var n=data.filter(function(s){return s.date===today();}).length;if(n>0)new Notification("📅 جلساتك اليوم",{body:"لديك "+n+" جلسة اليوم"});}schedDaily();},nxt-now);}
+function schedDaily(){var now=new Date(),nxt=new Date(now);nxt.setHours(8,0,0,0);if(nxt<=now)nxt.setDate(nxt.getDate()+1);setTimeout(function(){if(notifOn&&Notification.permission==='granted'){var todayN=data.filter(function(s){return s.date===today();}).length;var urgentDL=Object.keys(sessionDeadlines).filter(function(sid){var info=getDeadlineInfo(parseInt(sid));return info&&info.remaining>=0&&info.remaining<=7;}).length;var body='';if(todayN>0)body+='لديك '+todayN+' جلسة اليوم';if(urgentDL>0)body+=(body?' · ':'')+urgentDL+' موعد طعن قريب';if(body)new Notification('📅 ملخصك الصباحي',{body:body});}schedDaily();},nxt-now);}
 
 /* ═══════════════════════════════════════════════════════════
    AI - CLAUDE INTEGRATION (ENHANCED)
@@ -1420,8 +1438,7 @@ function rHome(){
   var td=today();var todayS=data.filter(function(s){return s.date===td;}).sort(function(a,b){return a.time.localeCompare(b.time);});
   var upcoming=data.filter(function(s){return s.date>td&&s.status==='scheduled';}).sort(function(a,b){return(a.date+a.time).localeCompare(b.date+b.time);}).slice(0,3);
   var high=data.filter(function(s){return s.priority==='high'&&s.status==='scheduled'&&s.date>=td;});
-  var statsData=[{e:'📋',l:'إجمالي',v:data.length,c:'var(--gold2)'},{e:'📅',l:'اليوم',v:todayS.length,c:'var(--amber)'},{e:'🔵',l:'مجدولة',v:data.filter(function(s){return s.status==='scheduled';}).length,c:'var(--blue)'},{e:'✅',l:'منتهية',v:data.filter(function(s){return s.status==='completed';}).length,c:'var(--green)'}];
-  var h='<div class="stats-grid stagger">';statsData.forEach(function(s){h+='<div class="stat-card" style="--sc-clr:'+s.c+'"><div class="stat-icon">'+s.e+'</div><div class="stat-value">'+s.v+'</div><div class="stat-label">'+s.l+'</div></div>';});h+='</div>';
+  var h=rDashboard();
   if(high.length){h+=secHdr('🔴','عالية الأهمية')+'<div class="stagger">';high.slice(0,2).forEach(function(s){h+=card(s);});h+='</div>';}
 
   // ── Deadlines section ──
@@ -3058,6 +3075,7 @@ openDet=function(id){
   var btns=[
     ['🔗','ربط','showLinkModal('+id+')','rgba(139,111,212,.1)','#a78bfa','rgba(139,111,212,.3)'],
     ['📨','إيميل','sendByEmail('+id+')','var(--blue-a)','#60a5fa','rgba(74,144,217,.3)'],
+    ['📅','تقويم','exportToGoogleCalendar('+id+')','rgba(234,67,53,.1)','#ea4335','rgba(234,67,53,.3)'],
     ['🗄️','أرشفة','archiveSession('+id+')','var(--surface2)','var(--text3)','var(--border2)']
   ];
   btns.forEach(function(btn){
@@ -3926,6 +3944,224 @@ function schedMorningBriefing(){
 }
 
 // Start morning briefing when notifications enabled
+/* ═══════════════════════════════════════════════════════════
+   📊 PROFESSIONAL DASHBOARD (replaces basic stats in rHome)
+═══════════════════════════════════════════════════════════ */
+function rDashboard(){
+  var td=today();
+  var all=data.length;
+  var sched=data.filter(function(s){return s.status==='scheduled';}).length;
+  var done=data.filter(function(s){return s.status==='completed';}).length;
+  var prog=data.filter(function(s){return s.status==='inProgress';}).length;
+  var todayN=data.filter(function(s){return s.date===td;}).length;
+  var winRate=all?Math.round((done/all)*100):0;
+  var totalFees=fees.reduce(function(s,f){return s+(f.amount||0);},0);
+  var paidFees=fees.filter(function(f){return f.paid;}).reduce(function(s,f){return s+(f.amount||0);},0);
+  var urgentDL=Object.keys(sessionDeadlines).filter(function(sid){var i=getDeadlineInfo(parseInt(sid));return i&&i.remaining>=0&&i.remaining<=7;}).length;
+  // 7-day trend
+  var days7=[],labels7=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);days7.push(d.toISOString().split('T')[0]);labels7.push(d.toLocaleDateString('ar-SA',{weekday:'short'}));}
+  var counts7=days7.map(function(d){return data.filter(function(s){return s.date===d;}).length;});
+  var max7=Math.max.apply(null,counts7)||1;
+
+  var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:12px">';
+  h+='<div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:10px;letter-spacing:.08em">📊 لوحة التحكم</div>';
+
+  // KPI row 1
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">';
+  [{v:all,l:'إجمالي',e:'📋',c:'var(--gold2)'},{v:todayN,l:'اليوم',e:'📅',c:'var(--amber)'},{v:sched,l:'مجدولة',e:'🔵',c:'var(--blue)'},{v:done,l:'منتهية',e:'✅',c:'var(--green)'}].forEach(function(x){
+    h+='<div style="background:var(--surface3);border-radius:10px;padding:10px 6px;text-align:center"><div style="font-size:16px">'+x.e+'</div><div style="font-size:20px;font-weight:900;color:'+x.c+';margin:2px 0">'+x.v+'</div><div style="font-size:9px;color:var(--text3)">'+x.l+'</div></div>';
+  });
+  h+='</div>';
+
+  // KPI row 2 — fees + winrate + urgent deadlines
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">';
+  h+='<div style="background:var(--surface3);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">نسبة الإنجاز</div><div style="font-size:22px;font-weight:900;color:var(--green)">'+winRate+'%</div></div>';
+  h+='<div style="background:var(--surface3);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">الأتعاب ر.س</div><div style="font-size:16px;font-weight:900;color:var(--gold2)">'+totalFees.toLocaleString('ar-SA')+'</div></div>';
+  h+='<div style="background:'+(urgentDL>0?'rgba(251,191,36,0.12)':'var(--surface3)')+';border-radius:10px;padding:10px;text-align:center;border:1px solid '+(urgentDL>0?'rgba(251,191,36,0.3)':'transparent')+'"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">مواعيد طعن عاجلة</div><div style="font-size:22px;font-weight:900;color:'+(urgentDL>0?'#fbbf24':'var(--text3)')+'">'+urgentDL+'</div></div>';
+  h+='</div>';
+
+  // Mini 7-day bar chart
+  h+='<div style="font-size:9px;font-weight:700;color:var(--text3);margin-bottom:5px">الجلسات آخر 7 أيام</div>';
+  h+='<div style="display:flex;gap:3px;align-items:flex-end;height:36px">';
+  counts7.forEach(function(c,i){
+    var pct=Math.round((c/max7)*100)||0;
+    h+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+    h+='<div style="width:100%;background:var(--gold);border-radius:3px 3px 0 0;height:'+(pct||4)+'%;min-height:4px;opacity:'+(c>0?1:0.3)+'"></div>';
+    h+='<div style="font-size:7px;color:var(--text3)">'+labels7[i]+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+
+  // Fees progress bar
+  if(totalFees>0){
+    var paidPct=Math.round((paidFees/totalFees)*100);
+    h+='<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-bottom:3px"><span>الأتعاب المحصّلة</span><span>'+paidFees.toLocaleString('ar-SA')+' / '+totalFees.toLocaleString('ar-SA')+' ر.س</span></div>';
+    h+='<div style="background:var(--surface3);border-radius:4px;height:5px"><div style="height:100%;background:var(--green);border-radius:4px;width:'+paidPct+'%"></div></div></div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📱 VOICE SEARCH (Arabic)
+═══════════════════════════════════════════════════════════ */
+var voiceActive=false;
+function toggleVoiceSearch(){
+  var SpeechRecog=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecog){toast('⚠️ البحث الصوتي غير مدعوم في هذا المتصفح');return;}
+  if(voiceActive){voiceActive=false;toast('🔇 توقف البحث الصوتي');return;}
+  var r=new SpeechRecog();
+  r.lang='ar-SA';r.continuous=false;r.interimResults=false;
+  voiceActive=true;toast('🎤 قل اسم القضية أو اسم الطرف...');
+  r.onresult=function(e){
+    var txt=e.results[0][0].transcript;
+    voiceActive=false;
+    toast('🔍 بحث: '+txt);
+    setQ(txt);go('list');
+  };
+  r.onerror=function(e){voiceActive=false;toast('⚠️ '+e.error);};
+  r.onend=function(){voiceActive=false;};
+  r.start();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   🖨️ PROFESSIONAL PDF REPORT WITH OFFICE LOGO
+═══════════════════════════════════════════════════════════ */
+function printProfessionalReport(){
+  var profile=lawyerProfile;
+  var td2=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+  var all=data.length,done=data.filter(function(s){return s.status==='completed';}).length;
+  var sched=data.filter(function(s){return s.status==='scheduled';}).length;
+  var totalFees=fees.reduce(function(s,f){return s+(f.amount||0);},0);
+  var paidFees=fees.filter(function(f){return f.paid;}).reduce(function(s,f){return s+(f.amount||0);},0);
+  var winRate=all?Math.round((done/all)*100):0;
+
+  // Deadline alerts for report
+  var urgentDLs=Object.keys(sessionDeadlines).map(function(sid){
+    var d=sessionDeadlines[sid];var info=getDeadlineInfo(parseInt(sid));
+    if(!info||info.remaining<0)return null;
+    var s=data.find(function(x){return x.id===parseInt(sid);});
+    return{info:info,d:d,s:s};
+  }).filter(Boolean).sort(function(a,b){return a.info.remaining-b.info.remaining;}).slice(0,10);
+
+  var logoHtml=lhDesign&&lhDesign.logo?'<img src="'+lhDesign.logo+'" style="height:70px;object-fit:contain;margin-bottom:6px">':'<div style="font-size:48px;margin-bottom:6px">⚖️</div>';
+
+  var pa=document.getElementById('pa');
+  pa.innerHTML=
+    '<style>'+
+    '@page{size:A4;margin:15mm 20mm}'+
+    '*{font-family:\'Traditional Arabic\',Arial,sans-serif;direction:rtl}'+
+    'body{margin:0;color:#0a0905;background:#fff}'+
+    '.hdr{text-align:center;border-bottom:3px solid #d4a843;padding-bottom:14px;margin-bottom:20px}'+
+    '.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}'+
+    '.kpi{background:#f8f8f2;border:1px solid #e8d87a;border-radius:8px;padding:10px;text-align:center}'+
+    '.kpi-v{font-size:26px;font-weight:900;color:#b8860b}'+
+    '.kpi-l{font-size:10px;color:#666;margin-top:3px}'+
+    'table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px}'+
+    'thead tr{background:#0a0905;color:#f0c55a}'+
+    'thead th{padding:7px 8px;text-align:right;border:1px solid #333}'+
+    'tbody td{padding:6px 8px;border:1px solid #ddd}'+
+    'tbody tr:nth-child(even){background:#fafaf5}'+
+    '.dl-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700}'+
+    '.urgent{background:#fff3cd;color:#856404;border:1px solid #f0ad4e}'+
+    '.ok{background:#d4edda;color:#155724;border:1px solid #c3e6cb}'+
+    '.expired{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}'+
+    '</style>'+
+    '<div class="hdr">'+logoHtml+
+    (profile.name?'<div style="font-size:22px;font-weight:700">'+profile.name+'</div>':'<div style="font-size:22px;font-weight:700">التقرير القانوني</div>')+
+    (profile.title?'<div style="font-size:13px;color:#666;margin-top:2px">'+profile.title+'</div>':'')+
+    (profile.license?'<div style="font-size:11px;color:#888">رقم الترخيص: '+profile.license+'</div>':'')+
+    (profile.phone||profile.email?'<div style="font-size:10px;color:#999;margin-top:3px">'+(profile.phone?'📞 '+profile.phone+'   ':'')+( profile.email?'✉️ '+profile.email:'')+'</div>':'')+
+    '<div style="font-size:11px;color:#aaa;margin-top:5px">📅 '+td2+'</div>'+
+    '</div>'+
+    '<div class="kpi-grid">'+
+    [{v:all,l:'إجمالي الجلسات'},{v:done,l:'منتهية'},{v:sched,l:'مجدولة'},{v:winRate+'%',l:'نسبة الإنجاز'},
+     {v:totalFees.toLocaleString(),l:'إجمالي الأتعاب'},{v:paidFees.toLocaleString(),l:'محصَّل'},{v:(totalFees-paidFees).toLocaleString(),l:'مستحق'},{v:archivedSessions.length,l:'مؤرشف'}
+    ].map(function(x){return'<div class="kpi"><div class="kpi-v">'+x.v+'</div><div class="kpi-l">'+x.l+'</div></div>';}).join('')+
+    '</div>'+
+    (urgentDLs.length?
+    '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:#b8860b;margin-bottom:8px;border-bottom:1px solid #e8d87a;padding-bottom:5px">⏰ مواعيد الطعن والاستئناف</div>'+
+    '<table><thead><tr><th>القضية</th><th>نوع الإجراء</th><th>الموعد النهائي</th><th>المتبقي</th></tr></thead><tbody>'+
+    urgentDLs.map(function(x,i){
+      var cls=x.info.remaining===0?'urgent':x.info.remaining<=7?'urgent':'ok';
+      return'<tr style="background:'+(i%2?'#fff':'#fafaf5')+'"><td>'+(x.s?x.s.num:'—')+'</td><td>'+x.d.typeName.split('(')[0].trim()+'</td><td>'+new Date(x.d.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'})+'</td><td><span class="dl-badge '+cls+'">'+( x.info.remaining===0?'اليوم':x.info.remaining+' يوم')+'</span></td></tr>';
+    }).join('')+
+    '</tbody></table></div>':'')+''+
+    '<div style="font-size:13px;font-weight:700;color:#b8860b;margin-bottom:8px;border-bottom:1px solid #e8d87a;padding-bottom:5px">قائمة الجلسات</div>'+
+    '<table><thead><tr><th>رقم القضية</th><th>النوع</th><th>المحكمة</th><th>المدعي</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>'+
+    data.map(function(s,i){return'<tr style="background:'+(i%2?'#fff':'#fafaf5')+'"><td>'+s.num+'</td><td>'+s.type+'</td><td>'+(s.court||'—')+'</td><td>'+(s.plnt||'—')+'</td><td>'+s.date+'</td><td>'+ST[s.status].lbl+'</td></tr>';}).join('')+
+    '</tbody></table>'+
+    '<div style="text-align:center;margin-top:20px;padding-top:10px;border-top:1px solid #e8d87a;font-size:9px;color:#aaa">تم إنشاء هذا التقرير بواسطة تطبيق الجلسات القضائية · '+td2+'</div>';
+  setTimeout(function(){window.print();},200);
+  toast('🖨️ جارٍ تصدير التقرير الاحترافي...');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📅 GOOGLE CALENDAR / ICS EXPORT (Enhanced)
+═══════════════════════════════════════════════════════════ */
+function exportToGoogleCalendar(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var dt=s.date.replace(/-/g,'');
+  var startTime=s.time.replace(':','')+'00';
+  // Add 2 hours for end time
+  var endH=parseInt(s.time.split(':')[0])+2;
+  var endTime=(endH<10?'0'+endH:endH)+''+s.time.split(':')[1]+'00';
+  var title=encodeURIComponent('⚖️ '+s.num+' — '+s.type);
+  var details=encodeURIComponent('المحكمة: '+(s.court||'')+(s.plnt?'\nالمدعي: '+s.plnt:'')+(s.dfnd?'\nالمدعى عليه: '+s.dfnd:'')+(s.meetUrl?'\nرابط الاجتماع: '+s.meetUrl:''));
+  var location=encodeURIComponent((s.court||'')+(s.room?' — قاعة '+s.room:''));
+  var url='https://calendar.google.com/calendar/render?action=TEMPLATE'+
+    '&text='+title+
+    '&dates='+dt+'T'+startTime+'/'+dt+'T'+endTime+
+    '&details='+details+
+    '&location='+location+
+    (s.meetUrl?'&conferenceDataVersion=1':'');
+  window.open(url,'_blank');
+  toast('📅 جارٍ فتح Google Calendar...');
+}
+
+function exportAllToICS(){
+  var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//جلسات قضائية//AR','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:جلساتي القضائية','X-WR-CALDESC:تقويم الجلسات القضائية'];
+  data.forEach(function(s){
+    if(!s.date||!s.time)return;
+    var dt=s.date.replace(/-/g,'');
+    var tm=s.time.replace(':','')+'00';
+    var endH=parseInt(s.time.split(':')[0])+2;
+    var etm=(endH<10?'0'+endH:endH)+''+s.time.split(':')[1]+'00';
+    var uid='jalsat-'+s.id+'@app';
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:'+uid);
+    lines.push('DTSTART:'+dt+'T'+tm);
+    lines.push('DTEND:'+dt+'T'+etm);
+    lines.push('SUMMARY:⚖️ '+s.num+' — '+s.type);
+    lines.push('DESCRIPTION:المحكمة: '+(s.court||'')+(s.plnt?' | المدعي: '+s.plnt:'')+(s.dfnd?' | المدعى عليه: '+s.dfnd:'')+( s.meetUrl?' | الاجتماع: '+s.meetUrl:''));
+    lines.push('LOCATION:'+(s.court||'')+(s.room?' - قاعة '+s.room:''));
+    if(s.meetUrl)lines.push('URL:'+s.meetUrl);
+    // Alarm 30 min before
+    lines.push('BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:تذكير: جلسة '+s.num+' بعد 30 دقيقة','END:VALARM');
+    lines.push('END:VEVENT');
+  });
+  // Add deadline events
+  Object.keys(sessionDeadlines).forEach(function(sid){
+    var d=sessionDeadlines[sid];if(!d)return;
+    var dt=d.deadlineDate.replace(/-/g,'');
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:deadline-'+sid+'@app');
+    lines.push('DTSTART;VALUE=DATE:'+dt);
+    lines.push('DTEND;VALUE=DATE:'+dt);
+    lines.push('SUMMARY:⏰ آخر موعد: '+d.typeName.split('(')[0].trim()+(d.sessionNum?' ('+d.sessionNum+')':''));
+    lines.push('DESCRIPTION:موعد الطعن والاستئناف');
+    lines.push('BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:غداً آخر موعد للطعن!','END:VALARM');
+    lines.push('END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  var blob=new Blob([lines.join('\r\n')],{type:'text/calendar;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='جلساتي_القضائية.ics';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('📅 تم تصدير '+data.length+' جلسة للتقويم');
+}
+
 var _origToggleNotif=toggleNotif;
 toggleNotif=function(){
   _origToggleNotif();
