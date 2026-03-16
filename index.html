@@ -3409,7 +3409,16 @@ function rSettings(){
   }
 
   // Form
-  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px" id="lawyerForm">';
+  // Collapsible form
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:14px;overflow:hidden">';
+  h+='<button onclick="var f=document.getElementById(\'lpForm\');var a=document.getElementById(\'lpArrow\');var open=f.style.display!==\'none\';f.style.display=open?\'none\':\'block\';a.style.transform=open?\'rotate(0deg)\':\'rotate(180deg)\'" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:none;cursor:pointer;font-family:Tajawal,sans-serif">';
+  h+='<div style="display:flex;align-items:center;gap:10px">';
+  h+='<div style="width:34px;height:34px;border-radius:9px;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;font-size:16px">✏️</div>';
+  h+='<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--text)">تعديل بيانات المحامي</div>';
+  h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">انقر لتوسيع النموذج</div></div></div>';
+  h+='<div id="lpArrow" style="font-size:14px;color:var(--text3);transition:transform .25s">▼</div>';
+  h+='</button>';
+  h+='<div id="lpForm" style="display:'+(hasProfile?'none':'block')+';padding:14px;border-top:1px solid var(--border)">';
 
   var fields=[
     {k:'name',lbl:'الاسم الكامل',type:'text',dir:'rtl',ph:'مثال: أحمد بن محمد العتيبي',icon:'👤'},
@@ -3432,6 +3441,7 @@ function rSettings(){
   h+='<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:4px">';
   h+='<button onclick="saveLawyerProfile();toast(\'✅ تم حفظ ملف المحامي\');render()" style="background:linear-gradient(135deg,var(--gold),#a07030);color:#0a0905;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif;display:flex;align-items:center;justify-content:center;gap:7px">💾 حفظ الملف</button>';
   h+='<button onclick="if(confirm(\'إنشاء ملف محامٍ جديد؟ سيتم مسح البيانات الحالية.\')){lawyerProfile={name:\'\',title:\'محامٍ\',license:\'\',phone:\'\',email:\'\'};saveLawyerProfile();render();toast(\'📄 تم إنشاء ملف جديد\')}" style="background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px 14px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif;white-space:nowrap">📄 جديد</button>';
+  h+='</div>';
   h+='</div>';
   h+='</div>';
 
