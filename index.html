@@ -2976,9 +2976,10 @@ function rLetterhead(){
     h+='<textarea id="lhTextArea" placeholder="\u0627\u0628\u062f\u0623 \u0627\u0644\u0643\u062a\u0627\u0628\u0629 \u0647\u0646\u0627..." dir="rtl" style="'+taStyle+'" oninput="autoResizeLh(this)"></textarea>';
     h+='</div>';
 
-    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-    h+='<button onclick="printLetterhead()" style="background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:Tajawal,sans-serif">\ud83d\udda8\ufe0f \u0637\u0628\u0627\u0639\u0629</button>';
-    h+='<button onclick="saveLhAsPDF()" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:Tajawal,sans-serif">\ud83d\udce5 PDF</button>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">';
+    h+='<button onclick="printLetterhead()" style="background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:Tajawal,sans-serif">\ud83d\udda8\ufe0f \u0637\u0628\u0627\u0639\u0629</button>';
+    h+='<button onclick="exportToWord()" style="background:rgba(74,144,217,.12);color:#60a5fa;border:1px solid rgba(74,144,217,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:Tajawal,sans-serif">\ud83d\udcdd Word</button>';
+    h+='<button onclick="saveLhAsPDF()" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:Tajawal,sans-serif">\ud83d\udce5 PDF</button>';
     h+='</div>';
     h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px">';
     h+='<button onclick="clearLhText()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:10px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">\ud83d\uddd1\ufe0f \u0645\u0633\u062d</button>';
@@ -3095,6 +3096,104 @@ function printLetterhead(){
 function saveLhAsPDF(){
   toast('💡 في نافذة الطباعة اختر "حفظ كـ PDF"');
   setTimeout(printLetterhead,600);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORT TO WORD (.docx) WITH LETTERHEAD
+═══════════════════════════════════════════════════════════ */
+function exportToWord(){
+  if(!lhImage){toast('⚠️ ارفع صورة الورق الرسمي أولاً');return;}
+  var ta=document.getElementById('lhTextArea');
+  var text=ta?ta.value:'';
+  if(!text.trim()){toast('⚠️ اكتب نصاً أولاً');return;}
+  toast('⏳ جارٍ إنشاء ملف Word...');
+  if(typeof docx!=='undefined'){doExportToWord(text);return;}
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js';
+  s.onload=function(){doExportToWord(text);};
+  s.onerror=function(){toast('⚠️ فشل تحميل المكتبة — تحقق من الإنترنت');};
+  document.head.appendChild(s);
+}
+
+function doExportToWord(text){
+  try{
+    var D=docx;
+    var pageSizesDXA={A4:{w:11906,h:16838},A5:{w:8391,h:11906},Letter:{w:12240,h:15840}};
+    var ps=pageSizesDXA[lhPageSize]||pageSizesDXA.A4;
+    var pagePx={A4:{w:794,h:1123},A5:{w:559,h:794},Letter:{w:816,h:1056}};
+    var pxDim=pagePx[lhPageSize]||pagePx.A4;
+    function px2dxa(px){return Math.round(px*15);}
+    var b64=lhImage.split(',')[1];
+    var bin=atob(b64);
+    var bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    var imgType=lhImage.indexOf('png')>-1?'png':'jpg';
+    var fontMap={'Tajawal':'Arial','Scheherazade New':'Traditional Arabic','Georgia':'Times New Roman'};
+    var wordFont=fontMap[lhFontFamily]||lhFontFamily;
+    var wordColor=lhTextColor.replace('#','');
+    var wordSize=Math.round(lhFontSize*2);
+    var wordLine=Math.round(lhLineHeight*240);
+    var alignMap={right:D.AlignmentType.RIGHT,left:D.AlignmentType.LEFT,center:D.AlignmentType.CENTER,justify:D.AlignmentType.BOTH};
+    var align=alignMap[lhTextAlign]||D.AlignmentType.RIGHT;
+
+    var bgImage=new D.ImageRun({
+      data:bytes,type:imgType,
+      transformation:{width:pxDim.w,height:pxDim.h},
+      floating:{
+        horizontalPosition:{relative:D.HorizontalPositionRelativeFrom.PAGE,offset:0},
+        verticalPosition:{relative:D.VerticalPositionRelativeFrom.PAGE,offset:0},
+        behindDocument:true,allowOverlap:true,lockAnchor:true,
+        margins:{top:0,bottom:0,left:0,right:0}
+      }
+    });
+
+    var header=new D.Header({
+      children:[new D.Paragraph({spacing:{before:0,after:0},children:[bgImage]})]
+    });
+
+    var lines=text.split('\n');
+    var paragraphs=lines.map(function(line){
+      return new D.Paragraph({
+        alignment:align,bidirectional:true,
+        spacing:{line:wordLine,lineRule:'auto',before:0,after:0},
+        children:[new D.TextRun({
+          text:line===''?'\u00a0':line,
+          font:{name:wordFont},size:wordSize,color:wordColor,
+          bold:!!lhBold,italics:!!lhItalic,
+          underline:lhUnderline?{type:D.UnderlineType?D.UnderlineType.SINGLE:'single'}:undefined,
+          rtl:true
+        })]
+      });
+    });
+
+    var doc=new D.Document({
+      sections:[{
+        properties:{page:{
+          size:{width:ps.w,height:ps.h},
+          margin:{
+            top:px2dxa(lhMargins.top),right:px2dxa(lhMargins.right),
+            bottom:px2dxa(lhMargins.bottom),left:px2dxa(lhMargins.left),
+            header:Math.round(px2dxa(lhMargins.top)*0.5),
+            footer:Math.round(px2dxa(lhMargins.bottom)*0.5)
+          }
+        }},
+        headers:{default:header},
+        children:paragraphs
+      }]
+    });
+
+    D.Packer.toBlob(doc).then(function(blob){
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url;a.download='مستند_رسمي_'+today()+'.docx';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('✅ تم تصدير ملف Word بنجاح');
+    }).catch(function(e){toast('⚠️ خطأ: '+e.message);});
+  }catch(e){
+    console.error('Word export:',e);
+    toast('⚠️ خطأ في إنشاء الملف: '+e.message);
+  }
 }
 
 (function(){
