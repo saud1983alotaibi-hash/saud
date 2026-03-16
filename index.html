@@ -481,6 +481,8 @@ option { background: var(--surface); }
         <button class="btn-icon" onclick="toggleVoiceSearch()" title="بحث صوتي" id="btnVoice">🎤</button>
         <button class="btn-icon" onclick="printProfessionalReport()" title="تقرير PDF احترافي">🖨️</button>
         <button class="btn-icon" onclick="exportAllToICS()" title="تصدير للتقويم">📅</button>
+        <button class="btn-icon" onclick="showPoaModal()" title="توكيل رسمي">📄</button>
+        <button class="btn-icon" onclick="showFeeCalcModal()" title="حاسبة الأتعاب">💰</button>
         <button class="btn-icon" onclick="showImportModal()" title="استيراد Excel/CSV">📤</button>
         <button class="btn-icon" onclick="showApiKeyModal()" title="مفتاح API" id="btnKey">🔑</button>
         <button class="btn-icon" onclick="showBackupModal()" title="نسخ احتياطي">💾</button>
@@ -1824,7 +1826,13 @@ function openDet(id){
 
   // Ask AI about this session
   b+='<button onclick="askAIAboutSession('+s.id+')" style="width:100%;background:rgba(16,163,127,0.1);color:#2ecc9a;border:1px solid rgba(16,163,127,0.25);border-radius:var(--r-md);padding:11px;font-weight:700;font-size:12px;cursor:pointer;margin:12px 0;display:flex;align-items:center;justify-content:center;gap:7px">⚖️ اسأل سعود عن هذه القضية</button>';
-
+  // AI quick actions
+  b+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">';
+  b+='<button onclick="aiDraftMemo('+s.id+')" style="background:rgba(16,163,127,.08);color:#2ecc9a;border:1px solid rgba(16,163,127,.2);border-radius:var(--r-md);padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">📝 صياغة مذكرة</button>';
+  b+='<button onclick="aiSuggestArticles('+s.id+')" style="background:rgba(16,163,127,.08);color:#2ecc9a;border:1px solid rgba(16,163,127,.2);border-radius:var(--r-md);padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">📚 مواد قانونية</button>';
+  b+='</div>';
+  // Stage tracker
+  b+=buildStageTrackerHTML(s);
   // ── Deadline Calculator inside session ──
   b+=buildDeadlineCalcHTML(s);
 
@@ -2227,7 +2235,7 @@ function rFees(){
   var unpaid=total-paid;
   var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
   h+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">💰 الأتعاب والرسوم</div>';
-  h+='<button onclick="openFeeForm()" style="background:var(--gold);color:#0a0905;border-radius:10px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer">+ إضافة</button>';
+  h+='<div style="display:flex;gap:7px"><button onclick="showFeeCalcModal()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:7px 12px;font-weight:700;font-size:11px;cursor:pointer">🧮 حاسبة</button><button onclick="openFeeForm()" style="background:var(--gold);color:#0a0905;border-radius:10px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer">+ إضافة</button></div>';
   h+='</div>';
   // Stats
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">';
@@ -3030,6 +3038,26 @@ function rSettings(){
   h+='</div>';
 
   // ── App Info ──
+  h+=secHdr('🌙','المظهر التلقائي');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between">';
+  h+='<div><div style="font-size:13px;font-weight:600;color:var(--text)">تبديل تلقائي ليلي/نهاري</div>';
+  h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">☀️ نهاري 7ص–7م · 🌙 ليلي باقي الوقت</div></div>';
+  h+='<label style="position:relative;display:inline-block;width:44px;height:24px">';
+  h+='<input type="checkbox" '+(autoThemeEnabled?'checked':'')+' onchange="autoThemeEnabled=this.checked;localStorage.setItem(\'j_autotheme\',this.checked?\'1\':\'0\');checkAutoTheme();toast(this.checked?\'✅ تفعيل المظهر التلقائي\':\'🌙 المظهر اليدوي\')" style="opacity:0;width:0;height:0">';
+  h+='<span style="position:absolute;inset:0;background:'+(autoThemeEnabled?'var(--gold)':'var(--surface3)')+';border-radius:24px;cursor:pointer;transition:.3s"></span>';
+  h+='<span style="position:absolute;height:18px;width:18px;background:#fff;border-radius:50%;bottom:3px;'+(autoThemeEnabled?'right:3px':'left:3px')+';transition:.3s"></span>';
+  h+='</label></div></div>';
+
+  h+=secHdr('⌨️','اختصارات لوحة المفاتيح');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  [['Alt + 1-9','التنقل بين التبويبات'],['Alt + N','جلسة جديدة'],['Alt + F','فتح البحث'],['Alt + V','بحث صوتي'],['Escape','إغلاق النوافذ']].forEach(function(k){
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">';
+    h+='<code style="background:var(--surface3);border:1px solid var(--border2);border-radius:5px;padding:2px 8px;font-size:11px;color:var(--gold2)">'+k[0]+'</code>';
+    h+='<span style="color:var(--text3)">'+k[1]+'</span></div>';
+  });
+  h+='</div>';
+
   h+=secHdr('ℹ️','معلومات التطبيق');
   h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
   [['الإصدار','2.0.0'],['الجلسات المحفوظة',data.length+''],['المؤرشفة',archivedSessions.length+''],['المهمات',tasks.length+''],['الأطراف',contacts.length+'']].forEach(function(r){
@@ -3152,6 +3180,7 @@ openDet=function(id){
     ['🔗','ربط','showLinkModal('+id+')','rgba(139,111,212,.1)','#a78bfa','rgba(139,111,212,.3)'],
     ['📨','إيميل','sendByEmail('+id+')','var(--blue-a)','#60a5fa','rgba(74,144,217,.3)'],
     ['📅','تقويم','exportToGoogleCalendar('+id+')','rgba(234,67,53,.1)','#ea4335','rgba(234,67,53,.3)'],
+    ['📄','توكيل','showPoaModal('+id+')','rgba(212,168,67,.1)','var(--gold2)','var(--gold-a30)'],
     ['🗄️','أرشفة','archiveSession('+id+')','var(--surface2)','var(--text3)','var(--border2)']
   ];
   btns.forEach(function(btn){
@@ -4457,6 +4486,317 @@ function exportAllToICS(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('📅 تم تصدير '+data.length+' جلسة للتقويم');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📄 LEGAL POWER OF ATTORNEY TEMPLATE (توكيل رسمي)
+═══════════════════════════════════════════════════════════ */
+function showPoaModal(sid){
+  var s=sid?data.find(function(x){return x.id===sid;}):null;
+  var modal=document.createElement('div');modal.id='poaModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;font-family:Tajawal,sans-serif;direction:rtl';
+  var p=lawyerProfile;
+  box.innerHTML=
+    '<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">📄 نموذج توكيل رسمي</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+    '<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">اسم الموكِّل *</label><input id="poaClient" type="text" placeholder="الاسم الكامل" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:12px;color:var(--text)"></div>'+
+    '<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">رقم الهوية</label><input id="poaId" type="text" placeholder="1234567890" dir="ltr" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:12px;color:var(--text)"></div>'+
+    '<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">الجنسية</label><input id="poaNat" type="text" placeholder="سعودي" dir="rtl" value="سعودي" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:12px;color:var(--text)"></div>'+
+    '<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">رقم القضية</label><input id="poaCase" type="text" placeholder="'+(s?s.num:'')+'" dir="rtl" value="'+(s?s.num:'')+'" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:12px;color:var(--text)"></div>'+
+    '</div>'+
+    '<label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">موضوع التوكيل</label>'+
+    '<textarea id="poaSubject" dir="rtl" rows="3" placeholder="مثال: تمثيله أمام المحاكم السعودية في القضية رقم..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:12px;color:var(--text);resize:none;margin-bottom:10px;font-family:Tajawal,sans-serif">'+(s?'تمثيله أمام المحاكم السعودية في القضية رقم '+s.num+' المقامة أمام '+( s.court||'المحكمة المختصة'):'')+'</textarea>'+
+    '<div style="display:flex;gap:8px">'+
+    '<button onclick="printPOA()" style="flex:1;background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:Tajawal,sans-serif">🖨️ طباعة</button>'+
+    '<button onclick="document.getElementById(\'poaModal\').remove()" style="flex:1;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px;font-size:13px;cursor:pointer;font-family:Tajawal,sans-serif">إلغاء</button>'+
+    '</div>';
+  modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function printPOA(){
+  var client=document.getElementById('poaClient').value.trim();
+  var idNum=document.getElementById('poaId').value.trim();
+  var nat=document.getElementById('poaNat').value.trim();
+  var caseNum=document.getElementById('poaCase').value.trim();
+  var subject=document.getElementById('poaSubject').value.trim();
+  if(!client){toast('⚠️ أدخل اسم الموكّل');return;}
+  var p=lawyerProfile;
+  var td2=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+  var pa=document.getElementById('pa');
+  pa.innerHTML=
+    '<style>@page{margin:25mm 20mm}body{direction:rtl;font-family:\'Traditional Arabic\',Arial,sans-serif;color:#0a0905;font-size:13pt}'+
+    '.hdr{text-align:center;border-bottom:3px double #c8a84b;padding-bottom:16px;margin-bottom:24px}'+
+    '.title{font-size:22pt;font-weight:700;margin-bottom:4px}'+
+    '.para{margin-bottom:14px;line-height:2;text-align:justify}'+
+    '.sig{margin-top:40px;display:flex;justify-content:space-between}'+
+    '.sig-box{text-align:center;width:40%}'+
+    '.underline{border-bottom:1px solid #333;min-width:160px;display:inline-block;margin-bottom:4px}'+
+    '</style>'+
+    '<div class="hdr">'+
+    (p.name?'<div style="font-size:18pt;font-weight:700">مكتب '+p.name+' '+( p.title||'')+'</div>':'<div style="font-size:18pt;font-weight:700">مكتب المحاماة</div>')+
+    (p.license?'<div style="font-size:11pt;color:#666">رقم الترخيص: '+p.license+'</div>':'')+
+    (p.phone||p.email?'<div style="font-size:10pt;color:#888">'+(p.phone?'📞 '+p.phone+' ':'')+( p.email?'✉️ '+p.email:'')+'</div>':'')+
+    '</div>'+
+    '<div class="title" style="text-align:center;font-size:20pt;margin-bottom:20px">وكالة شرعية</div>'+
+    '<div class="para">الحمد لله وحده والصلاة والسلام على من لا نبي بعده، وبعد:</div>'+
+    '<div class="para">أنا الموكِّل / <strong>'+client+'</strong>'+(idNum?' صاحب هوية رقم: <strong>'+idNum+'</strong>':'')+' الجنسية: <strong>'+(nat||'سعودي')+'</strong></div>'+
+    '<div class="para">أوكّل / <strong>'+(p.name||'المحامي')+'</strong>'+(p.license?' رقم الترخيص: '+p.license:'')+' وكالةً شرعيةً يصح معها التوكيل في القيام بما يلي:</div>'+
+    '<div class="para"><strong>موضوع الوكالة:</strong><br>'+subject+'</div>'+
+    '<div class="para">وله في ذلك جميع الصلاحيات اللازمة للقيام بهذه المهمة على أكمل وجه، وهذه وكالة خاصة لا تقبل التوكيل من الباطن إلا بإذن صريح.</div>'+
+    '<div class="para">حرر في: _________________ بتاريخ: <strong>'+td2+'</strong></div>'+
+    (caseNum?'<div class="para">بشأن القضية رقم: <strong>'+caseNum+'</strong></div>':'')+
+    '<div class="sig">'+
+    '<div class="sig-box"><div>الموكِّل</div><div style="margin-top:40px" class="underline"></div><div style="font-size:10pt;color:#666;margin-top:4px">'+client+'</div></div>'+
+    '<div class="sig-box"><div>الوكيل</div><div style="margin-top:40px" class="underline"></div><div style="font-size:10pt;color:#666;margin-top:4px">'+(p.name||'المحامي')+'</div></div>'+
+    '</div>';
+  setTimeout(function(){window.print();},150);
+  toast('🖨️ جارٍ طباعة التوكيل...');
+  document.getElementById('poaModal').remove();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   💰 SMART FEE CALCULATOR
+═══════════════════════════════════════════════════════════ */
+var FEE_RATES={
+  civil:{name:'مدنية',pct:0.05,min:2000,max:50000},
+  commercial:{name:'تجارية',pct:0.06,min:3000,max:80000},
+  criminal:{name:'جنائية',flat:5000},
+  personal:{name:'أحوال شخصية',flat:3000},
+  labor:{name:'عمالية',pct:0.04,min:1500,max:30000},
+  admin:{name:'إدارية',flat:4000},
+  appeal:{name:'استئناف',pct:0.03,min:2000,max:20000},
+  cassation:{name:'نقض',pct:0.04,min:3000,max:25000},
+};
+
+function calcSmartFees(type,amount,sessions){
+  var r=FEE_RATES[type]||FEE_RATES.civil;
+  var base=r.flat||(r.pct*(amount||0));
+  base=Math.max(r.min||0,Math.min(r.max||999999,base));
+  var sessionFee=(sessions||1)*500; // 500 per session
+  return{base:Math.round(base),sessions:Math.round(sessionFee),total:Math.round(base+sessionFee)};
+}
+
+function showFeeCalcModal(){
+  var modal=document.createElement('div');modal.id='feeCalcModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));font-family:Tajawal,sans-serif;direction:rtl';
+  var typeOpts=Object.entries(FEE_RATES).map(function(e){return'<option value="'+e[0]+'">'+e[1].name+'</option>';}).join('');
+  box.innerHTML=
+    '<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">💰 حاسبة الأتعاب الذكية</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+    '<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">نوع القضية</label>'+
+    '<select id="fcType" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:12px;color:var(--text)">'+typeOpts+'</select></div>'+
+    '<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">قيمة النزاع (ر.س)</label>'+
+    '<input type="number" id="fcAmount" placeholder="0" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:12px;color:var(--text)"></div>'+
+    '<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">عدد الجلسات المتوقع</label>'+
+    '<input type="number" id="fcSessions" value="3" min="1" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px;font-size:12px;color:var(--text)"></div>'+
+    '<div style="display:flex;align-items:flex-end">'+
+    '<button onclick="calcAndShowFees()" style="width:100%;background:var(--gold);color:#0a0905;border-radius:8px;padding:10px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">احسب</button></div>'+
+    '</div>'+
+    '<div id="fcResult" style="display:none;background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:12px"></div>'+
+    '<button onclick="document.getElementById(\'feeCalcModal\').remove()" style="width:100%;background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:10px;font-size:12px;cursor:pointer">إغلاق</button>';
+  modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function calcAndShowFees(){
+  var type=document.getElementById('fcType').value;
+  var amount=parseFloat(document.getElementById('fcAmount').value)||0;
+  var sessions=parseInt(document.getElementById('fcSessions').value)||3;
+  var r=calcSmartFees(type,amount,sessions);
+  var el=document.getElementById('fcResult');if(!el)return;
+  el.style.display='block';
+  el.innerHTML=
+    '<div style="font-size:11px;font-weight:700;color:var(--gold2);margin-bottom:10px">تقدير الأتعاب</div>'+
+    '<div style="display:flex;flex-direction:column;gap:7px">'+
+    '<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">أتعاب القضية</span><span style="color:var(--text);font-weight:700">'+r.base.toLocaleString('ar-SA')+' ر.س</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text3)">أتعاب الجلسات ('+sessions+'×500)</span><span style="color:var(--text);font-weight:700">'+r.sessions.toLocaleString('ar-SA')+' ر.س</span></div>'+
+    '<div style="border-top:1px solid var(--border);padding-top:7px;display:flex;justify-content:space-between;font-size:14px;font-weight:900"><span style="color:var(--gold2)">الإجمالي المقدَّر</span><span style="color:var(--gold2)">'+r.total.toLocaleString('ar-SA')+' ر.س</span></div>'+
+    '</div>'+
+    '<button onclick="var f=document.getElementById(\'fcResult\');quickAddFee(\''+type+'\','+r.total+')" style="width:100%;background:var(--gold);color:#0a0905;border-radius:8px;padding:8px;font-weight:700;font-size:12px;cursor:pointer;margin-top:10px;font-family:Tajawal,sans-serif">+ إضافة للأتعاب</button>';
+}
+
+function quickAddFee(type,amount){
+  fees.push({id:'f'+Date.now(),desc:'أتعاب '+( FEE_RATES[type]?FEE_RATES[type].name:'قضية'),amount:amount,paid:false,date:today(),sessionId:null});
+  try{localStorage.setItem('j_fees',JSON.stringify(fees));}catch(e){}
+  var modal=document.getElementById('feeCalcModal');if(modal)modal.remove();
+  toast('✅ تمت إضافة الأتعاب: '+amount.toLocaleString('ar-SA')+' ر.س');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📊 CASE STAGE TRACKER (متابعة مراحل القضية)
+═══════════════════════════════════════════════════════════ */
+var CASE_STAGES=['تسجيل الدعوى','إعلان الخصوم','تبادل اللوائح','الجلسات','الفصل في الدفوع','المرافعة الختامية','صدور الحكم','استئناف / نقض','التنفيذ','الإنهاء'];
+
+function buildStageTrackerHTML(s){
+  var currentStage=s.stage||'';
+  var stageIdx=CASE_STAGES.indexOf(currentStage);
+  var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px;margin:10px 0">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2)">🗂️ مرحلة القضية</div>';
+  h+='<select onchange="saveStage('+s.id+',this.value)" dir="rtl" style="background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text);font-family:Tajawal,sans-serif">';
+  h+='<option value="">حدد المرحلة</option>';
+  CASE_STAGES.forEach(function(st){h+='<option value="'+st+'" '+(currentStage===st?'selected':'')+'>'+st+'</option>';});
+  h+='</select></div>';
+  if(stageIdx>=0){
+    h+='<div style="position:relative;margin-bottom:8px">';
+    h+='<div style="background:var(--surface3);border-radius:4px;height:6px;overflow:hidden">';
+    h+='<div style="height:100%;background:linear-gradient(90deg,var(--gold),#f0c55a);border-radius:4px;width:'+Math.round(((stageIdx+1)/CASE_STAGES.length)*100)+'%;transition:width .5s"></div></div>';
+    h+='<div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:left">'+(stageIdx+1)+' / '+CASE_STAGES.length+'</div></div>';
+    h+='<div style="display:flex;gap:4px;flex-wrap:wrap">';
+    CASE_STAGES.forEach(function(st,i){
+      var done=i<stageIdx,active=i===stageIdx;
+      h+='<div style="display:flex;align-items:center;gap:3px;font-size:9px;color:'+(active?'var(--gold2)':done?'var(--green)':'var(--text3)')+'">';
+      h+='<div style="width:7px;height:7px;border-radius:50%;background:'+(active?'var(--gold)':done?'var(--green)':'var(--surface3)')+';flex-shrink:0"></div>'+st+'</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+function saveStage(id,stage){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  s.stage=stage;
+  dbPut(s).then(function(){toast('🗂️ تم تحديث المرحلة: '+stage);});
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📝 EDIT LOG — سجل التعديلات
+═══════════════════════════════════════════════════════════ */
+var editLog=[];
+try{editLog=JSON.parse(localStorage.getItem('j_editlog')||'[]');}catch(e){}
+function logEdit(action,details){
+  editLog.unshift({ts:new Date().toISOString(),action:action,details:details});
+  if(editLog.length>200)editLog=editLog.slice(0,200);
+  try{localStorage.setItem('j_editlog',JSON.stringify(editLog));}catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   🤖 AI ENHANCEMENTS — تحسينات سعود
+═══════════════════════════════════════════════════════════ */
+function aiDraftMemo(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  go('ai');
+  setTimeout(function(){
+    sendAI('أنت محامٍ محترف. صِغ مذكرة قانونية موجزة لهذه القضية:\n\nرقم القضية: '+s.num+'\nنوع القضية: '+s.type+'\nالمحكمة: '+(s.court||'')+'\nالمدعي: '+(s.plnt||'')+'\nالمدعى عليه: '+(s.dfnd||'')+'\nملاحظات: '+(s.notes||'')+'\n\nاكتب مذكرة دفاعية موجزة تتضمن: الوقائع، الأساس القانوني، الطلبات.');
+  },350);
+}
+
+function aiSuggestArticles(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  go('ai');
+  setTimeout(function(){
+    sendAI('اقترح المواد القانونية المناسبة لهذه القضية من الأنظمة السعودية:\n\nنوع: '+s.type+'\nالمحكمة: '+(s.court||'')+'\nالملاحظات: '+(s.notes||'')+'\n\nاذكر المواد مع نصها ووجه الاستدلال بها.');
+  },350);
+}
+
+function aiAnalyzeDoc(file){
+  if(!apiKey){toast('⚠️ يحتاج مفتاح API');return;}
+  var r=new FileReader();
+  r.onload=function(e){
+    var b64=e.target.result.split(',')[1];
+    var isImg=file.type.startsWith('image/');
+    go('ai');
+    setTimeout(function(){
+      var msgs=[{role:'user',content:isImg?
+        [{type:'image',source:{type:'base64',media_type:file.type,data:b64}},{type:'text',text:'حلّل هذا المستند القانوني واستخرج: النقاط الرئيسية، المواد المذكورة، التواريخ المهمة، والتوصيات.'}]:
+        [{type:'text',text:'حلّل هذا المستند: '+atob(b64).substring(0,3000)}]
+      }];
+      aiMessages=aiMessages.concat(msgs);
+      saveAIMsgs();render();
+      sendAI('');
+    },350);
+  };
+  r.readAsDataURL(file);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   🌙 AUTO THEME (ليلي/نهاري تلقائي)
+═══════════════════════════════════════════════════════════ */
+var autoThemeEnabled=false;
+try{autoThemeEnabled=localStorage.getItem('j_autotheme')==='1';}catch(e){}
+
+function checkAutoTheme(){
+  if(!autoThemeEnabled)return;
+  var h=new Date().getHours();
+  var shouldBeDay=h>=7&&h<19;
+  if(shouldBeDay!==isDay){isDay=shouldBeDay;applyTheme();localStorage.setItem('j_theme',isDay?'day':'night');var b=document.getElementById('btnTheme');if(b)b.textContent=isDay?'☀️':'🌙';}
+}
+setInterval(checkAutoTheme,60000);
+checkAutoTheme();
+
+/* ═══════════════════════════════════════════════════════════
+   ⌨️ KEYBOARD SHORTCUTS
+═══════════════════════════════════════════════════════════ */
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.contentEditable==='true')return;
+  if(e.altKey){
+    var map={'1':'home','2':'list','3':'tasks','4':'ai','5':'cal','6':'fees','7':'legal','8':'reports','9':'settings'};
+    if(map[e.key]){e.preventDefault();go(map[e.key]);}
+    if(e.key==='n'){e.preventDefault();openAdd();}
+    if(e.key==='f'){e.preventDefault();go('list');setTimeout(function(){var s=document.querySelector('.search-wrap input');if(s)s.focus();},200);}
+    if(e.key==='v'){e.preventDefault();toggleVoiceSearch();}
+  }
+  if(e.key==='Escape'){
+    var modals=['addLegalModal','poaModal','feeCalcModal','linkModal','boeImportModal'];
+    modals.forEach(function(id){var m=document.getElementById(id);if(m)m.remove();});
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   🎨 SESSION COLOR BY TYPE
+═══════════════════════════════════════════════════════════ */
+var TYPE_COLORS={
+  'جنائية':'#f87171','مدنية':'#60a5fa','تجارية':'#fbbf24',
+  'أحوال شخصية':'#a78bfa','عمالية':'#34d399','إدارية':'#fb923c',
+  'دستورية':'#e879f9','شخصية':'#a78bfa'
+};
+function typeColor(type){return TYPE_COLORS[type]||'var(--gold)';}
+
+/* ═══════════════════════════════════════════════════════════
+   💼 CLIENT STATEMENT — كشف حساب الموكل
+═══════════════════════════════════════════════════════════ */
+function printClientStatement(clientName){
+  var clientFees=fees.filter(function(f){
+    var s=f.sessionId?data.find(function(x){return x.id===f.sessionId;}):null;
+    return s&&(s.plnt===clientName||s.dfnd===clientName);
+  });
+  if(!clientFees.length){toast('⚠️ لا توجد سجلات لهذا الموكل');return;}
+  var total=clientFees.reduce(function(s,f){return s+(f.amount||0);},0);
+  var paid=clientFees.filter(function(f){return f.paid;}).reduce(function(s,f){return s+(f.amount||0);},0);
+  var p=lawyerProfile;
+  var td2=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+  var pa=document.getElementById('pa');
+  pa.innerHTML=
+    '<style>@page{margin:20mm}body{direction:rtl;font-family:\'Traditional Arabic\',Arial,sans-serif;color:#111}'+
+    'table{width:100%;border-collapse:collapse;font-size:11pt}th{background:#0a0905;color:#f0c55a;padding:8px;text-align:right}'+
+    'td{padding:7px 8px;border-bottom:1px solid #eee}tr:nth-child(even){background:#fafaf5}</style>'+
+    '<div style="text-align:center;border-bottom:3px solid #c8a84b;padding-bottom:14px;margin-bottom:20px">'+
+    '<div style="font-size:18pt;font-weight:700">'+(p.name?'مكتب '+p.name:'مكتب المحاماة')+'</div>'+
+    (p.license?'<div style="font-size:10pt;color:#666">رقم الترخيص: '+p.license+'</div>':'')+
+    '<div style="font-size:10pt;color:#888">كشف حساب — '+td2+'</div>'+
+    '</div>'+
+    '<div style="margin-bottom:16px"><strong>الموكّل: </strong>'+clientName+'</div>'+
+    '<table><thead><tr><th>الخدمة</th><th>القضية</th><th>المبلغ</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>'+
+    clientFees.map(function(f){
+      var s=f.sessionId?data.find(function(x){return x.id===f.sessionId;}):null;
+      return'<tr><td>'+f.desc+'</td><td>'+(s?s.num:'—')+'</td><td>'+f.amount.toLocaleString('ar-SA')+' ر.س</td><td>'+(f.paid?'✅ مسدّد':'⏳ معلق')+'</td><td>'+(f.date||'—')+'</td></tr>';
+    }).join('')+
+    '</tbody></table>'+
+    '<div style="margin-top:16px;text-align:left;border-top:2px solid #c8a84b;padding-top:10px">'+
+    '<div>إجمالي: <strong>'+total.toLocaleString('ar-SA')+' ر.س</strong></div>'+
+    '<div style="color:green">مسدّد: <strong>'+paid.toLocaleString('ar-SA')+' ر.س</strong></div>'+
+    '<div style="color:red">متبقي: <strong>'+(total-paid).toLocaleString('ar-SA')+' ر.س</strong></div>'+
+    '</div>';
+  setTimeout(function(){window.print();},150);
+  toast('🖨️ طباعة كشف حساب: '+clientName);
 }
 
 var _origToggleNotif=toggleNotif;
