@@ -680,7 +680,7 @@ var ST={
 };
 var PT={high:{lbl:"عالية",cls:"prio-high",icon:"🔴"},med:{lbl:"متوسطة",cls:"prio-med",icon:"🟡"},low:{lbl:"منخفضة",cls:"prio-low",icon:"🟢"},none:{lbl:"عادية",cls:"prio-none",icon:"🔵"}};
 var ALL_TAGS=['مدني','جنائي','عاجل','مهم','استئناف','نقض','تحكيم','وساطة','تنفيذ'];
-var STAGES=['تقديم الدعوى','قيد القضية','الجلسة الأولى','تبادل المذكرات','الإثبات','المرافعة','صدور الحكم'];
+var STAGES=['قيد الدعوى','تبليغ الخصوم','الدفوع الشكلية','الجلسات','الفصل في الدفوع','تبادل المذكرات','المرافعة الختامية','صدور الحكم','استئناف/نقض','التنفيذ','الانهاء'];
 var TEMPLATES=[
   {name:'جلسة جنائية — استماع',type:'جنائية',status:'scheduled',priority:'high',court:'المحكمة الجزائية',notes:'جلسة استماع للشهود'},
   {name:'جلسة جنائية — مرافعة',type:'جنائية',status:'scheduled',priority:'high',court:'المحكمة الجزائية',notes:'مرافعة ختامية'},
@@ -4983,31 +4983,42 @@ function quickAddFee(type,amount){
 /* ═══════════════════════════════════════════════════════════
    📊 CASE STAGE TRACKER (متابعة مراحل القضية)
 ═══════════════════════════════════════════════════════════ */
-var CASE_STAGES=['تسجيل الدعوى','إعلان الخصوم','تبادل اللوائح','الجلسات','الفصل في الدفوع','المرافعة الختامية','صدور الحكم','استئناف / نقض','التنفيذ','الإنهاء'];
+var CASE_STAGES=['قيد الدعوى','تبليغ الخصوم','الدفوع الشكلية','الجلسات','الفصل في الدفوع','تبادل المذكرات','المرافعة الختامية','صدور الحكم','استئناف/نقض','التنفيذ','الانهاء'];
 
 function buildStageTrackerHTML(s){
   var currentStage=s.stage||'';
   var stageIdx=CASE_STAGES.indexOf(currentStage);
+  var pct=stageIdx>=0?Math.round(((stageIdx+1)/CASE_STAGES.length)*100):0;
   var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px;margin:10px 0">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
-  h+='<div style="font-size:11px;font-weight:700;color:var(--text2)">🗂️ مرحلة القضية</div>';
-  h+='<select onchange="saveStage('+s.id+',this.value)" dir="rtl" style="background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text);font-family:Tajawal,sans-serif">';
-  h+='<option value="">حدد المرحلة</option>';
-  CASE_STAGES.forEach(function(st){h+='<option value="'+st+'" '+(currentStage===st?'selected':'')+'>'+st+'</option>';});
-  h+='</select></div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2)">&#x1F5C2;&#xFE0F; &#x645;&#x631;&#x627;&#x62D;&#x644; &#x627;&#x644;&#x642;&#x636;&#x64A;&#x629;</div>';
+  if(stageIdx>=0)h+='<div style="font-size:12px;font-weight:900;color:var(--gold2)">'+pct+'%</div>';
+  h+='</div>';
   if(stageIdx>=0){
-    h+='<div style="position:relative;margin-bottom:8px">';
-    h+='<div style="background:var(--surface3);border-radius:4px;height:6px;overflow:hidden">';
-    h+='<div style="height:100%;background:linear-gradient(90deg,var(--gold),#f0c55a);border-radius:4px;width:'+Math.round(((stageIdx+1)/CASE_STAGES.length)*100)+'%;transition:width .5s"></div></div>';
-    h+='<div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:left">'+(stageIdx+1)+' / '+CASE_STAGES.length+'</div></div>';
-    h+='<div style="display:flex;gap:4px;flex-wrap:wrap">';
-    CASE_STAGES.forEach(function(st,i){
-      var done=i<stageIdx,active=i===stageIdx;
-      h+='<div style="display:flex;align-items:center;gap:3px;font-size:9px;color:'+(active?'var(--gold2)':done?'var(--green)':'var(--text3)')+'">';
-      h+='<div style="width:7px;height:7px;border-radius:50%;background:'+(active?'var(--gold)':done?'var(--green)':'var(--surface3)')+';flex-shrink:0"></div>'+st+'</div>';
-    });
-    h+='</div>';
+    h+='<div style="background:var(--surface3);border-radius:4px;height:7px;overflow:hidden;margin-bottom:10px">';
+    h+='<div style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;width:'+pct+'%;transition:width .5s"></div></div>';
   }
+  h+='<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">';
+  CASE_STAGES.forEach(function(st,i){
+    var done=i<stageIdx;
+    var active=i===stageIdx;
+    var rowBg=active?'var(--gold-a10)':done?'rgba(48,184,128,0.06)':'var(--surface3)';
+    var rowBorder=active?'var(--gold-a30)':done?'rgba(48,184,128,0.25)':'var(--border)';
+    var dotBg=active?'var(--gold)':done?'var(--green)':'var(--surface2)';
+    var dotBorder=active?'var(--gold)':done?'var(--green)':'var(--border2)';
+    var dotTxt=done?'&#x2713;':active?'&#x25CF;':(i+1);
+    var dotColor=done?'#fff':active?'#0a0905':'var(--text3)';
+    var lblColor=active?'var(--gold2)':done?'var(--green)':'var(--text2)';
+    var lblWeight=active?'700':'500';
+    h+='<button onclick="saveStage('+s.id+',\''+st+'\')" style="display:flex;align-items:center;gap:8px;background:'+rowBg+';border:1px solid '+rowBorder+';border-radius:9px;padding:7px 10px;cursor:pointer;text-align:right;width:100%;font-family:Tajawal,sans-serif;transition:all .15s">';
+    h+='<div style="width:20px;height:20px;border-radius:50%;background:'+dotBg+';border:2px solid '+dotBorder+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;font-weight:700;color:'+dotColor+'">'+dotTxt+'</div>';
+    h+='<div style="flex:1;font-size:12px;font-weight:'+lblWeight+';color:'+lblColor+'">'+st+'</div>';
+    if(active)h+='<div style="font-size:9px;color:var(--gold2);font-weight:700;background:var(--gold-a10);padding:2px 6px;border-radius:6px">&#x62C;&#x627;&#x631;&#x64A;</div>';
+    else if(done)h+='<div style="font-size:10px;color:var(--green)">&#x2713;</div>';
+    h+='</button>';
+  });
+  h+='</div>';
+  h+='<div style="font-size:10px;color:var(--text3);text-align:center">'+(stageIdx>=0?'&#x627;&#x644;&#x645;&#x631;&#x62D;&#x644;&#x629; '+(stageIdx+1)+' &#x645;&#x646; '+CASE_STAGES.length:'&#x627;&#x636;&#x63A;&#x637; &#x639;&#x644;&#x649; &#x623;&#x64A; &#x645;&#x631;&#x62D;&#x644;&#x629; &#x644;&#x62A;&#x62D;&#x62F;&#x64A;&#x62F;&#x647;&#x627;')+'</div>';
   h+='</div>';
   return h;
 }
