@@ -1330,6 +1330,25 @@ function delDeadline(sid){
   if(curTab==='home')render();
 }
 
+function scrollToDeadlines(){
+  // If already on home, scroll to deadlines section
+  var el=document.getElementById('deadlinesSection');
+  if(el){
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    // Flash the section briefly
+    el.style.transition='outline .2s';
+    el.style.outline='2px solid var(--gold)';
+    setTimeout(function(){el.style.outline='';},1200);
+    return;
+  }
+  // Navigate to home then scroll
+  go('home');
+  setTimeout(function(){
+    var el2=document.getElementById('deadlinesSection');
+    if(el2)el2.scrollIntoView({behavior:'smooth',block:'start'});
+  },250);
+}
+
 function startTick(){
   if(tick)clearInterval(tick);
   tick=setInterval(function(){
@@ -4294,18 +4313,26 @@ function rDashboard(){
   var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:12px">';
   h+='<div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:10px;letter-spacing:.08em">📊 لوحة التحكم</div>';
 
-  // KPI row 1
+  // KPI row 1 — all clickable
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">';
-  [{v:all,l:'إجمالي',e:'📋',c:'var(--gold2)'},{v:todayN,l:'اليوم',e:'📅',c:'var(--amber)'},{v:sched,l:'مجدولة',e:'🔵',c:'var(--blue)'},{v:done,l:'منتهية',e:'✅',c:'var(--green)'}].forEach(function(x){
-    h+='<div style="background:var(--surface3);border-radius:10px;padding:10px 6px;text-align:center"><div style="font-size:16px">'+x.e+'</div><div style="font-size:20px;font-weight:900;color:'+x.c+';margin:2px 0">'+x.v+'</div><div style="font-size:9px;color:var(--text3)">'+x.l+'</div></div>';
+  [{v:all,l:'إجمالي',e:'📋',c:'var(--gold2)',act:"go('list')"},
+   {v:todayN,l:'اليوم',e:'📅',c:'var(--amber)',act:"filterS='all';q='';go('list')"},
+   {v:sched,l:'مجدولة',e:'🔵',c:'var(--blue)',act:"filterS='scheduled';q='';go('list')"},
+   {v:done,l:'منتهية',e:'✅',c:'var(--green)',act:"filterS='completed';q='';go('list')"}
+  ].forEach(function(x){
+    h+='<div onclick="'+x.act+'" style="background:var(--surface3);border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;transition:all .15s" onmousedown="this.style.transform=\'scale(.95)\'" onmouseup="this.style.transform=\'scale(1)\'"><div style="font-size:16px">'+x.e+'</div><div style="font-size:20px;font-weight:900;color:'+x.c+';margin:2px 0">'+x.v+'</div><div style="font-size:9px;color:var(--text3)">'+x.l+'</div></div>';
   });
   h+='</div>';
 
   // KPI row 2 — fees + winrate + urgent deadlines
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">';
-  h+='<div style="background:var(--surface3);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">نسبة الإنجاز</div><div style="font-size:22px;font-weight:900;color:var(--green)">'+winRate+'%</div></div>';
-  h+='<div style="background:var(--surface3);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">الأتعاب ر.س</div><div style="font-size:16px;font-weight:900;color:var(--gold2)">'+totalFees.toLocaleString('ar-SA')+'</div></div>';
-  h+='<div style="background:'+(urgentDL>0?'rgba(251,191,36,0.12)':'var(--surface3)')+';border-radius:10px;padding:10px;text-align:center;border:1px solid '+(urgentDL>0?'rgba(251,191,36,0.3)':'transparent')+'"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">مواعيد طعن عاجلة</div><div style="font-size:22px;font-weight:900;color:'+(urgentDL>0?'#fbbf24':'var(--text3)')+'">'+urgentDL+'</div></div>';
+  h+='<div onclick="go(\'fees\')" style="background:var(--surface3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .15s" onmousedown="this.style.transform=\'scale(.95)\'" onmouseup="this.style.transform=\'scale(1)\'"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">نسبة الإنجاز</div><div style="font-size:22px;font-weight:900;color:var(--green)">'+winRate+'%</div></div>';
+  h+='<div onclick="go(\'fees\')" style="background:var(--surface3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .15s" onmousedown="this.style.transform=\'scale(.95)\'" onmouseup="this.style.transform=\'scale(1)\'"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">الأتعاب ر.س</div><div style="font-size:16px;font-weight:900;color:var(--gold2)">'+totalFees.toLocaleString('ar-SA')+'</div></div>';
+  h+='<div onclick="scrollToDeadlines()" style="background:'+(urgentDL>0?'rgba(251,191,36,0.12)':'var(--surface3)')+';border-radius:10px;padding:10px;text-align:center;border:1px solid '+(urgentDL>0?'rgba(251,191,36,0.3)':'transparent')+';cursor:'+(urgentDL>0?'pointer':'default')+';transition:all .15s" '+(urgentDL>0?'onmousedown="this.style.transform=\'scale(.95)\'" onmouseup="this.style.transform=\'scale(1)\'"':'')+'>'+
+  '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">مواعيد طعن عاجلة</div>'+
+  '<div style="font-size:22px;font-weight:900;color:'+(urgentDL>0?'#fbbf24':'var(--text3)')+'">'+urgentDL+'</div>'+
+  (urgentDL>0?'<div style="font-size:9px;color:#fbbf24;margin-top:2px">اضغط للعرض ▼</div>':'')+
+  '</div>';
   h+='</div>';
 
   // Mini 7-day bar chart
