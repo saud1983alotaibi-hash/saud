@@ -3545,7 +3545,7 @@ function rLegal(){
 
   // Search
   h+='<div style="position:relative;margin-bottom:10px"><span style="position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;color:var(--text3)">🔍</span>';
-  h+='<input type="search" id="legalSearch" value="'+legalSearch+'" placeholder="ابحث في المواد والنصوص..." dir="rtl" oninput="legalSearch=this.value;render()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px 40px 11px 14px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif"></div>';
+  h+='<input type="search" id="legalSearch" value="'+legalSearch+'" placeholder="ابحث في المواد والنصوص..." dir="rtl" oninput="legalSearch=this.value;updateLegalResults()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px 40px 11px 14px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif"></div>';
 
   // Categories
   h+='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">';
@@ -3559,7 +3559,16 @@ function rLegal(){
 
   var q=legalSearch.trim().toLowerCase();
 
-  // Built-in articles
+  h+='<div id="legalResults">';
+  h+=buildLegalResults(q);
+  h+='</div>';
+  return h;
+}
+
+function buildLegalResults(q){
+  var allCats=Object.keys(LEGAL_DB);
+  var h='';
+
   allCats.forEach(function(cat){
     if(legalCat&&legalCat!==cat)return;
     var arts=LEGAL_DB[cat].filter(function(a){
@@ -3569,53 +3578,44 @@ function rLegal(){
     if(!arts.length)return;
     h+=secHdr('📋',cat);
     arts.forEach(function(a){
+      var safeText=a.text.replace(/'/g,"\\'");
       h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px">';
       h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">';
       h+='<span style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:7px;padding:3px 10px;font-size:11px;font-weight:700">'+a.art+'</span>';
-      h+='<button onclick="copyLegalArt(\''+a.art+': '+a.text.replace(/'/g,"\\'")+'\')" style="background:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">📋 نسخ</button>';
+      h+='<button onclick="copyLegalArt(\''+a.art+': '+safeText+'\')" style="background:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">📋 نسخ</button>';
       h+='</div><div style="font-size:12px;color:var(--text);line-height:1.7;direction:rtl">'+a.text+'</div></div>';
     });
   });
 
-  // User-imported docs
   legalUserDocs.forEach(function(doc,di){
     if(legalCat&&legalCat!==doc.title)return;
-    // Filter paragraphs by search
     var paras=doc.paragraphs.filter(function(p){
       if(!q)return true;
       return p.toLowerCase().includes(q);
     });
     if(!paras.length)return;
     h+=secHdr('📄',doc.title);
-    h+='<div style="margin-bottom:4px;display:flex;justify-content:flex-end">';
-    h+='<button onclick="deleteLegalDoc('+di+')" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:7px;padding:3px 10px;font-size:10px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ حذف</button></div>';
-    paras.slice(0,50).forEach(function(p,pi){
+    h+='<div style="margin-bottom:4px;display:flex;justify-content:flex-end"><button onclick="deleteLegalDoc('+di+')" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:7px;padding:3px 10px;font-size:10px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ حذف</button></div>';
+    paras.slice(0,50).forEach(function(p){
       if(!p.trim())return;
-      // Highlight search term
       var display=p;
-      if(q){
-        var re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
-        display=p.replace(re,'<mark style="background:var(--gold-a20);color:var(--gold2)">$1</mark>');
-      }
-      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;direction:rtl">';
-      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
-      h+='<div style="font-size:12px;color:var(--text);line-height:1.7;flex:1">'+display+'</div>';
-      h+='<button onclick="copyLegalArt(\''+p.replace(/'/g,"\\'")+'\')" style="background:none;color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0;font-family:Tajawal,sans-serif">📋</button>';
-      h+='</div></div>';
+      if(q){try{var re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');display=p.replace(re,'<mark style="background:var(--gold-a20);color:var(--gold2)">$1</mark>');}catch(e){}}
+      var safeP=p.replace(/'/g,"\\'");
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;direction:rtl"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="font-size:12px;color:var(--text);line-height:1.7;flex:1">'+display+'</div><button onclick="copyLegalArt(\''+safeP+'\')" style="background:none;color:var(--text3);font-size:11px;cursor:pointer;flex-shrink:0;font-family:Tajawal,sans-serif">📋</button></div></div>';
     });
-    if(paras.length>50)h+='<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:8px">... و'+(paras.length-50)+' فقرة أخرى — ضيّق البحث لعرض المزيد</div>';
+    if(paras.length>50)h+='<div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:8px">... و'+(paras.length-50)+' فقرة أخرى</div>';
   });
 
-  if(q&&!cats.some(function(c){
-    if(allCats.indexOf(c)>-1)return LEGAL_DB[c].some(function(a){return a.art.toLowerCase().includes(q)||a.text.includes(q);});
-    var ud=legalUserDocs.find(function(d){return d.title===c;});
-    return ud&&ud.paragraphs.some(function(p){return p.toLowerCase().includes(q);});
-  })){
-    h+='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">لا توجد نتائج</div><div class="empty-sub">جرب كلمات أخرى</div></div>';
-  }
+  if(!h)h='<div class="empty"><div class="empty-icon">'+(q?'🔍':'📚')+'</div><div class="empty-title">'+(q?'لا توجد نتائج لـ &quot;'+q+'&quot;':'اختر تصنيفاً أو ابحث')+'</div></div>';
   return h;
 }
 
+function updateLegalResults(){
+  var el=document.getElementById('legalResults');
+  if(!el)return;
+  var q=legalSearch.trim().toLowerCase();
+  el.innerHTML=buildLegalResults(q);
+}
 function importLegalDoc(input){
   var file=input.files[0];if(!file)return;
   input.value='';
