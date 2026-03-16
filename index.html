@@ -2818,6 +2818,14 @@ openDet=function(id){
 var lhImage='';
 var lhMargins={top:140,right:60,bottom:100,left:60};
 var lhFontSize=14;
+var lhFontFamily='Tajawal';
+var lhLineHeight=1.9;
+var lhTextAlign='right';
+var lhTextColor='#111111';
+var lhBold=false;
+var lhItalic=false;
+var lhUnderline=false;
+var lhPageSize='A4';
 var lhTemplates=[];
 
 function initLhTemplates(){
@@ -2832,87 +2840,154 @@ function initLhTemplates(){
 try{lhImage=localStorage.getItem('j_lh_image')||'';}catch(e){}
 try{lhMargins=JSON.parse(localStorage.getItem('j_lh_margins')||JSON.stringify(lhMargins));}catch(e){}
 try{lhFontSize=parseInt(localStorage.getItem('j_lh_fontsize'))||14;}catch(e){}
+try{lhFontFamily=localStorage.getItem('j_lh_family')||'Tajawal';}catch(e){}
+try{lhLineHeight=parseFloat(localStorage.getItem('j_lh_lh'))||1.9;}catch(e){}
+try{lhTextAlign=localStorage.getItem('j_lh_align')||'right';}catch(e){}
+try{lhTextColor=localStorage.getItem('j_lh_color')||'#111111';}catch(e){}
+try{lhBold=localStorage.getItem('j_lh_bold')==='1';}catch(e){}
+try{lhItalic=localStorage.getItem('j_lh_italic')==='1';}catch(e){}
+try{lhUnderline=localStorage.getItem('j_lh_underline')==='1';}catch(e){}
+try{lhPageSize=localStorage.getItem('j_lh_pagesize')||'A4';}catch(e){}
 
 function saveLhSettings(){
   try{
     if(lhImage)localStorage.setItem('j_lh_image',lhImage);
     localStorage.setItem('j_lh_margins',JSON.stringify(lhMargins));
     localStorage.setItem('j_lh_fontsize',String(lhFontSize));
+    localStorage.setItem('j_lh_family',lhFontFamily);
+    localStorage.setItem('j_lh_lh',String(lhLineHeight));
+    localStorage.setItem('j_lh_align',lhTextAlign);
+    localStorage.setItem('j_lh_color',lhTextColor);
+    localStorage.setItem('j_lh_bold',lhBold?'1':'0');
+    localStorage.setItem('j_lh_italic',lhItalic?'1':'0');
+    localStorage.setItem('j_lh_underline',lhUnderline?'1':'0');
+    localStorage.setItem('j_lh_pagesize',lhPageSize);
   }catch(e){toast('⚠️ مساحة التخزين ممتلئة — جرب صورة أصغر');}
 }
 
 function rLetterhead(){
   initLhTemplates();
   var hasImage=!!lhImage;
-  var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">📄 الورق الرسمي</div>';
+  var pageSizes={A4:{w:'210mm',h:'297mm',label:'A4'},A5:{w:'148mm',h:'210mm',label:'A5'},Letter:{w:'216mm',h:'279mm',label:'Letter'}};
+  var fonts=['Tajawal','Scheherazade New','Arial','Times New Roman','Courier New','Georgia'];
+  var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">\u0627\u0644\u0648\u0631\u0642 \u0627\u0644\u0631\u0633\u0645\u064a \ud83d\udcc4</div>';
 
-  // Upload section
   h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:12px">';
-  h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">🖼️ صورة الورق الرسمي</div>';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">\ufe0f\u0635\u0648\u0631\u0629 \u0627\u0644\u0648\u0631\u0642 \u0627\u0644\u0631\u0633\u0645\u064a</div>';
   if(!hasImage){
-    h+='<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:28px;background:var(--surface3);border:2px dashed var(--gold-a30);border-radius:var(--r-md);cursor:pointer;text-align:center">';
-    h+='<div style="font-size:40px">📄</div>';
-    h+='<div style="font-size:13px;font-weight:700;color:var(--gold2)">ارفع صورة ورقك الرسمي</div>';
-    h+='<div style="font-size:11px;color:var(--text3)">JPG أو PNG — يُفضّل A4 عمودي</div>';
-    h+='<input type="file" accept="image/*" style="display:none" onchange="uploadLetterhead(this)">';
-    h+='</label>';
+    h+='<label style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px;background:var(--surface3);border:2px dashed var(--gold-a30);border-radius:var(--r-md);cursor:pointer;text-align:center">';
+    h+='<div style="font-size:40px">\ud83d\udcc4</div>';
+    h+='<div style="font-size:13px;font-weight:700;color:var(--gold2)">\u0627\u0631\u0641\u0639 \u0635\u0648\u0631\u0629 \u0648\u0631\u0642\u0643 \u0627\u0644\u0631\u0633\u0645\u064a</div>';
+    h+='<div style="font-size:11px;color:var(--text3)">JPG \u0623\u0648 PNG</div>';
+    h+='<input type="file" accept="image/*" style="display:none" onchange="uploadLetterhead(this)"></label>';
   } else {
-    h+='<div style="position:relative;border-radius:10px;overflow:hidden;margin-bottom:10px">';
-    h+='<img src="'+lhImage+'" style="width:100%;max-height:160px;object-fit:cover;display:block">';
+    h+='<div style="position:relative;border-radius:10px;overflow:hidden;margin-bottom:8px">';
+    h+='<img src="'+lhImage+'" style="width:100%;max-height:130px;object-fit:cover;display:block">';
     h+='<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;gap:10px">';
-    h+='<label style="background:var(--gold);color:#0a0905;border-radius:9px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">🔄 تغيير<input type="file" accept="image/*" style="display:none" onchange="uploadLetterhead(this)"></label>';
-    h+='<button onclick="removeLhImage()" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:9px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ حذف</button>';
+    h+='<label style="background:var(--gold);color:#0a0905;border-radius:9px;padding:7px 13px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">\ud83d\udd04 \u062a\u063a\u064a\u064a\u0631<input type="file" accept="image/*" style="display:none" onchange="uploadLetterhead(this)"></label>';
+    h+='<button onclick="removeLhImage()" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:9px;padding:7px 13px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">\ud83d\uddd1\ufe0f \u062d\u0630\u0641</button>';
     h+='</div></div>';
   }
   h+='</div>';
 
   if(hasImage){
-    // Margins & font size
+    // Page size + margins
     h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:12px">';
-    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">📐 ضبط الهوامش وحجم الخط</div>';
-    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
-    [{k:'top',l:'هامش أعلى'},{k:'bottom',l:'هامش أسفل'},{k:'right',l:'هامش يمين'},{k:'left',l:'هامش يسار'}].forEach(function(m){
-      h+='<div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px"><span>'+m.l+'</span><span id="lhm_'+m.k+'" style="color:var(--gold2);font-weight:700">'+lhMargins[m.k]+'</span></div>';
-      h+='<input type="range" min="0" max="300" value="'+lhMargins[m.k]+'" oninput="lhMargins[\''+m.k+'\']=parseInt(this.value);document.getElementById(\'lhm_'+m.k+'\').textContent=this.value;updateLhPreview()" style="width:100%"></div>';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">\ud83d\udcd0 \u062d\u062c\u0645 \u0627\u0644\u0635\u0641\u062d\u0629 \u0648\u0627\u0644\u0647\u0648\u0627\u0645\u0634</div>';
+    h+='<div style="display:flex;gap:7px;margin-bottom:12px">';
+    Object.keys(pageSizes).forEach(function(k){
+      var active=lhPageSize===k;
+      h+='<button onclick="lhPageSize=\''+k+'\';saveLhSettings();updateLhPreview();render()" style="flex:1;padding:8px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;background:'+(active?'var(--gold)':'var(--surface3)')+';color:'+(active?'#0a0905':'var(--text3)')+';border:1px solid '+(active?'transparent':'var(--border2)')+'">'+pageSizes[k].label+'</button>';
     });
     h+='</div>';
-    h+='<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px"><span>حجم الخط</span><span id="lhFsVal" style="color:var(--gold2);font-weight:700">'+lhFontSize+' px</span></div>';
-    h+='<input type="range" min="10" max="24" value="'+lhFontSize+'" oninput="lhFontSize=parseInt(this.value);document.getElementById(\'lhFsVal\').textContent=this.value+\' px\';updateLhPreview()" style="width:100%"></div>';
-    h+='<button onclick="saveLhSettings();toast(\'✅ تم الحفظ\')" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:9px;padding:8px;font-size:12px;cursor:pointer;margin-top:10px;font-family:Tajawal,sans-serif">💾 حفظ الإعدادات</button>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    [{k:'top',l:'\u0623\u0639\u0644\u0649'},{k:'bottom',l:'\u0623\u0633\u0641\u0644'},{k:'right',l:'\u064a\u0645\u064a\u0646'},{k:'left',l:'\u064a\u0633\u0627\u0631'}].forEach(function(m){
+      h+='<div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px"><span>\u0647\u0627\u0645\u0634 '+m.l+'</span><span id="lhm_'+m.k+'" style="color:var(--gold2);font-weight:700">'+lhMargins[m.k]+'</span></div>';
+      h+='<input type="range" min="0" max="300" step="5" value="'+lhMargins[m.k]+'" oninput="lhMargins[\''+m.k+'\']= parseInt(this.value);document.getElementById(\'lhm_'+m.k+'\').textContent=this.value;updateLhPreview()" style="width:100%"></div>';
+    });
+    h+='</div>';
+    h+='<button onclick="saveLhSettings();toast(\'\u2705 \u062d\u064f\u0641\u0638\u062a\');updateLhPreview()" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:9px;padding:8px;font-size:12px;cursor:pointer;margin-top:10px;font-family:Tajawal,sans-serif">\ud83d\udcbe \u062d\u0641\u0638 \u0627\u0644\u0625\u0639\u062f\u0627\u062f\u0627\u062a</button>';
+    h+='</div>';
+
+    // Formatting toolbar
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px;margin-bottom:12px">';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">\u270d\ufe0f \u062a\u0646\u0633\u064a\u0642 \u0627\u0644\u0646\u0635</div>';
+
+    // Font + size row
+    h+='<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">';
+    h+='<select onchange="lhFontFamily=this.value;updateLhPreview()" style="flex:2;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:12px;color:var(--text);direction:ltr">';
+    fonts.forEach(function(f){h+='<option value="'+f+'" '+(lhFontFamily===f?'selected':'')+'>'+f+'</option>';});
+    h+='</select>';
+    h+='<input type="number" min="8" max="36" value="'+lhFontSize+'" oninput="lhFontSize=parseInt(this.value)||14;updateLhPreview()" style="flex:1;min-width:52px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:12px;color:var(--text);text-align:center">';
+    h+='<div style="font-size:10px;color:var(--text3)">px</div>';
+    h+='</div>';
+
+    // Bold / Italic / Underline / Color / Line-height row
+    h+='<div style="display:flex;gap:7px;margin-bottom:8px;align-items:center;flex-wrap:wrap">';
+    h+='<button id="lhBoldBtn" onclick="lhBold=!lhBold;this.style.background=lhBold?\'var(--gold-a20)\':\'var(--surface3)\';this.style.borderColor=lhBold?\'var(--gold-a30)\':\'var(--border2)\';updateLhPreview()" title="\u063a\u0627\u0645\u0642" style="width:38px;height:38px;border-radius:8px;background:'+(lhBold?'var(--gold-a20)':'var(--surface3)')+';border:1px solid '+(lhBold?'var(--gold-a30)':'var(--border2)')+';color:var(--text);font-size:16px;cursor:pointer;font-weight:900">\u0628</button>';
+    h+='<button id="lhItalBtn" onclick="lhItalic=!lhItalic;this.style.background=lhItalic?\'var(--gold-a20)\':\'var(--surface3)\';this.style.borderColor=lhItalic?\'var(--gold-a30)\':\'var(--border2)\';updateLhPreview()" title="\u0645\u0627\u0626\u0644" style="width:38px;height:38px;border-radius:8px;background:'+(lhItalic?'var(--gold-a20)':'var(--surface3)')+';border:1px solid '+(lhItalic?'var(--gold-a30)':'var(--border2)')+';color:var(--text);font-size:16px;cursor:pointer;font-style:italic">\u0628</button>';
+    h+='<button id="lhUndBtn" onclick="lhUnderline=!lhUnderline;this.style.background=lhUnderline?\'var(--gold-a20)\':\'var(--surface3)\';this.style.borderColor=lhUnderline?\'var(--gold-a30)\':\'var(--border2)\';updateLhPreview()" title="\u062a\u0633\u0637\u064a\u0631" style="width:38px;height:38px;border-radius:8px;background:'+(lhUnderline?'var(--gold-a20)':'var(--surface3)')+';border:1px solid '+(lhUnderline?'var(--gold-a30)':'var(--border2)')+';color:var(--text);font-size:14px;cursor:pointer;text-decoration:underline">\u0628</button>';
+    // Color swatch
+    h+='<label title="\u0644\u0648\u0646 \u0627\u0644\u062e\u0637" style="position:relative;width:38px;height:38px;border-radius:8px;background:var(--surface3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer">';
+    h+='<div id="lhColorSwatch" style="width:20px;height:20px;border-radius:50%;background:'+lhTextColor+';border:2px solid rgba(255,255,255,.3)"></div>';
+    h+='<input type="color" value="'+lhTextColor+'" onchange="lhTextColor=this.value;document.getElementById(\'lhColorSwatch\').style.background=this.value;updateLhPreview()" style="position:absolute;opacity:0;width:1px;height:1px"></label>';
+    // Line height select
+    h+='<select onchange="lhLineHeight=parseFloat(this.value);updateLhPreview()" title="\u062a\u0628\u0627\u0639\u062f \u0627\u0644\u0623\u0633\u0637\u0631" style="flex:1;min-width:80px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:11px;color:var(--text);direction:rtl">';
+    [['1.4','\u0636\u064a\u0642'],['1.6','\u0639\u0627\u062f\u064a'],['1.9','\u0645\u062a\u0648\u0633\u0637'],['2.2','\u0648\u0627\u0633\u0639'],['2.6','\u0641\u0636\u0641\u0627\u0636']].forEach(function(o){
+      h+='<option value="'+o[0]+'" '+(Math.abs(lhLineHeight-parseFloat(o[0]))<0.05?'selected':'')+'>\u062a\u0628\u0627\u0639\u062f: '+o[1]+'</option>';
+    });
+    h+='</select>';
+    h+='</div>';
+
+    // Alignment row
+    h+='<div style="display:flex;gap:7px">';
+    [['right','\u062a\u062e\u0637\u064a\u0637 \u064a\u0645\u064a\u0646','\u21a6'],['center','\u062a\u0648\u0633\u064a\u0637','\u2194'],['left','\u062a\u062e\u0637\u064a\u0637 \u064a\u0633\u0627\u0631','\u21a4'],['justify','\u0636\u0628\u0637','\u2261']].forEach(function(a){
+      var active=lhTextAlign===a[0];
+      h+='<button onclick="lhTextAlign=\''+a[0]+'\';document.querySelectorAll(\'.lhAlBtn\').forEach(function(x){x.style.background=\'var(--surface3)\';x.style.borderColor=\'var(--border2)\'});this.style.background=\'var(--gold-a20)\';this.style.borderColor=\'var(--gold-a30)\';updateLhPreview()" class="lhAlBtn" title="'+a[1]+'" style="flex:1;height:36px;border-radius:8px;background:'+(active?'var(--gold-a20)':'var(--surface3)')+';border:1px solid '+(active?'var(--gold-a30)':'var(--border2)')+';color:var(--text);font-size:16px;cursor:pointer">'+a[2]+'</button>';
+    });
+    h+='</div>';
     h+='</div>';
 
     // Templates
-    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">📝 قوالب جاهزة</div>';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">\ud83d\udcdd \u0642\u0648\u0627\u0644\u0628 \u062c\u0627\u0647\u0632\u0629</div>';
     h+='<div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">';
     lhTemplates.forEach(function(t,i){
       h+='<button onclick="loadLhTemplate('+i+')" style="flex-shrink:0;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:Tajawal,sans-serif">'+t.name+'</button>';
     });
     h+='</div>';
 
-    // Paper + textarea
-    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">✏️ منطقة الكتابة</div>';
-    h+='<div id="lhPaperWrap" style="position:relative;width:100%;background:#fff;border-radius:var(--r-md);overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.45);margin-bottom:14px">';
+    // Paper
+    var taStyle=[
+      'position:relative;z-index:2;width:100%;min-height:580px',
+      'background:transparent;border:none;resize:none;outline:none',
+      'font-family:\''+lhFontFamily+'\',Tajawal,sans-serif',
+      'font-size:'+lhFontSize+'px',
+      'line-height:'+lhLineHeight,
+      'color:'+lhTextColor,
+      'text-align:'+lhTextAlign,
+      'font-weight:'+(lhBold?'700':'400'),
+      'font-style:'+(lhItalic?'italic':'normal'),
+      'text-decoration:'+(lhUnderline?'underline':'none'),
+      'padding:'+lhMargins.top+'px '+lhMargins.right+'px '+lhMargins.bottom+'px '+lhMargins.left+'px'
+    ].join(';');
+
+    h+='<div id="lhPaperWrap" style="position:relative;width:100%;background:#fff;border-radius:var(--r-md);overflow:hidden;box-shadow:0 4px 28px rgba(0,0,0,.5);margin-bottom:14px">';
     h+='<img src="'+lhImage+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none" alt="">';
-    h+='<textarea id="lhTextArea" placeholder="ابدأ الكتابة هنا..." dir="rtl"';
-    h+=' style="position:relative;z-index:2;width:100%;min-height:580px;background:transparent;border:none;resize:none;outline:none;font-family:Tajawal,sans-serif;font-size:'+lhFontSize+'px;line-height:1.9;color:#111;text-align:right;';
-    h+='padding:'+lhMargins.top+'px '+lhMargins.right+'px '+lhMargins.bottom+'px '+lhMargins.left+'px"';
-    h+=' oninput="autoResizeLh(this)"></textarea>';
+    h+='<textarea id="lhTextArea" placeholder="\u0627\u0628\u062f\u0623 \u0627\u0644\u0643\u062a\u0627\u0628\u0629 \u0647\u0646\u0627..." dir="rtl" style="'+taStyle+'" oninput="autoResizeLh(this)"></textarea>';
     h+='</div>';
 
-    // Action buttons
     h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-    h+='<button onclick="printLetterhead()" style="background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:Tajawal,sans-serif">🖨️ طباعة</button>';
-    h+='<button onclick="saveLhAsPDF()" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:Tajawal,sans-serif">📥 PDF</button>';
+    h+='<button onclick="printLetterhead()" style="background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:Tajawal,sans-serif">\ud83d\udda8\ufe0f \u0637\u0628\u0627\u0639\u0629</button>';
+    h+='<button onclick="saveLhAsPDF()" style="background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:13px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:Tajawal,sans-serif">\ud83d\udce5 PDF</button>';
     h+='</div>';
-    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-    h+='<button onclick="clearLhText()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ مسح النص</button>';
-    h+='<button onclick="copyLhText()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">📋 نسخ النص</button>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px">';
+    h+='<button onclick="clearLhText()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:10px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">\ud83d\uddd1\ufe0f \u0645\u0633\u062d</button>';
+    h+='<button onclick="copyLhText()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:10px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">\ud83d\udccb \u0646\u0633\u062e</button>';
+    h+='<button onclick="saveLhSettings();toast(\'\u2705 \u062d\u064f\u0641\u0638\')" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:10px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">\ud83d\udcbe \u062d\u0641\u0638</button>';
     h+='</div>';
   }
-
   return h;
 }
-
 function uploadLetterhead(input){
   var file=input.files[0];if(!file)return;
   if(!file.type.startsWith('image/')){toast('⚠️ يُقبل صور فقط');return;}
@@ -2948,6 +3023,13 @@ function updateLhPreview(){
   var ta=document.getElementById('lhTextArea');if(!ta)return;
   ta.style.padding=lhMargins.top+'px '+lhMargins.right+'px '+lhMargins.bottom+'px '+lhMargins.left+'px';
   ta.style.fontSize=lhFontSize+'px';
+  ta.style.fontFamily="'"+lhFontFamily+"',Tajawal,sans-serif";
+  ta.style.lineHeight=String(lhLineHeight);
+  ta.style.color=lhTextColor;
+  ta.style.textAlign=lhTextAlign;
+  ta.style.fontWeight=lhBold?'700':'400';
+  ta.style.fontStyle=lhItalic?'italic':'normal';
+  ta.style.textDecoration=lhUnderline?'underline':'none';
   autoResizeLh(ta);
 }
 
@@ -2982,14 +3064,31 @@ function copyLhText(){
 function printLetterhead(){
   var ta=document.getElementById('lhTextArea');
   var text=ta?ta.value:'';
+  var pageSizes={A4:{w:'210mm',h:'297mm'},A5:{w:'148mm',h:'210mm'},Letter:{w:'216mm',h:'279mm'}};
+  var ps=pageSizes[lhPageSize]||pageSizes.A4;
   var pa=document.getElementById('pa');
+  var textStyle=[
+    'position:relative;z-index:1',
+    'padding:'+lhMargins.top+'px '+lhMargins.right+'px '+lhMargins.bottom+'px '+lhMargins.left+'px',
+    'font-family:\''+lhFontFamily+'\',Tajawal,\'Times New Roman\',serif',
+    'font-size:'+lhFontSize+'px',
+    'line-height:'+lhLineHeight,
+    'color:'+lhTextColor,
+    'text-align:'+lhTextAlign,
+    'font-weight:'+(lhBold?'700':'400'),
+    'font-style:'+(lhItalic?'italic':'normal'),
+    'text-decoration:'+(lhUnderline?'underline':'none'),
+    'white-space:pre-wrap',
+    'min-height:'+ps.h,
+    'direction:rtl'
+  ].join(';');
   pa.innerHTML=
-    '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;font-family:Tajawal,sans-serif;direction:rtl;background:#fff">'+
-    '<img src="'+lhImage+'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0" alt="">'+
-    '<div style="position:relative;z-index:1;padding:'+lhMargins.top+'px '+lhMargins.right+'px '+lhMargins.bottom+'px '+lhMargins.left+'px;font-size:'+lhFontSize+'px;line-height:1.9;color:#111;white-space:pre-wrap;text-align:right">'+
-    text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+
-    '</div></div>';
-  setTimeout(function(){window.print();},120);
+    '<style>@page{size:'+ps.w+' '+ps.h+';margin:0}body{margin:0}#lhPrint{width:'+ps.w+';height:'+ps.h+';position:relative;overflow:hidden}#lhPrint img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}#lhPrint div{'+textStyle+'}</style>'+
+    '<div id="lhPrint">'+
+    '<img src="'+lhImage+'" alt="">'+
+    '<div>'+text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>'+
+    '</div>';
+  setTimeout(function(){window.print();},150);
   toast('🖨️ جارٍ الطباعة...');
 }
 
