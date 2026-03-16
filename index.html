@@ -1556,7 +1556,7 @@ function rWeek(){var next7=[];for(var i=0;i<7;i++){var d=new Date();d.setDate(d.
 ═══════════════════════════════════════════════════════════ */
 function rList(){
   var po={high:0,med:1,low:2,none:3};
-  var filt=data.filter(function(s){var ms=filterS==='all'||s.status===filterS;var mq=!q||[s.num,s.plnt,s.dfnd,s.court,s.type,s.room,s.notes].some(function(x){return searchMatch(x,q);});var mt=!advType||s.type===advType;var mc=!advCourt||(s.court&&searchMatch(s.court,advCourt));var mf=!advFrom||s.date>=advFrom;var mto=!advTo||s.date<=advTo;var mp=!advPrio||s.priority===advPrio;return ms&&mq&&mt&&mc&&mf&&mto&&mp;}).sort(function(a,b){return(po[a.priority||'none']-po[b.priority||'none'])||(a.date+a.time).localeCompare(b.date+b.time);});
+  var filt=data.filter(function(s){var ms=filterS==='all'||s.status===filterS;var mq=!q||searchMatchAny([s.num,s.plnt,s.dfnd,s.court,s.type,s.room,s.notes],q);var mt=!advType||s.type===advType;var mc=!advCourt||(s.court&&searchMatch(s.court,advCourt));var mf=!advFrom||s.date>=advFrom;var mto=!advTo||s.date<=advTo;var mp=!advPrio||s.priority===advPrio;return ms&&mq&&mt&&mc&&mf&&mto&&mp;}).sort(function(a,b){return(po[a.priority||'none']-po[b.priority||'none'])||(a.date+a.time).localeCompare(b.date+b.time);});
   var h='<div class="search-wrap"><span class="search-ico">🔍</span><input type="search" placeholder="بحث في الجلسات..." dir="rtl" value="'+q+'" oninput="setQ(this.value)"><button class="search-adv" onclick="tgAdv()">'+(advOpen?'▲':'▼')+'</button></div>';
   if(q&&q.trim().length>=2)return h+rGlobalSearch(q);
   if(advOpen){h+='<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px;margin-bottom:10px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">نوع القضية</label><select onchange="advType=this.value;render()" dir="rtl" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text)"><option value="">الكل</option><option>جنائية</option><option>مدنية</option><option>تجارية</option><option>أحوال شخصية</option><option>عمالية</option><option>إدارية</option></select></div><div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">الأهمية</label><select onchange="advPrio=this.value;render()" dir="rtl" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text)"><option value="">الكل</option><option value="high">عالية</option><option value="med">متوسطة</option><option value="low">منخفضة</option><option value="none">عادية</option></select></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px"><div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">من تاريخ</label><input type="date" value="'+advFrom+'" onchange="advFrom=this.value;render()" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text);color-scheme:dark"></div><div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">إلى تاريخ</label><input type="date" value="'+advTo+'" onchange="advTo=this.value;render()" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text);color-scheme:dark"></div></div><div style="margin-top:7px"><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">🏛️ المحكمة</label><input type="text" value="'+advCourt+'" placeholder="اسم المحكمة..." oninput="advCourt=this.value;render()" dir="rtl" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text)"></div><button onclick="clrAdv()" style="width:100%;background:none;color:var(--text3);font-size:11px;padding:7px;cursor:pointer;margin-top:6px">✕ مسح الفلاتر</button></div>';}
@@ -1569,31 +1569,74 @@ function rList(){
 function normalizeAr(str){
   if(!str)return'';
   return str
-    .replace(/[\u0610-\u061A\u064B-\u065F]/g,'') // remove tashkeel/diacritics
-    .replace(/[أإآا]/g,'ا')  // normalize alef
-    .replace(/[ىي]/g,'ي')   // normalize ya
-    .replace(/ة/g,'ه')      // normalize ta marbuta
-    .replace(/\s+/g,' ')    // normalize spaces
+    .replace(/[\u0610-\u061A\u064B-\u065F]/g,'')
+    .replace(/[أإآا]/g,'ا')
+    .replace(/[ىي]/g,'ي')
+    .replace(/ة/g,'ه')
+    .replace(/\s+/g,' ')
     .trim()
     .toLowerCase();
+}
+
+// Stop words to skip
+var AR_STOP=['ال','و','في','من','على','إلى','عن','مع','هو','هي','هم','أن','إن','لا','ما','لم'];
+
+function searchWords(needle){
+  // Split normalized needle into meaningful words (length > 1, not stop words)
+  return normalizeAr(needle).split(' ').filter(function(w){
+    return w.length>1 && AR_STOP.indexOf(w)===-1;
+  });
 }
 
 function searchMatch(haystack,needle){
   if(!haystack||!needle)return false;
   var h=normalizeAr(String(haystack));
   var n=normalizeAr(String(needle));
-  return h.includes(n);
+  // 1. Exact contains (needle inside haystack)
+  if(h.includes(n))return true;
+  // 2. Haystack inside needle (stored name shorter than voice result)
+  if(h.length>2&&n.includes(h))return true;
+  // 3. Word-by-word: any significant word of needle found in haystack
+  var words=searchWords(needle);
+  return words.length>0&&words.some(function(w){return h.includes(w);});
+}
+
+function searchMatchAny(fields,needle){
+  // Match against combined fields AND individual fields
+  var combined=normalizeAr(fields.filter(Boolean).join(' '));
+  var n=normalizeAr(String(needle));
+  if(combined.includes(n))return true;
+  if(n.length>3&&combined.includes(n.substring(0,n.length-1)))return true; // partial
+  return fields.some(function(f){return searchMatch(f,needle);});
 }
 
 function rGlobalSearch(qry){
   var q2=qry.trim();
   var sRes=data.filter(function(s){
-    return[s.num,s.plnt,s.dfnd,s.court,s.type,s.room,s.notes].some(function(x){return searchMatch(x,q2);});
+    return searchMatchAny([s.num,s.plnt,s.dfnd,s.court,s.type,s.room,s.notes],q2);
   });
   var tRes=tasks.filter(function(t){return searchMatch(t.title,q2)||(t.caseNum&&searchMatch(t.caseNum,q2));});
   var cRes=contacts.filter(function(c){return searchMatch(c.name,q2)||(c.caseNum&&searchMatch(c.caseNum,q2));});
+
+  // Also find sessions linked to matched contacts
+  if(cRes.length){
+    cRes.forEach(function(c){
+      if(!c.caseNum)return;
+      data.forEach(function(s){
+        if(s.num===c.caseNum&&!sRes.find(function(x){return x.id===s.id;})){
+          sRes.push(s);
+        }
+      });
+    });
+  }
+
   var total=sRes.length+tRes.length+cRes.length;
-  if(!total)return'<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">لا توجد نتائج لـ "'+q2+'"</div><div class="empty-sub">جرب كلمات أقل تفصيلاً</div></div>';
+  if(!total){
+    // Show suggestion
+    var words=searchWords(q2);
+    var hint=words.length>1?'جرب كلمة واحدة مثل: "'+words[0]+'"':'لم يُعثر على نتائج';
+    return'<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">لا توجد نتائج لـ "'+q2+'"</div><div class="empty-sub">'+hint+'</div></div>';
+  }
   var h='<div style="font-size:10px;color:var(--text3);margin-bottom:9px">'+total+' نتيجة لـ "'+q2+'"</div>';
   if(sRes.length){h+=secHdr('⚖️','الجلسات ('+sRes.length+')');sRes.forEach(function(s){h+=card(s);});}
   if(tRes.length){h+=secHdr('📋','المهمات ('+tRes.length+')');tRes.forEach(function(t){h+='<div class="task-card"><div class="task-title">'+t.title+'</div>'+(t.caseNum?'<div style="font-size:10px;color:var(--text3);margin-top:3px">📋 '+t.caseNum+'</div>':'')+'</div>';});}
