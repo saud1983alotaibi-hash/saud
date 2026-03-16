@@ -711,6 +711,10 @@ var tasks=[],contacts=[],wordFiles=[],folders=[];
 var aiMessages=[],aiLoading=false;
 var curFolder=null;
 var apiKey='';
+var openaiKey='';
+var aiProvider='claude';
+try{openaiKey=localStorage.getItem('j_openai_key')||'';}catch(e){}
+try{aiProvider=localStorage.getItem('j_ai_provider')||'claude';}catch(e){}
 // PIN lock
 var pinEnabled=false,pinCode='',pinLocked=false,pinAttempts=0;
 // Linked cases
@@ -834,36 +838,50 @@ function getHeaders(){
 }
 
 function showApiKeyModal(){
-  var existing=document.getElementById('apikeyModal');
-  if(existing)existing.remove();
-  var modal=document.createElement('div');
-  modal.id='apikeyModal';
+  var existing=document.getElementById('apikeyModal');if(existing)existing.remove();
+  var modal=document.createElement('div');modal.id='apikeyModal';
   modal.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:center;justify-content:center;padding:22px';
-  var bg=document.createElement('div');
-  bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)';
-  bg.onclick=function(){if(apiKey)modal.remove();};
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px)';
+  bg.onclick=function(){if(apiKey||openaiKey)modal.remove();};
   var box=document.createElement('div');
-  box.style.cssText='position:relative;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-xl);padding:28px 22px;width:100%;max-width:340px';
-  box.innerHTML=
-    '<div style="text-align:center;margin-bottom:20px">'+
-      '<div style="font-size:40px;margin-bottom:10px">🔑</div>'+
-      '<div style="font-family:Scheherazade New,serif;font-size:20px;color:var(--gold2);margin-bottom:6px">مفتاح Anthropic API</div>'+
-      '<div style="font-size:12px;color:var(--text3);line-height:1.6">أدخل مفتاح API الخاص بك لتفعيل سعود<br>يُحفظ محلياً على جهازك فقط</div>'+
-    '</div>'+
-    '<div style="position:relative;margin-bottom:8px">'+
-      '<input id="apikeyInput" type="password" placeholder="sk-ant-api03-..." dir="ltr"'+
-        ' style="width:100%;background:var(--surface3);border:1.5px solid var(--border2);border-radius:var(--r-md);padding:12px 44px 12px 13px;font-size:13px;color:var(--text);display:block;font-family:monospace"'+
-        ' value="'+(apiKey||'')+'" oninput="document.getElementById(\'apikeyErr\').style.display=\'none\'">'+
-      '<button onclick="toggleKeyVis()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;color:var(--text3);font-size:16px;cursor:pointer" id="keyVisBtn">👁</button>'+
-    '</div>'+
-    '<div id="apikeyErr" style="font-size:11px;color:#f87171;margin-bottom:10px;display:none">⚠️ المفتاح يجب أن يبدأ بـ sk-ant-</div>'+
-    '<button onclick="saveApiKey()" style="width:100%;background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:9px">حفظ وتفعيل</button>'+
-    (apiKey?'<button onclick="clearApiKey()" style="width:100%;background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:11px;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:9px">🗑️ حذف المفتاح</button>':'')+''+
-    '<div style="font-size:10px;color:var(--text3);text-align:center;line-height:1.6">احصل على مفتاحك من<br><span style="color:var(--gold2)">console.anthropic.com</span></div>';
-  modal.appendChild(bg);
-  modal.appendChild(box);
-  document.body.appendChild(modal);
-  setTimeout(function(){var inp=document.getElementById('apikeyInput');if(inp)inp.focus();},100);
+  box.style.cssText='position:relative;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-xl);padding:24px 20px;width:100%;max-width:360px;font-family:Tajawal,sans-serif;direction:rtl';
+  function rebuildBox(){
+    var isOAI=aiProvider==='openai';
+    var provRow='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">';
+    provRow+='<button onclick="switchProv(\'claude\')" style="padding:11px 6px;border-radius:12px;border:2px solid;cursor:pointer;font-family:Tajawal,sans-serif;'+(!isOAI?'background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.5)':'background:var(--surface3);border-color:var(--border2)')+'">'+
+      '<div style="font-size:20px">&#x1F7E3;</div><div style="font-size:12px;font-weight:700;color:'+(!isOAI?'#818cf8':'var(--text3)')+'">Claude</div>'+
+      '<div style="font-size:9px;color:var(--text3)">Anthropic</div>'+(!isOAI?'<div style="font-size:9px;color:#818cf8">&check; &#x645;&#x641;&#x639;&#x651;&#x644;</div>':'')+'</button>';
+    provRow+='<button onclick="switchProv(\'openai\')" style="padding:11px 6px;border-radius:12px;border:2px solid;cursor:pointer;font-family:Tajawal,sans-serif;'+(isOAI?'background:rgba(16,163,127,.15);border-color:rgba(16,163,127,.5)':'background:var(--surface3);border-color:var(--border2)')+'">'+
+      '<div style="font-size:20px">&#x1F7E2;</div><div style="font-size:12px;font-weight:700;color:'+(isOAI?'#10a37f':'var(--text3)')+'">ChatGPT</div>'+
+      '<div style="font-size:9px;color:var(--text3)">GPT-4o</div>'+(isOAI?'<div style="font-size:9px;color:#10a37f">&check; &#x645;&#x641;&#x639;&#x651;&#x644;</div>':'')+'</button>';
+    provRow+='</div>';
+    var keyLabel=isOAI?'&#x645;&#x641;&#x62A;&#x627;&#x62D; OpenAI API':'&#x645;&#x641;&#x62A;&#x627;&#x62D; Anthropic API';
+    var placeholder=isOAI?'sk-...':'sk-ant-api03-...';
+    var curKey=isOAI?(openaiKey||''):(apiKey||'');
+    var errTxt=isOAI?'&#x64A;&#x628;&#x62F;&#x623; &#x628;&#x640; sk-':'&#x64A;&#x628;&#x62F;&#x623; &#x628;&#x640; sk-ant-';
+    var srcLink=isOAI?'<span style="color:#10a37f">platform.openai.com/api-keys</span>':'<span style="color:#818cf8">console.anthropic.com</span>';
+    var hasKey=(isOAI&&openaiKey)||(!isOAI&&apiKey);
+    box.innerHTML=
+      '<div style="text-align:center;margin-bottom:14px">'+
+      '<div style="font-size:34px;margin-bottom:5px">'+(isOAI?'&#x1F7E2;':'&#x1F7E3;')+'</div>'+
+      '<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">&#x631;&#x628;&#x637; &#x633;&#x639;&#x648;&#x62F; &#x628;&#x627;&#x644;&#x630;&#x643;&#x627;&#x621;</div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-top:3px">&#x627;&#x62E;&#x62A;&#x631; &#x645;&#x632;&#x648;&#x651;&#x62F; &#x627;&#x644;&#x630;&#x643;&#x627;&#x621; &#x627;&#x644;&#x627;&#x635;&#x637;&#x646;&#x627;&#x639;&#x64A;</div></div>'+
+      provRow+
+      '<label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:5px">'+keyLabel+'</label>'+
+      '<div style="position:relative;margin-bottom:8px">'+
+      '<input id="apikeyInput" type="password" placeholder="'+placeholder+'" dir="ltr"'+
+      ' style="width:100%;background:var(--surface3);border:1.5px solid var(--border2);border-radius:var(--r-md);padding:12px 44px 12px 13px;font-size:13px;color:var(--text);display:block;font-family:monospace" value="'+curKey+'">'+
+      '<button onclick="toggleKeyVis()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;color:var(--text3);font-size:16px;cursor:pointer" id="keyVisBtn">&#x1F441;</button>'+
+      '</div>'+
+      '<div id="apikeyErr" style="font-size:11px;color:#f87171;margin-bottom:8px;display:none">&#x26A0;&#xFE0F; '+errTxt+'</div>'+
+      '<button onclick="saveApiKey()" style="width:100%;background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:8px">&#x1F4BE; &#x62D;&#x641;&#x638; &#x648;&#x62A;&#x641;&#x639;&#x64A;&#x644;</button>'+
+      (hasKey?'<button onclick="clearApiKey()" style="width:100%;background:var(--red-a);color:#f87171;border:1px solid rgba(232,80,80,.3);border-radius:var(--r-md);padding:10px;font-size:13px;cursor:pointer;margin-bottom:8px">&#x1F5D1;&#xFE0F; &#x62D;&#x630;&#x641; &#x627;&#x644;&#x645;&#x641;&#x62A;&#x627;&#x62D;</button>':'')+
+      '<div style="font-size:10px;color:var(--text3);text-align:center;line-height:1.7">&#x645;&#x641;&#x62A;&#x627;&#x62D;&#x643; &#x645;&#x646;<br>'+srcLink+'</div>';
+    setTimeout(function(){var i=document.getElementById('apikeyInput');if(i)i.focus();},30);
+  }
+  window.switchProv=function(p){aiProvider=p;try{localStorage.setItem('j_ai_provider',p);}catch(e){}rebuildBox();};
+  rebuildBox();
+  modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
 }
 
 function toggleKeyVis(){
@@ -875,36 +893,35 @@ function toggleKeyVis(){
 }
 
 function saveApiKey(){
-  var inp=document.getElementById('apikeyInput');
-  if(!inp)return;
+  var inp=document.getElementById('apikeyInput');if(!inp)return;
   var val=inp.value.trim();
   if(!val){toast('⚠️ أدخل المفتاح أولاً');return;}
-  if(!val.startsWith('sk-ant-')){
-    var err=document.getElementById('apikeyErr');
-    if(err)err.style.display='block';
-    return;
+  var isOAI=aiProvider==='openai';
+  if(isOAI){
+    if(!val.startsWith('sk-')){var e=document.getElementById('apikeyErr');if(e)e.style.display='block';return;}
+    openaiKey=val;try{localStorage.setItem('j_openai_key',openaiKey);}catch(ex){}
+    toast('✅ تم ربط ChatGPT GPT-4o بنجاح!');
+  } else {
+    if(!val.startsWith('sk-ant-')){var e2=document.getElementById('apikeyErr');if(e2)e2.style.display='block';return;}
+    apiKey=val;try{localStorage.setItem('j_apikey',apiKey);}catch(ex){}
+    toast('✅ تم تفعيل سعود بـ Claude!');
   }
-  apiKey=val;
-  try{localStorage.setItem('j_apikey',apiKey);}catch(e){}
-  var modal=document.getElementById('apikeyModal');
-  if(modal)modal.remove();
+  var modal=document.getElementById('apikeyModal');if(modal)modal.remove();
   var b=document.getElementById('btnKey');if(b){b.style.borderColor='';b.style.color='';}
-  toast('✅ تم حفظ المفتاح وتفعيل سعود');
   render();
 }
 
 function clearApiKey(){
-  apiKey='';
-  try{localStorage.removeItem('j_apikey');}catch(e){}
-  var modal=document.getElementById('apikeyModal');
-  if(modal)modal.remove();
-  var b=document.getElementById('btnKey');if(b){b.style.borderColor='rgba(232,80,80,0.4)';b.style.color='#f87171';}
-  toast('🗑️ تم حذف المفتاح');
-  render();
+  if(!confirm('حذف مفتاح API؟'))return;
+  if(aiProvider==='openai'){openaiKey='';try{localStorage.removeItem('j_openai_key');}catch(ex){}}
+  else{apiKey='';try{localStorage.removeItem('j_apikey');}catch(ex){}}
+  var modal=document.getElementById('apikeyModal');if(modal)modal.remove();
+  toast('🗑️ تم حذف المفتاح');render();
 }
 
 function requireApiKey(){
-  if(!apiKey){showApiKeyModal();return false;}
+  var key=aiProvider==='openai'?openaiKey:apiKey;
+  if(!key){showApiKeyModal();return false;}
   return true;
 }
 
@@ -997,7 +1014,7 @@ function rAI(){
   // Header
   h+='<div class="ai-header">';
   h+='<div class="ai-avatar-wrap"><div class="ai-avatar">⚖️</div><div class="ai-online-dot" style="background:'+(apiKey?'#10a37f':'#e85050')+'"></div></div>';
-  h+='<div style="flex:1"><div class="ai-name">سعود – المستشار القانوني</div><div class="ai-status" style="color:'+(apiKey?'#10a37f':'#f87171')+'">'+(apiKey?'مدعوم بـ Claude · متصل ويعرف جلساتك':'⚠️ يحتاج مفتاح API للعمل')+'</div></div>';
+  h+='<div style="flex:1"><div class="ai-name">سعود – المستشار القانوني</div><div class="ai-status" style="color:'+(apiKey||openaiKey?'#10a37f':'#f87171')+'">'+(apiKey||openaiKey?'مدعوم بـ '+(aiProvider==='openai'?'ChatGPT GPT-4o':'Claude')+' · متصل ويعرف جلساتك':'⚠️ يحتاج مفتاح API للعمل')+'</div></div>';
   h+='<div style="display:flex;gap:6px">';
   h+='<button onclick="showApiKeyModal()" class="ai-clear-btn" style="color:'+(apiKey?'var(--text3)':'#f87171')+';border-color:'+(apiKey?'var(--border2)':'rgba(232,80,80,.3)')+'">🔑</button>';
   h+='<button class="ai-clear-btn" onclick="clearAI()">مسح</button>';
@@ -1147,6 +1164,26 @@ function sendAI(msg){
   // Must start with user role
   while(cleanMsgs.length&&cleanMsgs[0].role!=='user')cleanMsgs.shift();
   if(!cleanMsgs.length)cleanMsgs=[{role:'user',content:msg.trim()}];
+
+  if(aiProvider==='openai'){
+    var oaiMsgs=[{role:'system',content:buildAISystem()}].concat(cleanMsgs);
+    fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
+      body:JSON.stringify({model:'gpt-4o',max_tokens:1024,messages:oaiMsgs})
+    })
+    .then(function(r){if(!r.ok)return r.json().then(function(e){throw new Error((e.error&&e.error.message)||'HTTP '+r.status);});return r.json();})
+    .then(function(d){
+      var reply=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||'عذراً، لم أتمكن من الرد.';
+      aiMessages.push({role:'assistant',content:reply});saveAIMsgs();aiLoading=false;render();
+      setTimeout(function(){var chat=document.getElementById('ai-chat');if(chat)chat.scrollTop=chat.scrollHeight;},50);
+    })
+    .catch(function(err){
+      aiMessages.push({role:'assistant',content:'⚠️ '+(err.message&&err.message.length<120?err.message:'تعذّر الاتصال بـ ChatGPT.')});
+      saveAIMsgs();aiLoading=false;render();
+    });
+    return;
+  }
 
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
@@ -1497,12 +1534,164 @@ function secHdr(icon,title){return'<div class="sec-hdr"><span>'+icon+'</span>'+t
 /* ═══════════════════════════════════════════════════════════
    HOME
 ═══════════════════════════════════════════════════════════ */
+var homeWidgets={dashboard:true,highPrio:true,deadlines:true,remote:true,today:true,upcoming:true,week:true,ai:true};
+try{homeWidgets=Object.assign({dashboard:true,highPrio:true,deadlines:true,remote:true,today:true,upcoming:true,week:true,ai:true},JSON.parse(localStorage.getItem('j_home_widgets')||'{}'));}catch(e){}
+function saveHomeWidgets(){try{localStorage.setItem('j_home_widgets',JSON.stringify(homeWidgets));}catch(e){}}
+
+function showHomeCustomizer(){
+  var modal=document.createElement('div');modal.id='homeCustModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));font-family:Tajawal,sans-serif;direction:rtl;max-height:85vh;overflow-y:auto';
+
+  var sections=[
+    {k:'dashboard',icon:'📊',lbl:'لوحة التحكم والإحصائيات'},
+    {k:'highPrio',icon:'🔴',lbl:'الجلسات عالية الأهمية'},
+    {k:'deadlines',icon:'⏰',lbl:'مواعيد الطعن والاستئناف'},
+    {k:'remote',icon:'🎥',lbl:'الجلسات عن بُعد اليوم'},
+    {k:'today',icon:'📅',lbl:'جلسات اليوم'},
+    {k:'upcoming',icon:'🔜',lbl:'قادمة قريباً'},
+    {k:'week',icon:'📆',lbl:'الأسبوع القادم'},
+    {k:'ai',icon:'🤖',lbl:'زر سعود AI'},
+  ];
+
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
+  h+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">🎛️ تخصيص الرئيسية</div>';
+  h+='<button onclick="resetHomeWidgets()" style="font-size:11px;color:var(--text3);background:none;border:1px solid var(--border2);border-radius:8px;padding:5px 10px;cursor:pointer">إعادة تعيين</button>';
+  h+='</div>';
+  h+='<div style="font-size:11px;color:var(--text3);margin-bottom:14px">اختر الأقسام التي تريد إظهارها في الصفحة الرئيسية</div>';
+
+  sections.forEach(function(s){
+    var on=homeWidgets[s.k]!==false;
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px 14px;margin-bottom:8px">';
+    h+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">'+s.icon+'</span>';
+    h+='<span style="font-size:13px;font-weight:600;color:var(--text)">'+s.lbl+'</span></div>';
+    h+='<label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0">';
+    h+='<input type="checkbox" '+(on?'checked':'')+' onchange="toggleHomeWidget(\''+s.k+'\',this.checked)" style="opacity:0;width:0;height:0">';
+    h+='<span style="position:absolute;inset:0;background:'+(on?'var(--gold)':'var(--surface3)')+';border-radius:24px;cursor:pointer;transition:.25s"></span>';
+    h+='<span style="position:absolute;height:18px;width:18px;background:#fff;border-radius:50%;bottom:3px;'+(on?'right:3px':'left:3px')+';transition:.25s"></span>';
+    h+='</label></div>';
+  });
+
+  h+='<button onclick="document.getElementById(\'homeCustModal\').remove();if(curTab===\'home\')render()" style="width:100%;background:var(--gold);color:#0a0905;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:13px;cursor:pointer;margin-top:6px">✓ حفظ وتطبيق</button>';
+
+  box.innerHTML=h;modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function toggleHomeWidget(key,val){
+  homeWidgets[key]=val;
+  saveHomeWidgets();
+}
+
+function resetHomeWidgets(){
+  homeWidgets={dashboard:true,highPrio:true,deadlines:true,remote:true,today:true,upcoming:true,week:true,ai:true};
+  saveHomeWidgets();
+  document.getElementById('homeCustModal').remove();
+  if(curTab==='home')render();
+  toast('✅ تم إعادة تعيين الرئيسية');
+}
+
 function rHome(){
   var td=today();var todayS=data.filter(function(s){return s.date===td;}).sort(function(a,b){return a.time.localeCompare(b.time);});
   var upcoming=data.filter(function(s){return s.date>td&&s.status==='scheduled';}).sort(function(a,b){return(a.date+a.time).localeCompare(b.date+b.time);}).slice(0,3);
   var high=data.filter(function(s){return s.priority==='high'&&s.status==='scheduled'&&s.date>=td;});
-  var h=rDashboard();
-  if(high.length){h+=secHdr('🔴','عالية الأهمية')+'<div class="stagger">';high.slice(0,2).forEach(function(s){h+=card(s);});h+='</div>';}
+
+  // Customize button
+  var h='<div style="display:flex;justify-content:flex-end;margin-bottom:8px">';
+  h+='<button onclick="showHomeCustomizer()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-size:10px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:Tajawal,sans-serif">🎛️ تخصيص الصفحة</button>';
+  h+='</div>';
+
+  if(homeWidgets.dashboard!==false)h+=rDashboard();
+  if(homeWidgets.highPrio!==false&&high.length){h+=secHdr('🔴','عالية الأهمية')+'<div class="stagger">';high.slice(0,2).forEach(function(s){h+=card(s);});h+='</div>';}
+
+  // ── Deadlines section ──
+  if(homeWidgets.deadlines!==false){
+    var deadlineEntries=Object.keys(sessionDeadlines).map(function(sid){
+      var s=data.find(function(x){return x.id===parseInt(sid);})||archivedSessions.find(function(x){return x.id===parseInt(sid);});
+      var info=getDeadlineInfo(parseInt(sid));
+      if(!info)return null;
+      return{sid:parseInt(sid),s:s,info:info};
+    }).filter(function(x){return x&&x.info.remaining>=-3;})
+      .sort(function(a,b){return a.info.remaining-b.info.remaining;});
+
+    if(deadlineEntries.length){
+      h+=secHdr('⏰','مواعيد الطعن والاستئناف');
+      h+='<div id="deadlinesSection" style="margin-bottom:14px">';
+      deadlineEntries.forEach(function(entry){
+        var info=entry.info,s=entry.s,sid=entry.sid;
+        var remaining=info.remaining;
+        var expired=remaining<0;
+        var goldBase='#c8a84b',goldLight='rgba(200,168,75,0.13)',goldBorder='rgba(200,168,75,0.4)',goldGlow='rgba(200,168,75,0.18)';
+        var numClr,icon;
+        if(expired||remaining===0){numClr='#f87171';icon='🔴';}
+        else if(remaining<=3){numClr='#f87171';icon='⚡';}
+        else if(remaining<=7){numClr='#fbbf24';icon='⚠️';}
+        else{numClr=goldBase;icon='⏳';}
+        h+='<div style="background:'+goldLight+';border:1.5px solid '+goldBorder+';border-radius:var(--r-lg);margin-bottom:10px;overflow:hidden;cursor:pointer;box-shadow:0 2px 12px '+goldGlow+'" onclick="'+(s?'openDet('+sid+')':'')+'\">';
+        h+='<div style="height:3px;background:linear-gradient(90deg,#c8a84b,#f0c55a,#c8a84b)"></div>';
+        h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 0">';
+        h+='<div style="display:flex;align-items:center;gap:7px">';
+        h+='<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#c8a84b,#f0c55a);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">⚖️</div>';
+        h+='<div><div style="font-size:12px;font-weight:700;color:var(--text)">'+(s?s.num+' · '+s.type:'قضية')+'</div>';
+        h+='<div style="font-size:10px;color:'+goldBase+';margin-top:1px;font-weight:600">'+info.typeName.split('(')[0].trim()+(s&&s.court?' · '+s.court:'')+'</div></div></div>';
+        h+='<div style="display:flex;align-items:center;gap:7px"><span style="font-size:18px">'+icon+'</span>';
+        h+='<button onclick="event.stopPropagation();delDeadline('+sid+')" style="background:none;color:var(--text3);font-size:14px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid var(--border2)">✕</button>';
+        h+='</div></div>';
+        h+='<div style="padding:10px 14px">';
+        if(expired){
+          h+='<div style="text-align:center;padding:8px 0"><div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:4px">⛔ انتهى الموعد</div>';
+          h+='<div style="font-size:11px;color:var(--text3)">منذ '+Math.abs(remaining)+' يوم · '+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'})+'</div></div>';
+        } else {
+          h+='<div id="dlc-'+sid+'" style="display:flex;gap:5px;justify-content:center;align-items:flex-end;direction:ltr">';
+          [{id:'dlcd',lbl:'يوم',w:'52px'},{id:'dlch',lbl:'ساعة',w:'46px'},{id:'dlcm',lbl:'دقيقة',w:'46px'},{id:'dlcs',lbl:'ثانية',w:'46px'}].forEach(function(u,ui){
+            h+='<div style="text-align:center"><div id="'+u.id+'-'+sid+'" style="background:rgba(200,168,75,0.15);border:1.5px solid rgba(200,168,75,0.4);border-radius:10px;padding:5px 8px;min-width:'+u.w+';font-size:26px;font-weight:900;color:'+numClr+';font-variant-numeric:tabular-nums;line-height:1">--</div>';
+            h+='<div style="font-size:9px;color:'+goldBase+';margin-top:3px;font-weight:700">'+u.lbl+'</div></div>';
+            if(ui<3)h+='<div style="font-size:22px;font-weight:900;color:'+goldBase+';padding-bottom:16px;opacity:.6">:</div>';
+          });
+          h+='</div>';
+          h+='<div style="text-align:center;margin-top:7px;font-size:11px;color:var(--text3)">📅 الموعد النهائي: <strong style="color:'+goldBase+'">'+new Date(info.deadlineDate+'T00:00:00').toLocaleDateString('ar-SA',{weekday:'short',year:'numeric',month:'long',day:'numeric'})+'</strong></div>';
+          var pct=Math.min(100,Math.round(((info.days-remaining)/info.days)*100));
+          h+='<div style="margin-top:8px;background:rgba(200,168,75,0.15);border-radius:4px;height:5px;overflow:hidden"><div id="dlcpb-'+sid+'" style="height:100%;background:linear-gradient(90deg,#c8a84b,#f0c55a);border-radius:4px;width:'+pct+'%;transition:width 1s linear"></div></div>';
+          h+='<div style="display:flex;justify-content:space-between;font-size:9px;color:'+goldBase+';margin-top:2px;opacity:.7"><span>بداية المدة</span><span id="dlcpct-'+sid+'">'+pct+'%</span><span>الموعد النهائي</span></div>';
+        }
+        h+='</div></div>';
+      });
+      h+='</div>';
+    }
+  }
+
+  // Remote sessions today
+  if(homeWidgets.remote!==false){
+    var remoteSessions=data.filter(function(s){return s.date===td&&s.meetUrl&&(s.status==='scheduled'||s.status==='inProgress');});
+    if(remoteSessions.length){
+      h+=secHdr('🎥','جلسات عن بُعد اليوم');
+      h+='<div class="stagger">';
+      remoteSessions.forEach(function(s){
+        var info=getMeetInfo(s.meetUrl)||{icon:'🔗',color:'var(--gold2)',bg:'var(--gold-a10)',border:'var(--gold-a30)',name:'اجتماع'};
+        h+='<div style="background:'+info.bg+';border:1px solid '+info.border+';border-radius:var(--r-md);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+        h+='<div style="font-size:24px">'+info.icon+'</div>';
+        h+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+s.num+'</div>';
+        h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">'+s.time+' · '+info.name+'</div></div>';
+        h+=meetJoinBtn(s,'small');
+        h+='</div>';
+      });
+      h+='</div>';
+    }
+  }
+
+  if(homeWidgets.today!==false&&todayS.length){h+=secHdr('📅','جلسات اليوم')+'<div class="stagger">';todayS.forEach(function(s){h+=card(s);});h+='</div>';}
+  if(homeWidgets.upcoming!==false&&upcoming.length){h+=secHdr('🔜','قادمة قريباً')+'<div class="stagger">';upcoming.forEach(function(s){h+=card(s);});h+='</div>';}
+  if(homeWidgets.week!==false)h+=rWeek();
+  if(homeWidgets.ai!==false){
+    h+='<div style="background:rgba(16,163,127,0.08);border:1px solid rgba(16,163,127,0.2);border-radius:var(--r-md);padding:14px;margin-top:14px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="go(\'ai\')">';
+    h+='<div style="font-size:28px">⚖️</div><div><div style="font-size:13px;font-weight:700;color:#2ecc9a">سعود – مستشارك القانوني</div><div style="font-size:11px;color:var(--text3);margin-top:3px">اسأله عن جلساتك أو أي سؤال قانوني</div></div><div style="margin-right:auto;font-size:18px;color:#10a37f">›</div>';
+    h+='</div>';
+  }
+  if(!todayS.length&&!upcoming.length&&!high.length)h+='<div class="empty"><div class="empty-icon">⚖️</div><div class="empty-title">لا توجد جلسات مجدولة</div><div class="empty-sub">اضغط «جديدة» لإضافة جلسة</div></div>';
+  return h;
+}
 
   // ── Deadlines section ──
   var deadlineEntries=Object.keys(sessionDeadlines).map(function(sid){
@@ -1577,32 +1766,7 @@ function rHome(){
     h+='</div>';
   }
 
-  // Remote sessions today
-  var remoteSessions=data.filter(function(s){return s.date===td&&s.meetUrl&&(s.status==='scheduled'||s.status==='inProgress');});
-  if(remoteSessions.length){
-    h+=secHdr('🎥','جلسات عن بُعد اليوم');
-    h+='<div class="stagger">';
-    remoteSessions.forEach(function(s){
-      var info=getMeetInfo(s.meetUrl)||{icon:'🔗',color:'var(--gold2)',bg:'var(--gold-a10)',border:'var(--gold-a30)',name:'اجتماع'};
-      h+='<div style="background:'+info.bg+';border:1px solid '+info.border+';border-radius:var(--r-md);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
-      h+='<div style="font-size:24px">'+info.icon+'</div>';
-      h+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+s.num+'</div>';
-      h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">'+s.time+' · '+info.name+'</div></div>';
-      h+=meetJoinBtn(s,'small');
-      h+='</div>';
-    });
-    h+='</div>';
-  }
-  if(todayS.length){h+=secHdr('📅','جلسات اليوم')+'<div class="stagger">';todayS.forEach(function(s){h+=card(s);});h+='</div>';}
-  if(upcoming.length){h+=secHdr('🔜','قادمة قريباً')+'<div class="stagger">';upcoming.forEach(function(s){h+=card(s);});h+='</div>';}
-  h+=rWeek();
-  // AI shortcut on home
-  h+='<div style="background:rgba(16,163,127,0.08);border:1px solid rgba(16,163,127,0.2);border-radius:var(--r-md);padding:14px;margin-top:14px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="go(\'ai\')">';
-  h+='<div style="font-size:28px">⚖️</div><div><div style="font-size:13px;font-weight:700;color:#2ecc9a">سعود – مستشارك القانوني</div><div style="font-size:11px;color:var(--text3);margin-top:3px">اسأله عن جلساتك أو أي سؤال قانوني</div></div><div style="margin-right:auto;font-size:18px;color:#10a37f">›</div>';
-  h+='</div>';
-  if(!todayS.length&&!upcoming.length&&!high.length)h+='<div class="empty"><div class="empty-icon">⚖️</div><div class="empty-title">لا توجد جلسات مجدولة</div><div class="empty-sub">اضغط «جديدة» لإضافة جلسة</div></div>';
-  return h;
-}
+
 
 function rWeek(){var next7=[];for(var i=0;i<7;i++){var d=new Date();d.setDate(d.getDate()+i);next7.push(d.toISOString().split('T')[0]);}var weekData=data.filter(function(s){return next7.indexOf(s.date)>-1;}).sort(function(a,b){return(a.date+a.time).localeCompare(b.date+b.time);});var h=secHdr('📅','الأسبوع القادم');if(!weekData.length)return h+'<div class="empty" style="padding:22px 0"><div style="font-size:32px;opacity:.25">📅</div><div class="empty-sub" style="margin-top:6px">لا توجد جلسات هذا الأسبوع</div></div>';var byDate={};weekData.forEach(function(s){if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});Object.keys(byDate).sort().forEach(function(d){h+='<div class="week-date-pill">'+fmtL(d)+' ('+byDate[d].length+')</div>';byDate[d].forEach(function(s){h+=card(s);});});return h;}
 
