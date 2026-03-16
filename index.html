@@ -2419,6 +2419,8 @@ function calcDeadlineInSession(sid){
     court:s?s.court:''
   };
   saveDeadlines();
+  // If home tab is open, refresh it immediately
+  if(curTab==='home'){var cnt=document.getElementById('cnt');if(cnt){cnt.innerHTML=rHome();startTick();}}
 
   var now=new Date();now.setHours(0,0,0,0);
   var remaining=Math.ceil((deadline-now)/86400000);
@@ -2451,7 +2453,10 @@ function calcDeadlineInSession(sid){
     '<div style="height:100%;background:'+clr+';border-radius:4px;width:'+Math.min(100,Math.round(((days-remaining)/days)*100))+'%;transition:width .4s"></div>'+
     '</div>'+
     '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px"><span>اليوم 0</span><span>يوم '+days+'</span></div>':'')+'</div>'+
-    '<div style="margin-top:8px;font-size:10px;color:var(--text3);text-align:center">💾 تم حفظ الموعد — يظهر في الرئيسية تلقائياً</div>';
+    '<div style="margin-top:10px;display:flex;gap:8px">'+
+    '<div style="flex:1;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:9px;padding:8px 10px;font-size:10px;color:#34d399;text-align:center">💾 تم حفظ الموعد</div>'+
+    '<button onclick="go(\'home\')" style="flex:1;background:var(--gold);color:#0a0905;border-radius:9px;padding:8px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">🏠 عرض في الرئيسية</button>'+
+    '</div>';
 }
 
 function calcDeadline(){
