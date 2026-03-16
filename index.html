@@ -824,37 +824,144 @@ function updNotifBtn(){var b=document.getElementById('btnNotif');if(b){b.classLi
 function schedNotifs(){
   notifTimers.forEach(function(t){clearTimeout(t);});notifTimers=[];if(!notifOn)return;
   var now=new Date();
+
   data.filter(function(s){return s.status==='scheduled';}).forEach(function(s){
+    if(!s.date||!s.time)return;
     var tgt=new Date(s.date+'T'+s.time+':00');
-    var d30=tgt-now-1800000,d5=tgt-now-300000,d0=tgt-now;
-    if(d30>0)notifTimers.push(setTimeout(function(){new Notification('⚖️ تذكير',{body:'جلسة '+s.num+' بعد 30 دقيقة'+(s.meetUrl?' — عن بُعد':'')});},d30));
-    if(d5>0&&s.meetUrl)notifTimers.push(setTimeout(function(){
-      var n=new Notification('🎥 جلسة عن بُعد خلال 5 دقائق',{body:'جلسة '+s.num+' — اضغط للانضمام',requireInteraction:true});
-      n.onclick=function(){window.open(s.meetUrl,'_blank');};
-    },d5));
-    if(d0>0&&d0<86400000)notifTimers.push(setTimeout(function(){
-      var body='جلسة '+s.num+' — '+(s.court||'');
-      var n=new Notification('🔴 جلسة الآن',{body:body+(s.meetUrl?' (عن بُعد)':''),requireInteraction:!!s.meetUrl});
-      if(s.meetUrl)n.onclick=function(){window.open(s.meetUrl,'_blank');};
-    },d0));
+    var diff=tgt-now;
+    if(diff<0||diff>48*3600000)return; // only schedule within 48h
+
+    var prioBadge=s.priority==='high'?'🔴 ':s.priority==='med'?'🟡 ':'';
+    var courtTxt=s.court?' — '+s.court:'';
+
+    var chkN=function(k){return localStorage.getItem(k)!=='0';};
+    // ── يوم قبل (في الساعة 8 مساءً من اليوم السابق) ──
+    if(chkN('notif_day')){
+    var dayBefore=new Date(s.date+'T20:00:00');
+    dayBefore.setDate(dayBefore.getDate()-1);
+    var dDay=dayBefore-now;
+    if(dDay>0&&dDay<48*3600000){
+      notifTimers.push(setTimeout(function(){
+        new Notification('📅 جلسة غداً',{
+          body:prioBadge+'جلسة '+s.num+' غداً الساعة '+s.time+courtTxt,
+          tag:'sess-day-'+s.id
+        });
+      },dDay));
+    }
+
+    }
+    // ── ساعة قبل ──
+    if(chkN('notif_hour')){var d1h=diff-3600000;
+    if(d1h>0){
+      notifTimers.push(setTimeout(function(){
+        new Notification('⏰ جلسة بعد ساعة',{
+          body:prioBadge+'جلسة '+s.num+' الساعة '+s.time+courtTxt+(s.meetUrl?' 🎥 عن بُعد':''),
+          requireInteraction:true,
+          tag:'sess-1h-'+s.id
+        });
+      },d1h));
+    }
+
+    }
+    // ── 30 دقيقة قبل ──
+    if(chkN('notif_30m')){var d30=diff-1800000;
+    if(d30>0){
+      notifTimers.push(setTimeout(function(){
+        new Notification('⚖️ جلسة بعد 30 دقيقة',{
+          body:prioBadge+'جلسة '+s.num+courtTxt+(s.meetUrl?' — عن بُعد':''),
+          tag:'sess-30m-'+s.id
+        });
+      },d30));
+    }
+
+    }
+    // ── 5 دقائق قبل (جلسات عن بُعد) ──
+    if(chkN('notif_remote')&&s.meetUrl){
+      var d5=diff-300000;
+      if(d5>0){
+        notifTimers.push(setTimeout(function(){
+          var n=new Notification('🎥 جلسة عن بُعد خلال 5 دقائق',{
+            body:'جلسة '+s.num+' — اضغط للانضمام',
+            requireInteraction:true,
+            tag:'sess-5m-'+s.id
+          });
+          n.onclick=function(){window.open(s.meetUrl,'_blank');};
+        },d5));
+      }
+    }
+
+    // ── وقت الجلسة ──
+    if(diff>0&&diff<3600000){
+      notifTimers.push(setTimeout(function(){
+        var body='جلسة '+s.num+' — '+(s.court||'');
+        var n=new Notification('🔴 جلسة الآن',{
+          body:body+(s.meetUrl?' (عن بُعد)':''),
+          requireInteraction:!!s.meetUrl,
+          tag:'sess-now-'+s.id
+        });
+        if(s.meetUrl)n.onclick=function(){window.open(s.meetUrl,'_blank');};
+      },diff));
+    }
   });
-  // Smart deadline notifications
-  Object.keys(sessionDeadlines).forEach(function(sid){
+
+  // ── تنبيهات مواعيد الطعن ──
+  if(localStorage.getItem('notif_deadline')!=='0')Object.keys(sessionDeadlines).forEach(function(sid){
     var d=sessionDeadlines[sid];if(!d)return;
     var deadline=new Date(d.deadlineDate+'T08:00:00');
     [7,3,1,0].forEach(function(daysLeft){
-      var alertTime=new Date(deadline);alertTime.setDate(alertTime.getDate()-daysLeft);alertTime.setHours(8,0,0,0);
+      var alertTime=new Date(deadline);
+      alertTime.setDate(alertTime.getDate()-daysLeft);
+      alertTime.setHours(8,0,0,0);
       var diff=alertTime-now;
       if(diff>0&&diff<8*86400000){
         notifTimers.push(setTimeout(function(){
-          var msg=daysLeft===0?'اليوم آخر يوم للطعن!':daysLeft===1?'غداً آخر موعد للطعن':'متبقي '+daysLeft+' أيام على موعد الطعن';
-          new Notification('⚖️ تنبيه موعد طعن',{body:msg+' — '+d.typeName.split('(')[0].trim()+(d.sessionNum?' ('+d.sessionNum+')':''),requireInteraction:daysLeft<=1});
+          var msg=daysLeft===0?'⛔ اليوم آخر يوم للطعن!':
+                  daysLeft===1?'⚠️ غداً آخر موعد للطعن':
+                  '📋 متبقي '+daysLeft+' أيام على موعد الطعن';
+          new Notification('⚖️ تنبيه موعد طعن',{
+            body:msg+' — '+d.typeName.split('(')[0].trim()+(d.sessionNum?' ('+d.sessionNum+')':''),
+            requireInteraction:daysLeft<=1,
+            tag:'deadline-'+sid+'-'+daysLeft
+          });
         },diff));
       }
     });
   });
 }
-function schedDaily(){var now=new Date(),nxt=new Date(now);nxt.setHours(8,0,0,0);if(nxt<=now)nxt.setDate(nxt.getDate()+1);setTimeout(function(){if(notifOn&&Notification.permission==='granted'){var todayN=data.filter(function(s){return s.date===today();}).length;var urgentDL=Object.keys(sessionDeadlines).filter(function(sid){var info=getDeadlineInfo(parseInt(sid));return info&&info.remaining>=0&&info.remaining<=7;}).length;var body='';if(todayN>0)body+='لديك '+todayN+' جلسة اليوم';if(urgentDL>0)body+=(body?' · ':'')+urgentDL+' موعد طعن قريب';if(body)new Notification('📅 ملخصك الصباحي',{body:body});}schedDaily();},nxt-now);}
+
+function schedDaily(){
+  var now=new Date(),nxt=new Date(now);
+  nxt.setHours(8,0,0,0);
+  if(nxt<=now)nxt.setDate(nxt.getDate()+1);
+  setTimeout(function(){
+    if(notifOn&&Notification.permission==='granted'){
+      var td=today();
+      var todaySess=data.filter(function(s){return s.date===td&&s.status==='scheduled';});
+      var tomorrowSess=data.filter(function(s){
+        var tmr=new Date();tmr.setDate(tmr.getDate()+1);
+        return s.date===tmr.toISOString().split('T')[0]&&s.status==='scheduled';
+      });
+      var urgentDL=Object.keys(sessionDeadlines).filter(function(sid){
+        var info=getDeadlineInfo(parseInt(sid));
+        return info&&info.remaining>=0&&info.remaining<=7;
+      }).length;
+
+      var lines=[];
+      if(todaySess.length)lines.push('📅 '+todaySess.length+' جلسة اليوم');
+      if(tomorrowSess.length)lines.push('🔜 '+tomorrowSess.length+' جلسة غداً');
+      if(urgentDL)lines.push('⏰ '+urgentDL+' موعد طعن قريب');
+
+      if(lines.length){
+        new Notification('🌅 ملخصك الصباحي',{
+          body:lines.join(' · '),
+          tag:'daily-summary'
+        });
+      }
+      schedNotifs(); // re-schedule for the new day
+    }
+    schedDaily();
+  },nxt-now);
+}
 
 /* ═══════════════════════════════════════════════════════════
    AI - CLAUDE INTEGRATION (ENHANCED)
@@ -3379,6 +3486,42 @@ function rSettings(){
   h+='</div>';
 
   // ── App Info ──
+  // ── Smart Notifications ──
+  h+=secHdr('🔔','إعدادات التنبيهات الذكية');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  var notifStatus=notifOn&&(typeof Notification!=='undefined')&&Notification.permission==='granted';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">';
+  h+='<div style="width:38px;height:38px;border-radius:50%;background:'+(notifStatus?'rgba(48,184,128,0.15)':'var(--surface3)')+';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+(notifStatus?'🔔':'🔕')+'</div>';
+  h+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">التنبيهات '+(notifStatus?'مفعّلة':'معطّلة')+'</div>';
+  h+='<div style="font-size:10px;color:'+(notifStatus?'var(--green)':'var(--text3)')+'">'+( notifStatus?'تصلك إشعارات تلقائية قبل جلساتك':'فعّل للحصول على تنبيهات ذكية')+'</div></div>';
+  h+='<button onclick="toggleNotif()" style="background:'+(notifStatus?'var(--red-a)':'var(--gold)')+';color:'+(notifStatus?'#f87171':'#0a0905')+';border:1px solid '+(notifStatus?'rgba(224,64,80,.3)':'transparent')+';border-radius:10px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">'+(notifStatus?'إيقاف':'تفعيل')+'</button>';
+  h+='</div>';
+
+  var alerts=[
+    {icon:'🌅',title:'ملخص صباحي يومي',desc:'8:00 ص — جلسات اليوم والغد ومواعيد الطعن',key:'notif_morning'},
+    {icon:'📅',title:'قبل يوم من الجلسة',desc:'8:00 م — تذكير بجلسات الغد',key:'notif_day'},
+    {icon:'⏰',title:'قبل ساعة من الجلسة',desc:'تنبيه عند اقتراب موعد الجلسة',key:'notif_hour'},
+    {icon:'🔔',title:'قبل 30 دقيقة',desc:'تنبيه أخير للتحضير',key:'notif_30m'},
+    {icon:'🎥',title:'جلسات عن بُعد',desc:'تنبيه 5 دقائق قبل مع رابط الدخول',key:'notif_remote'},
+    {icon:'⚖️',title:'مواعيد الطعن',desc:'تنبيهات عند 7 و3 و1 و0 أيام',key:'notif_deadline'},
+  ];
+
+  alerts.forEach(function(a){
+    var val=localStorage.getItem(a.key)!=='0';
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">';
+    h+='<span style="font-size:18px;flex-shrink:0">'+a.icon+'</span>';
+    h+='<div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">'+a.title+'</div>';
+    h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">'+a.desc+'</div></div>';
+    h+='<label style="position:relative;display:inline-block;width:38px;height:21px;flex-shrink:0">';
+    h+='<input type="checkbox" '+(val?'checked':'')+' onchange="localStorage.setItem(\''+a.key+'\',this.checked?\'1\':\'0\');schedNotifs()" style="opacity:0;width:0;height:0">';
+    h+='<span style="position:absolute;inset:0;background:'+(val?'var(--gold)':'var(--surface3)')+';border-radius:21px;cursor:pointer;transition:.25s"></span>';
+    h+='<span style="position:absolute;height:15px;width:15px;background:#fff;border-radius:50%;bottom:3px;'+(val?'right:3px':'left:3px')+';transition:.25s"></span>';
+    h+='</label></div>';
+  });
+
+  h+='<button onclick="schedNotifs();toast(\'🔔 تم تحديث جدول التنبيهات\')" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:9px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;margin-top:10px;font-family:Tajawal,sans-serif">🔄 تحديث التنبيهات الآن</button>';
+  h+='</div>';
+
   h+=secHdr('🌙','المظهر التلقائي');
   h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between">';
