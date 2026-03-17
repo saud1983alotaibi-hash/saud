@@ -2632,14 +2632,23 @@ try{fees=JSON.parse(localStorage.getItem('j_fees')||'[]');}catch(e){fees=[];}
 function saveFees(){try{localStorage.setItem('j_fees',JSON.stringify(fees));}catch(e){}}
 
 function rFees(){
-  var total=fees.reduce(function(s,f){return s+(f.amount||0);},0);
-  var paidFull=fees.filter(function(f){return f.status==='paid';});
-  var paidPart=fees.filter(function(f){return f.status==='partial';});
-  var pending=fees.filter(function(f){return !f.status||f.status==='pending';});
-
-  var paidAmt=paidFull.reduce(function(s,f){return s+(f.amount||0);},0);
-  var partAmt=paidPart.reduce(function(s,f){return s+(f.paidAmount||0);},0);
-  var unpaid=total-paidAmt-partAmt;
+  // ── حساب صحيح لكل حالة ──
+  var total=0, paidAmt=0, partialPaid=0, unpaid=0;
+  fees.forEach(function(f){
+    var amt=f.amount||0;
+    var st=f.status||(f.paid===true?'paid':'pending');
+    total+=amt;
+    if(st==='paid'){
+      paidAmt+=amt;
+    } else if(st==='partial'){
+      var paid=f.paidAmount||0;
+      partialPaid+=paid;
+      unpaid+=(amt-paid);
+    } else {
+      // pending
+      unpaid+=amt;
+    }
+  });
 
   var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
   h+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">💰 الأتعاب والرسوم</div>';
@@ -2651,7 +2660,7 @@ function rFees(){
   [
     {v:total.toLocaleString('ar-SA'),l:'الإجمالي',c:'var(--gold2)',bg:'var(--gold-a10)',border:'var(--gold-a20)',icon:'💰'},
     {v:paidAmt.toLocaleString('ar-SA'),l:'تم التسديد',c:'#34d399',bg:'rgba(48,184,128,0.08)',border:'rgba(48,184,128,0.2)',icon:'✅'},
-    {v:partAmt.toLocaleString('ar-SA'),l:'مسدد جزئي',c:'#f0b040',bg:'rgba(224,144,48,0.08)',border:'rgba(224,144,48,0.2)',icon:'⚡'},
+    {v:partialPaid.toLocaleString('ar-SA'),l:'مسدد جزئي',c:'#f0b040',bg:'rgba(224,144,48,0.08)',border:'rgba(224,144,48,0.2)',icon:'⚡'},
     {v:unpaid.toLocaleString('ar-SA'),l:'المتبقي',c:'#f87171',bg:'rgba(224,64,80,0.08)',border:'rgba(224,64,80,0.2)',icon:'⏳'},
   ].forEach(function(x){
     h+='<div style="background:'+x.bg+';border:1px solid '+x.border+';border-radius:var(--r-md);padding:12px;position:relative;overflow:hidden">';
@@ -2664,13 +2673,13 @@ function rFees(){
 
   // Progress bar
   if(total>0){
-    var paidPct=Math.round(((paidAmt+partAmt)/total)*100);
+    var paidPct=total>0?Math.round(((paidAmt+partialPaid)/total)*100):0;
     h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:14px">';
     h+='<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:6px">';
     h+='<span>نسبة التحصيل</span><span style="color:var(--gold2);font-weight:700">'+paidPct+'%</span></div>';
     h+='<div style="background:var(--surface3);border-radius:4px;height:8px;overflow:hidden;display:flex">';
     if(paidAmt>0)h+='<div style="height:100%;background:#34d399;transition:width .5s;width:'+Math.round((paidAmt/total)*100)+'%"></div>';
-    if(partAmt>0)h+='<div style="height:100%;background:#f0b040;transition:width .5s;width:'+Math.round((partAmt/total)*100)+'%"></div>';
+    if(partialPaid>0&&total>0)h+='<div style="height:100%;background:#f0b040;transition:width .5s;width:'+Math.round((partialPaid/total)*100)+'%"></div>';
     h+='</div>';
     h+='<div style="display:flex;gap:12px;margin-top:6px;font-size:9px">';
     h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:#34d399"></div><span style="color:var(--text3)">مسدد</span></div>';
