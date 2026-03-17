@@ -1899,7 +1899,7 @@ function rGlobalSearch(qry){
   // ── نتائج الجلسات ──
   if(sRes.length){
     h+=secHdr('⚖️','الجلسات ('+sRes.length+')');
-    sRes.forEach(function(s){h+=card(s);});
+    sRes.forEach(function(s){h+=cardForSearch(s);});
   }
 
   // ── المهمات ──
@@ -1907,7 +1907,7 @@ function rGlobalSearch(qry){
     h+=secHdr('📋','المهمات ('+tRes.length+')');
     tRes.forEach(function(t){
       var ov=t.due&&!t.done&&t.due<today();
-      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 12px;margin-bottom:7px;border-right:3px solid '+(t.done?'var(--green)':ov?'var(--red)':'var(--blue)')+'">';
+      h+='<div onclick="goFromSearch(\'tasks\')" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 12px;margin-bottom:7px;border-right:3px solid '+(t.done?'var(--green)':ov?'var(--red)':'var(--blue)')+';cursor:pointer">';
       h+='<div style="font-size:13px;font-weight:600;color:var(--text)'+(t.done?';text-decoration:line-through;opacity:.5':'')+'">'+(t.done?'✅ ':ov?'⚠️ ':'')+t.title+'</div>';
       if(t.caseNum)h+='<div style="font-size:10px;color:var(--text3);margin-top:3px">📋 '+t.caseNum+'</div>';
       if(t.due)h+='<div style="font-size:10px;color:'+(ov?'#f57070':'var(--text3)')+';margin-top:2px">📅 '+t.due+'</div>';
@@ -1919,7 +1919,7 @@ function rGlobalSearch(qry){
   if(cRes.length){
     h+=secHdr('👤','الأطراف ('+cRes.length+')');
     cRes.forEach(function(c){
-      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;display:flex;align-items:center;gap:10px">';
+      h+='<div onclick="goFromSearch(\'contacts\')" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer">';
       h+='<div style="width:36px;height:36px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">👤</div>';
       h+='<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+c.name+'</div>';
       h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+c.role+(c.caseNum?' · 📋 '+c.caseNum:'')+(c.phone?' · 📱 '+c.phone:'')+'</div></div>';
@@ -1931,7 +1931,7 @@ function rGlobalSearch(qry){
   if(fRes.length){
     h+=secHdr('📁','الملفات ('+fRes.length+')');
     fRes.forEach(function(f){
-      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;display:flex;align-items:center;gap:10px">';
+      h+='<div onclick="goFromSearch(\'files\')" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer">';
       h+='<div style="width:36px;height:36px;border-radius:9px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📄</div>';
       h+='<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+f.name+'</div>';
       h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">📂 '+f.folder+' · '+f.date+'</div></div></div>';
@@ -1944,7 +1944,7 @@ function rGlobalSearch(qry){
     feRes.forEach(function(f){
       var st=f.status||(f.paid?'paid':'pending');
       var stClr=st==='paid'?'#28b870':st==='partial'?'#f0b040':'#f57070';
-      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;border-right:3px solid '+stClr+'">';
+      h+='<div onclick="goFromSearch(\'fees\')" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;border-right:3px solid '+stClr+';cursor:pointer">';
       h+='<div style="display:flex;justify-content:space-between"><div style="font-size:13px;font-weight:600;color:var(--text)">'+f.desc+'</div>';
       h+='<div style="font-size:14px;font-weight:900;color:var(--gold2)">'+f.amount.toLocaleString('ar-SA')+'</div></div>';
       if(f.client)h+='<div style="font-size:10px;color:var(--text3);margin-top:3px">👤 '+f.client+'</div>';
@@ -1955,7 +1955,7 @@ function rGlobalSearch(qry){
   // ── الأرشيف ──
   if(archRes.length){
     h+=secHdr('🗄️','الأرشيف ('+archRes.length+')');
-    archRes.forEach(function(s){h+=card(s);});
+    archRes.forEach(function(s){h+=cardForSearch(s);});
   }
 
   return h;
@@ -7095,6 +7095,36 @@ function doGlobalSearch(val){
     return;
   }
   res.innerHTML=rGlobalSearch(val);
+}
+
+function openFromSearch(id){
+  var modal=document.getElementById('globalSearchModal');
+  if(modal)modal.remove();
+  openDet(id);
+}
+
+function goFromSearch(tab){
+  var modal=document.getElementById('globalSearchModal');
+  if(modal)modal.remove();
+  go(tab);
+}
+
+function cardForSearch(s){
+  var c=ST[s.status],p=s.priority||'none';
+  var colorLabel=s.colorLabel?getLabelColor(s.colorLabel):null;
+  var cardBorder=colorLabel?'border-color:'+colorLabel.border+';background:'+colorLabel.bg:'';
+  var accentBg=colorLabel?colorLabel.dot:c.clr;
+  return'<div class="s-card" onclick="openFromSearch('+s.id+')" style="'+cardBorder+'">'+
+    '<div class="s-card-accent" style="background:'+accentBg+'"></div>'+
+    '<div class="s-card-top"><div>'+
+    '<div class="s-card-num">'+s.num+(s.ref?'<span style="font-size:10px;color:var(--text3);margin-right:6px">🏷️ '+s.ref+'</span>':'')+
+    (colorLabel?'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+colorLabel.dot+';margin-right:5px;vertical-align:middle"></span>':'')+
+    '</div>'+
+    '<div class="s-card-meta">'+s.type+(s.room?' · '+s.room:'')+'&nbsp;&nbsp;'+ptag(p)+'</div></div>'+
+    '<div class="s-card-time"><div class="s-card-timestr">'+s.time+'</div><div class="s-card-date">'+fmtS(s.date)+'</div></div></div>'+
+    '<div class="s-card-parties"><span style="opacity:.4">👤</span> '+(s.plnt||'—')+' <span style="color:var(--text3)">↔</span> '+(s.dfnd||'—')+'</div>'+
+    '<div class="s-card-footer"><div class="s-card-court">🏛️ '+(s.court||'—')+'</div>'+
+    '<div class="s-card-actions">'+bdg(s.status)+'</div></div></div>';
 }
 
 function showEncryptionSetup(){
