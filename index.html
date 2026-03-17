@@ -591,6 +591,8 @@ option { background: var(--surface); }
     </div>
     <div class="sheet-body">
       <div class="field"><label>رقم القضية *</label><input id="fNum" type="text" placeholder="مثال: 2025/1234" dir="rtl" oninput="chkV()"></div>
+      <div class="field"><label>🏷️ الرقم المرجعي للمكتب</label><input id="fRef" type="text" placeholder="مثال: م.م/2025/001" dir="rtl"></div>
+      <div class="field"><label>👤 اسم الموكل</label><input id="fClient" type="text" placeholder="اسم الموكل / الجهة" dir="rtl"></div>
       <div class="field"><label>نوع القضية</label>
         <select id="fType" dir="rtl">
           <option>جنائية</option><option>مدنية</option><option>تجارية</option>
@@ -1647,11 +1649,11 @@ function card(s){
   var dlBadge=deadlineBadge(s);
   return'<div class="s-card" onclick="openDet('+s.id+')">'+
     '<div class="s-card-accent" style="background:'+c.clr+'"></div>'+
-    '<div class="s-card-top"><div><div class="s-card-num">'+s.num+'</div>'+
+    '<div class="s-card-top"><div><div class="s-card-num">'+s.num+(s.ref?'<span style="font-size:10px;font-weight:600;color:var(--text3);margin-right:6px;font-family:Tajawal,sans-serif">🏷️ '+s.ref+'</span>':'')+'</div>'+
     '<div class="s-card-meta">'+s.type+(s.room?' · '+s.room:'')+'&nbsp;&nbsp;'+ptag(p)+'</div></div>'+
     '<div class="s-card-time"><div class="s-card-timestr">'+s.time+'</div><div class="s-card-date">'+(s.hijriDate?s.hijriDate.split(' ').slice(0,2).join(' '):fmtS(s.date))+'</div></div></div>'+
     '<div class="s-card-parties"><span style="opacity:.4">👤</span> '+(s.plnt||'—')+' <span style="color:var(--text3)">↔</span> '+(s.dfnd||'—')+'</div>'+
-    '<div class="s-card-footer"><div class="s-card-court">🏛️ '+(s.court||'—')+'</div>'+
+    '<div class="s-card-footer"><div class="s-card-court">🏛️ '+(s.court||'—')+(s.client?'<span style="margin-right:8px;color:var(--gold2)">👤 '+s.client+'</span>':'')+'</div>'+
     '<div class="s-card-actions">'+bdg(s.status)+'<button onclick="cycleStatus('+s.id+',event)" class="btn-cycle">🔁</button></div></div>'+
     ((att>0||hasMemo)?'<div style="font-size:9px;color:var(--text3);margin-top:6px;display:flex;gap:8px">'+(att>0?'<span>📎 '+att+' مرفق</span>':'')+(hasMemo?'<span>📝 مذكرة</span>':'')+'</div>':'')+
     (s.meetUrl?'<div style="margin-top:8px">'+meetJoinBtn(s,'small')+'</div>':'')+
@@ -2252,8 +2254,8 @@ function confDel(){delTgt=detId;document.getElementById('dlg').classList.remove(
 /* ═══════════════════════════════════════════════════════════
    FORM
 ═══════════════════════════════════════════════════════════ */
-function openAdd(){editId=null;curPrio='none';curTags=[];document.getElementById('formTitle').textContent='جلسة جديدة';document.getElementById('btnSave').textContent='حفظ الجلسة';['fNum','fCourt','fRoom','fPlnt','fDfnd','fNotes','fMeetUrl'].forEach(function(i){document.getElementById(i).value='';});document.getElementById('fType').value='جنائية';document.getElementById('fStatus').value='scheduled';document.getElementById('fDate').value='';document.getElementById('fTime').value='';document.getElementById('btnSave').disabled=true;setPrio('none');updMeetIcon('');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker([]);document.getElementById('formSheet').classList.remove('hid');}
-function openEdit(s){editId=s.id;curPrio=s.priority||'none';curTags=(s.tags||[]).slice();document.getElementById('formTitle').textContent='تعديل الجلسة';document.getElementById('btnSave').textContent='💾 حفظ التعديلات';document.getElementById('fNum').value=s.num;document.getElementById('fType').value=s.type;document.getElementById('fCourt').value=s.court||'';document.getElementById('fRoom').value=s.room||'';document.getElementById('fMeetUrl').value=s.meetUrl||'';document.getElementById('fPlnt').value=s.plnt||'';document.getElementById('fDfnd').value=s.dfnd||'';document.getElementById('fDate').value=s.date;document.getElementById('fTime').value=s.time;document.getElementById('fStatus').value=s.status;document.getElementById('fNotes').value=s.notes||'';document.getElementById('btnSave').disabled=false;setPrio(s.priority||'none');updMeetIcon(s.meetUrl||'');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker(s.tags||[]);document.getElementById('formSheet').classList.remove('hid');}
+function openAdd(){editId=null;curPrio='none';curTags=[];document.getElementById('formTitle').textContent='جلسة جديدة';document.getElementById('btnSave').textContent='حفظ الجلسة';['fNum','fRef','fClient','fCourt','fRoom','fPlnt','fDfnd','fNotes','fMeetUrl'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});document.getElementById('fType').value='جنائية';document.getElementById('fStatus').value='scheduled';document.getElementById('fDate').value='';document.getElementById('fTime').value='';document.getElementById('btnSave').disabled=true;setPrio('none');updMeetIcon('');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker([]);document.getElementById('formSheet').classList.remove('hid');}
+function openEdit(s){editId=s.id;curPrio=s.priority||'none';curTags=(s.tags||[]).slice();document.getElementById('formTitle').textContent='تعديل الجلسة';document.getElementById('btnSave').textContent='💾 حفظ التعديلات';document.getElementById('fNum').value=s.num;document.getElementById('fType').value=s.type;document.getElementById('fCourt').value=s.court||'';document.getElementById('fRoom').value=s.room||'';document.getElementById('fMeetUrl').value=s.meetUrl||'';document.getElementById('fPlnt').value=s.plnt||'';document.getElementById('fDfnd').value=s.dfnd||'';document.getElementById('fDate').value=s.date;document.getElementById('fTime').value=s.time;document.getElementById('fStatus').value=s.status;document.getElementById('fNotes').value=s.notes||'';var fRef=document.getElementById('fRef');if(fRef)fRef.value=s.ref||'';var fClient=document.getElementById('fClient');if(fClient)fClient.value=s.client||'';document.getElementById('btnSave').disabled=false;setPrio(s.priority||'none');updMeetIcon(s.meetUrl||'');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker(s.tags||[]);document.getElementById('formSheet').classList.remove('hid');}
 function closeForm(){document.getElementById('formSheet').classList.add('hid');editId=null;}
 function chkV(){var ok=document.getElementById('fNum').value.trim()&&document.getElementById('fCourt').value.trim()&&document.getElementById('fDate').value&&document.getElementById('fTime').value;document.getElementById('btnSave').disabled=!ok;}
 
@@ -2323,7 +2325,7 @@ function meetJoinBtn(s,size){
     ';font-weight:700;cursor:pointer;display:'+(big?'flex':'inline-flex')+';align-items:center;justify-content:center;gap:6px;font-family:Tajawal,sans-serif">'+
     info.icon+' انضم عبر '+info.name+'</button>';
 }
-function saveS(){var ex=editId?data.find(function(x){return x.id===editId;}):null;var s={id:editId||Date.now(),num:document.getElementById('fNum').value.trim(),type:document.getElementById('fType').value,court:document.getElementById('fCourt').value.trim(),room:document.getElementById('fRoom').value.trim(),meetUrl:(document.getElementById('fMeetUrl').value||'').trim(),plnt:document.getElementById('fPlnt').value.trim(),dfnd:document.getElementById('fDfnd').value.trim(),date:document.getElementById('fDate').value,time:document.getElementById('fTime').value,status:document.getElementById('fStatus').value,priority:curPrio,tags:curTags.slice(),notes:document.getElementById('fNotes').value.trim(),attachments:ex?(ex.attachments||[]):[],memo:ex?(ex.memo||''):'',minutes:ex?(ex.minutes||''):'',quickNote:ex?(ex.quickNote||''):'',stage:ex?(ex.stage||''):''};if(!s.num||!s.court||!s.date||!s.time)return;dbPut(s).then(function(){if(editId)data=data.map(function(x){return x.id===editId?s:x;});else data.push(s);schedNotifs();toast(editId?'✅ تم حفظ التعديلات':'✅ أُضيفت الجلسة');closeForm();render();});}
+function saveS(){var ex=editId?data.find(function(x){return x.id===editId;}):null;var s={id:editId||Date.now(),num:document.getElementById('fNum').value.trim(),type:document.getElementById('fType').value,court:document.getElementById('fCourt').value.trim(),room:document.getElementById('fRoom').value.trim(),meetUrl:(document.getElementById('fMeetUrl').value||'').trim(),plnt:document.getElementById('fPlnt').value.trim(),dfnd:document.getElementById('fDfnd').value.trim(),date:document.getElementById('fDate').value,time:document.getElementById('fTime').value,status:document.getElementById('fStatus').value,priority:curPrio,tags:curTags.slice(),notes:document.getElementById('fNotes').value.trim(),ref:(function(){var el=document.getElementById('fRef');return el?el.value.trim():'';})(),client:(function(){var el=document.getElementById('fClient');return el?el.value.trim():'';})(),attachments:ex?(ex.attachments||[]):[],memo:ex?(ex.memo||''):'',minutes:ex?(ex.minutes||''):'',quickNote:ex?(ex.quickNote||''):'',stage:ex?(ex.stage||''):''};if(!s.num||!s.court||!s.date||!s.time)return;dbPut(s).then(function(){if(editId)data=data.map(function(x){return x.id===editId?s:x;});else data.push(s);schedNotifs();toast(editId?'✅ تم حفظ التعديلات':'✅ أُضيفت الجلسة');closeForm();render();});}
 
 /* ═══════════════════════════════════════════════════════════
    DELETE
@@ -2678,6 +2680,70 @@ function rFees(){
   }
 
   // Filter chips
+  // ── View toggle: سجل / موكلين ──
+  var feeView=window._feeView||'list';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">';
+  h+='<button onclick="window._feeView=\'list\';render()" style="padding:9px;border-radius:var(--r-md);font-size:12px;font-weight:700;cursor:pointer;border:1px solid;background:'+(feeView==='list'?'var(--gold-a10)':'var(--surface2)')+';color:'+(feeView==='list'?'var(--gold2)':'var(--text3)')+';border-color:'+(feeView==='list'?'var(--gold-a30)':'var(--border2)')+'">📋 سجل الأتعاب</button>';
+  h+='<button onclick="window._feeView=\'clients\';render()" style="padding:9px;border-radius:var(--r-md);font-size:12px;font-weight:700;cursor:pointer;border:1px solid;background:'+(feeView==='clients'?'var(--gold-a10)':'var(--surface2)')+';color:'+(feeView==='clients'?'var(--gold2)':'var(--text3)')+';border-color:'+(feeView==='clients'?'var(--gold-a30)':'var(--border2)')+'">👥 تتبع التحصيل</button>';
+  h+='</div>';
+
+  if(feeView==='clients'){
+    // Group by client
+    var clientMap={};
+    fees.forEach(function(f){
+      var s=data.find(function(x){return x.id===f.sessionId;});
+      var clientName=(s&&s.client)||f.client||'غير محدد';
+      if(!clientMap[clientName])clientMap[clientName]={name:clientName,total:0,paid:0,partial:0,unpaid:0,fees:[],cases:{}};
+      var cm=clientMap[clientName];
+      cm.total+=f.amount||0;
+      var st=f.status||(f.paid?'paid':'pending');
+      if(st==='paid')cm.paid+=f.amount||0;
+      else if(st==='partial')cm.partial+=(f.paidAmount||0);
+      else cm.unpaid+=f.amount||0;
+      cm.fees.push(f);
+      if(s)cm.cases[s.num]=true;
+    });
+
+    var clients=Object.values(clientMap).sort(function(a,b){return b.total-a.total;});
+    if(!clients.length){
+      h+='<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">لا توجد بيانات موكلين</div><div class="empty-sub">أضف اسم الموكل عند إضافة الجلسة أو الأتعاب</div></div>';
+    } else {
+      h+=secHdr('👥','تحصيل الأتعاب لكل موكل');
+      clients.forEach(function(cm){
+        var collRate=cm.total>0?Math.round(((cm.paid+cm.partial)/cm.total)*100):0;
+        var caseList=Object.keys(cm.cases);
+        h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:13px;margin-bottom:10px">';
+        // Header
+        h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+        h+='<div style="width:38px;height:38px;border-radius:50%;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👤</div>';
+        h+='<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">'+cm.name+'</div>';
+        if(caseList.length)h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">📋 '+caseList.join(' · ')+'</div>';
+        h+='</div>';
+        h+='<div style="text-align:left"><div style="font-size:11px;font-weight:900;color:var(--gold2)">'+cm.total.toLocaleString('ar-SA')+'</div><div style="font-size:9px;color:var(--text3)">ر.س إجمالي</div></div></div>';
+        // Stats row
+        h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">';
+        [{v:cm.paid.toLocaleString('ar-SA'),l:'مسدد',c:'#34d399',bg:'rgba(48,184,128,0.08)'},
+         {v:cm.partial.toLocaleString('ar-SA'),l:'جزئي',c:'#f0b040',bg:'rgba(224,144,48,0.08)'},
+         {v:cm.unpaid.toLocaleString('ar-SA'),l:'متبقي',c:'#f87171',bg:'rgba(224,64,80,0.08)'}
+        ].forEach(function(x){
+          h+='<div style="background:'+x.bg+';border-radius:8px;padding:7px;text-align:center">';
+          h+='<div style="font-size:13px;font-weight:700;color:'+x.c+'">'+x.v+'</div>';
+          h+='<div style="font-size:9px;color:var(--text3)">'+x.l+'</div></div>';
+        });
+        h+='</div>';
+        // Progress bar
+        h+='<div style="background:var(--surface3);border-radius:4px;height:6px;overflow:hidden;margin-bottom:4px;display:flex">';
+        if(cm.paid>0)h+='<div style="height:100%;background:#34d399;width:'+Math.round((cm.paid/cm.total)*100)+'%"></div>';
+        if(cm.partial>0)h+='<div style="height:100%;background:#f0b040;width:'+Math.round((cm.partial/cm.total)*100)+'%"></div>';
+        h+='</div>';
+        h+='<div style="font-size:10px;color:var(--text3);text-align:left">نسبة التحصيل: <strong style="color:'+(collRate>=80?'#34d399':collRate>=40?'#f0b040':'#f87171')+'">'+collRate+'%</strong> · '+cm.fees.length+' سجل</div>';
+        h+='</div>';
+      });
+    }
+    h+='<div id="feeForm" style="display:none"></div>';
+    return h;
+  }
+
   var feeFilter=window._feeFilter||'all';
   h+='<div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px">';
   [['all','الكل'],['pending','معلق'],['partial','جزئي'],['paid','مسدد']].forEach(function(chip){
@@ -2738,6 +2804,7 @@ function rFees(){
   h+='<div id="feeForm" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:14px;margin-top:12px">';
   h+='<div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px">تسجيل أتعاب / رسوم</div>';
   h+='<input id="feDesc" type="text" placeholder="وصف الأتعاب / الخدمة *" dir="rtl" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">';
+  h+='<input id="feClient" type="text" placeholder="اسم الموكل (اختياري)" dir="rtl" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">';
   h+='<input id="feAmt" type="number" placeholder="المبلغ الكلي (ر.س) *" dir="ltr" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block">';
   h+='<input id="feDate" type="date" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block;color-scheme:dark">';
   h+='<select id="feSess" dir="rtl" style="width:100%;background:var(--surface3);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);margin-bottom:8px;display:block">';
@@ -2765,9 +2832,11 @@ function saveFee(){
   var st=statusEl?statusEl.value:'pending';
   var partAmt=st==='partial'?(parseFloat(document.getElementById('fePaidAmt').value)||0):0;
   var sessEl=document.getElementById('feSess');
+  var feClient=document.getElementById('feClient');
   fees.push({
     id:'fee_'+Date.now(),
     desc:desc.value.trim(),
+    client:feClient?feClient.value.trim():'',
     amount:parseFloat(amt.value)||0,
     date:document.getElementById('feDate').value,
     sessionId:sessEl?parseInt(sessEl.value)||null:null,
