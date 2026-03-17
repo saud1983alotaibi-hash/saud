@@ -2704,11 +2704,12 @@ function rFees(){
       var clientName=(s&&s.client)||f.client||'غير محدد';
       if(!clientMap[clientName])clientMap[clientName]={name:clientName,total:0,paid:0,partial:0,unpaid:0,fees:[],cases:{}};
       var cm=clientMap[clientName];
-      cm.total+=f.amount||0;
-      var st=f.status||(f.paid?'paid':'pending');
-      if(st==='paid')cm.paid+=f.amount||0;
-      else if(st==='partial')cm.partial+=(f.paidAmount||0);
-      else cm.unpaid+=f.amount||0;
+      var fAmt=f.amount||0;
+      cm.total+=fAmt;
+      var st=f.status||(f.paid===true?'paid':'pending');
+      if(st==='paid'){cm.paid+=fAmt;}
+      else if(st==='partial'){var paidPart=f.paidAmount||0;cm.partial+=paidPart;cm.unpaid+=(fAmt-paidPart);}
+      else{cm.unpaid+=fAmt;}
       cm.fees.push(f);
       if(s)cm.cases[s.num]=true;
     });
