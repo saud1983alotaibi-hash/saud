@@ -342,6 +342,7 @@ option{background:var(--surface);}
       <div class="hdr-actions">
         <button class="btn-icon" id="btnTheme" onclick="toggleTheme()" title="تبديل المظهر">🌙</button>
         <button class="btn-icon" onclick="showColorPicker()" title="تخصيص الألوان">🎨</button>
+        <button class="btn-icon" onclick="showClientFiles()" title="ملفات الموكلين" id="btnClients">🧩</button>
         <button class="btn-icon" onclick="showGlobalSearch()" title="بحث موحد" id="btnSearch">🔍</button>
         <button class="btn-icon" onclick="printProfessionalReport()" title="تقرير PDF احترافي">🖨️</button>
         <button class="btn-icon" onclick="exportAllToICS()" title="تصدير للتقويم">📅</button>
@@ -2346,6 +2347,7 @@ function openDet(id){
     '<button class="action-btn" onclick="dupSession('+id+')" style="background:rgba(139,111,212,.1);color:#a78bfa;border-color:rgba(139,111,212,.3)">🔄 استنساخ</button>'+
     '<button class="action-btn" onclick="printS('+id+')" style="background:var(--green-a);color:#34d399;border-color:rgba(58,184,130,.3)">🖨️ طباعة</button>'+
     '<button class="action-btn" onclick="showWAReminderModal('+id+')" style="background:rgba(37,211,102,.1);color:#25d366;border-color:rgba(37,211,102,.25)">💬 واتساب</button>'+
+    (s.client?'<button class="action-btn" onclick="closeDet();openClientFile(\''+s.client.replace(/'/g,"\\'")+'\')" style="background:rgba(120,80,216,.1);color:#a78bfa;border-color:rgba(120,80,216,.3)">🧩 ملف الموكل</button>':'')+
     '<button class="action-btn" onclick="confDel()" style="background:var(--red-a);color:#f87171;border-color:rgba(232,80,80,.3)">🗑️ حذف</button>'+
   '</div>';
   document.getElementById('detBody').innerHTML=b;
@@ -7880,6 +7882,218 @@ function makeModal(id,title){
   box.innerHTML=hdr;
   modal.appendChild(bg);modal.appendChild(box);
   return{el:modal,box:box};
+}
+
+/* ════════════════════════════════════════════════════════
+   🧩 ملف الموكل المتكامل
+════════════════════════════════════════════════════════ */
+var clientProfiles=[];
+try{clientProfiles=JSON.parse(localStorage.getItem('j_client_profiles')||'[]');}catch(e){}
+function saveClientProfiles(){try{localStorage.setItem('j_client_profiles',JSON.stringify(clientProfiles));}catch(e){}}
+
+function getAllClients(){
+  var clients={};
+  // من بيانات الجلسات (حقل الموكل)
+  data.forEach(function(s){
+    if(s.client&&s.client.trim()){
+      if(!clients[s.client])clients[s.client]={name:s.client,source:'sessions'};
+    }
+  });
+  // من الأطراف (المدعي/المدعى عليه كموكل)
+  contacts.forEach(function(c){
+    if(c.role==='مدعي'||c.role==='مدعى عليه'){
+      if(!clients[c.name])clients[c.name]={name:c.name,phone:c.phone,source:'contacts'};
+    }
+  });
+  // من ملفات العملاء المحفوظة
+  clientProfiles.forEach(function(p){
+    if(!clients[p.name])clients[p.name]={name:p.name,phone:p.phone,email:p.email,notes:p.notes,source:'profile',id:p.id};
+    else Object.assign(clients[p.name],{phone:p.phone,email:p.email,notes:p.notes,id:p.id});
+  });
+  return Object.values(clients);
+}
+
+function showClientFiles(){
+  var modal=makeModal('clientFilesModal','🧩 ملفات الموكلين');
+  var b=modal.box;
+  var clients=getAllClients();
+
+  var h='<div style="display:flex;gap:8px;margin-bottom:12px">';
+  h+='<div style="flex:1;position:relative">';
+  h+='<span style="position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--text3)">🔍</span>';
+  h+='<input id="clientSearch" type="search" placeholder="ابحث عن موكل..." dir="rtl" oninput="filterClients(this.value)" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-md);padding:9px 36px 9px 12px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif">';
+  h+='</div>';
+  h+='<button onclick="showAddClientForm()" style="background:var(--gold);color:#040608;border-radius:var(--r-md);padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Tajawal,sans-serif">+ موكل</button>';
+  h+='</div>';
+  h+='<div id="clientsList">'+renderClientsList(clients,'')+'</div>';
+
+  b.innerHTML+=h;
+
+  window.filterClients=function(q){
+    var el=document.getElementById('clientsList');
+    if(el)el.innerHTML=renderClientsList(getAllClients(),q);
+  };
+
+  document.body.appendChild(modal.el);
+}
+
+function renderClientsList(clients,q){
+  var list=q?clients.filter(function(c){return c.name.includes(q);}):clients;
+  if(!list.length)return'<div style="text-align:center;padding:30px 0;color:var(--text3)"><div style="font-size:40px;opacity:.15;margin-bottom:8px">👥</div>لا يوجد موكلون مطابقون</div>';
+  return list.map(function(c){
+    var cSessions=data.filter(function(s){return s.client===c.name||s.plnt===c.name||s.dfnd===c.name;});
+    var cFees=fees.filter(function(f){return f.client===c.name;});
+    var totalFees=cFees.reduce(function(s,f){return s+(f.amount||0);},0);
+    var paidFees=cFees.filter(function(f){return f.status==='paid'||f.paid;}).reduce(function(s,f){return s+(f.amount||0);},0);
+    var cFiles=wordFiles.filter(function(f){return f.folder===c.name;});
+    return'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px;margin-bottom:8px;cursor:pointer" onclick="openClientFile(\''+c.name.replace(/'/g,"\\'")+'\')" onmousedown="this.style.transform=\'scale(.99)\'" onmouseup="this.style.transform=\'scale(1)\'">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">'
+      +'<div style="width:40px;height:40px;border-radius:50%;background:var(--gold-a10);border:1.5px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👤</div>'
+      +'<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">'+c.name+'</div>'
+      +(c.phone?'<div style="font-size:10px;color:var(--text3);margin-top:1px">📱 '+c.phone+'</div>':'')
+      +'</div>'
+      +'<span style="font-size:12px;color:var(--text3)">←</span>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">'
+      +'<div style="background:var(--surface3);border-radius:8px;padding:7px;text-align:center"><div style="font-size:14px;font-weight:700;color:var(--gold2)">'+cSessions.length+'</div><div style="font-size:9px;color:var(--text3)">جلسة</div></div>'
+      +'<div style="background:var(--surface3);border-radius:8px;padding:7px;text-align:center"><div style="font-size:14px;font-weight:700;color:var(--green)">'+cFees.length+'</div><div style="font-size:9px;color:var(--text3)">أتعاب</div></div>'
+      +'<div style="background:var(--surface3);border-radius:8px;padding:7px;text-align:center"><div style="font-size:12px;font-weight:700;color:var(--blue)">'+totalFees.toLocaleString('ar-SA')+'</div><div style="font-size:9px;color:var(--text3)">الإجمالي</div></div>'
+      +'<div style="background:var(--surface3);border-radius:8px;padding:7px;text-align:center"><div style="font-size:14px;font-weight:700;color:var(--amber)">'+cFiles.length+'</div><div style="font-size:9px;color:var(--text3)">ملف</div></div>'
+      +'</div></div>';
+  }).join('');
+}
+
+function openClientFile(name){
+  var existing=document.getElementById('clientFilesModal');if(existing)existing.remove();
+  var modal=makeModal('clientFileDetail','👤 '+name);
+  var b=modal.box;
+
+  var profile=clientProfiles.find(function(p){return p.name===name;})||{};
+  var cSessions=data.filter(function(s){return s.client===name||s.plnt===name||s.dfnd===name;}).sort(function(a,b){return b.date.localeCompare(a.date);});
+  var cFees=fees.filter(function(f){return f.client===name;});
+  var totalFees=cFees.reduce(function(s,f){return s+(f.amount||0);},0);
+  var paidFees=cFees.filter(function(f){return f.status==='paid'||f.paid;}).reduce(function(s,f){return s+(f.amount||0);},0);
+  var unpaidFees=totalFees-paidFees;
+  var cTasks=tasks.filter(function(t){
+    return cSessions.some(function(s){return s.num===t.caseNum;});
+  });
+
+  // بطاقة الموكل
+  var h='<div style="background:linear-gradient(135deg,#0a1120,#111d32);border:1px solid var(--gold-a30);border-radius:var(--r-lg);padding:16px;margin-bottom:14px">';
+  h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">';
+  h+='<div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#9a7030);display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 14px rgba(200,168,75,.3);flex-shrink:0">👤</div>';
+  h+='<div><div style="font-size:16px;font-weight:700;color:var(--gold2)">'+name+'</div>';
+  if(profile.phone)h+='<div style="font-size:11px;color:var(--text3);margin-top:2px">📱 '+profile.phone+'</div>';
+  if(profile.email)h+='<div style="font-size:11px;color:var(--text3)">📧 '+profile.email+'</div>';
+  h+='</div>';
+  h+='<button onclick="showEditClientProfile(\''+name.replace(/'/g,"\\'")+'\')" style="margin-right:auto;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">✏️ تعديل</button>';
+  h+='</div>';
+  // إحصائيات
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+  [{v:cSessions.length,l:'جلسة',c:'var(--gold2)'},{v:paidFees.toLocaleString('ar-SA'),l:'محصّل ر.س',c:'var(--green)'},{v:unpaidFees.toLocaleString('ar-SA'),l:'متبقي ر.س',c:'#f57070'}].forEach(function(x){
+    h+='<div style="background:rgba(0,0,0,.2);border-radius:9px;padding:8px;text-align:center"><div style="font-size:14px;font-weight:900;color:'+x.c+'">'+x.v+'</div><div style="font-size:9px;color:var(--text3);margin-top:2px">'+x.l+'</div></div>';
+  });
+  h+='</div></div>';
+
+  // WhatsApp
+  if(profile.phone){
+    h+='<a href="https://wa.me/'+profile.phone.replace(/[^0-9]/g,'')+'" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.3);border-radius:var(--r-md);padding:11px;text-decoration:none;margin-bottom:14px">';
+    h+='<span style="font-size:18px">💬</span><span style="font-size:13px;font-weight:700;color:#25d366">تواصل عبر واتساب</span></a>';
+  }
+
+  // الجلسات
+  if(cSessions.length){
+    h+=secHdr('⚖️','الجلسات ('+cSessions.length+')');
+    cSessions.forEach(function(s){
+      var stClr=ST[s.status]?ST[s.status].clr:'var(--text3)';
+      h+='<div onclick="document.getElementById(\'clientFileDetail\').remove();openDet('+s.id+')" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px;margin-bottom:7px;cursor:pointer;display:flex;align-items:center;gap:10px">';
+      h+='<div style="width:3px;height:40px;border-radius:2px;background:'+stClr+';flex-shrink:0"></div>';
+      h+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+s.num+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+s.type+' · '+s.court+' · '+s.date+'</div></div>';
+      h+='<div style="font-size:9px;background:'+stClr+'22;color:'+stClr+';border-radius:8px;padding:2px 8px;font-weight:700">'+(ST[s.status]?ST[s.status].lbl:s.status)+'</div>';
+      h+='</div>';
+    });
+  }
+
+  // الأتعاب
+  if(cFees.length){
+    h+=secHdr('💰','الأتعاب ('+cFees.length+')');
+    cFees.forEach(function(f){
+      var st=f.status||(f.paid?'paid':'pending');
+      var stClr=st==='paid'?'#28b870':st==='partial'?'#f0b040':'#f57070';
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">';
+      h+='<div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">'+f.desc+'</div>';
+      if(f.date)h+='<div style="font-size:10px;color:var(--text3)">📅 '+f.date+'</div>';
+      h+='</div><div style="text-align:left"><div style="font-size:14px;font-weight:700;color:var(--gold2)">'+f.amount.toLocaleString('ar-SA')+'</div>';
+      h+='<div style="font-size:9px;color:'+stClr+';font-weight:700">'+(st==='paid'?'✅ مسدد':st==='partial'?'⚡ جزئي':'⏳ معلق')+'</div></div></div>';
+    });
+  }
+
+  // المهمات
+  if(cTasks.length){
+    h+=secHdr('📋','المهمات المرتبطة ('+cTasks.length+')');
+    cTasks.forEach(function(t){
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px">';
+      h+='<div style="width:16px;height:16px;border-radius:4px;border:2px solid '+(t.done?'var(--green)':'var(--border2)')+';background:'+(t.done?'var(--green)':'transparent')+';flex-shrink:0;display:flex;align-items:center;justify-content:center">';
+      if(t.done)h+='<span style="color:#fff;font-size:9px">✓</span>';
+      h+='</div>';
+      h+='<div style="font-size:12px;color:var(--text);'+(t.done?'text-decoration:line-through;opacity:.5':'')+'">'+t.title+'</div>';
+      h+='</div>';
+    });
+  }
+
+  // ملاحظات الموكل
+  h+=secHdr('📝','ملاحظات الموكل');
+  h+='<textarea id="clientNotes_'+name+'" dir="rtl" rows="3" placeholder="أدخل ملاحظات عن الموكل..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-md);padding:11px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif;line-height:1.7;resize:none;margin-bottom:8px">'+(profile.notes||'')+'</textarea>';
+  h+='<button onclick="saveClientNote(\''+name.replace(/'/g,"\\'")+'\')" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">💾 حفظ الملاحظة</button>';
+
+  b.innerHTML+=h;
+
+  window.saveClientNote=function(n){
+    var el=document.getElementById('clientNotes_'+n);if(!el)return;
+    var p=clientProfiles.find(function(x){return x.name===n;});
+    if(p){p.notes=el.value;}
+    else{clientProfiles.push({id:'cp_'+Date.now(),name:n,notes:el.value,phone:'',email:''});}
+    saveClientProfiles();toast('✅ تم حفظ الملاحظة');
+  };
+
+  window.showEditClientProfile=function(n){
+    var p=clientProfiles.find(function(x){return x.name===n;})||{name:n,phone:'',email:''};
+    var fh='<div id="editClientForm" style="background:var(--surface3);border-radius:var(--r-md);padding:12px;margin-bottom:12px">';
+    fh+='<input id="ecPhone" type="tel" placeholder="رقم الجوال" dir="ltr" value="'+(p.phone||'')+'" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block">';
+    fh+='<input id="ecEmail" type="email" placeholder="البريد الإلكتروني" dir="ltr" value="'+(p.email||'')+'" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block">';
+    fh+='<button onclick="saveEditClient(\''+n.replace(/'/g,"\\'")+'\')" style="width:100%;background:var(--gold);color:#040608;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">حفظ</button></div>';
+    b.insertAdjacentHTML('afterbegin',fh);
+  };
+
+  window.saveEditClient=function(n){
+    var ph=document.getElementById('ecPhone');var em=document.getElementById('ecEmail');
+    var p=clientProfiles.find(function(x){return x.name===n;});
+    if(p){p.phone=ph?ph.value:'';p.email=em?em.value:'';}
+    else{clientProfiles.push({id:'cp_'+Date.now(),name:n,phone:ph?ph.value:'',email:em?em.value:'',notes:''});}
+    saveClientProfiles();toast('✅ تم الحفظ');document.getElementById('clientFileDetail').remove();openClientFile(n);
+  };
+
+  document.body.appendChild(modal.el);
+}
+
+function showAddClientForm(){
+  var modal=makeModal('addClientModal','➕ إضافة موكل');
+  var b=modal.box;
+  b.innerHTML+='<div style="display:grid;gap:9px;margin-bottom:12px">'
+    +'<input id="ncName" type="text" placeholder="اسم الموكل *" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif">'
+    +'<input id="ncPhone" type="tel" placeholder="رقم الجوال" dir="ltr" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)">'
+    +'<input id="ncEmail" type="email" placeholder="البريد الإلكتروني" dir="ltr" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)">'
+    +'<textarea id="ncNotes" placeholder="ملاحظات..." dir="rtl" rows="3" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif;line-height:1.7;resize:none"></textarea>'
+    +'</div>'
+    +'<button onclick="saveNewClient()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">💾 حفظ</button>';
+  window.saveNewClient=function(){
+    var n=document.getElementById('ncName');if(!n||!n.value.trim()){toast('⚠️ أدخل الاسم');return;}
+    var ph=document.getElementById('ncPhone');var em=document.getElementById('ncEmail');var nt=document.getElementById('ncNotes');
+    clientProfiles.push({id:'cp_'+Date.now(),name:n.value.trim(),phone:ph?ph.value.trim():'',email:em?em.value.trim():'',notes:nt?nt.value.trim():''});
+    saveClientProfiles();toast('✅ تم إضافة الموكل');document.getElementById('addClientModal').remove();showClientFiles();
+  };
+  document.body.appendChild(modal.el);
 }
 
 var _origToggleNotif=toggleNotif;
