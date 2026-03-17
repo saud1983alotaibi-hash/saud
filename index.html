@@ -1668,10 +1668,19 @@ function go(t){
   curTab=t;
   document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('on');});
   var tb=document.getElementById('tb-'+t);if(tb)tb.classList.add('on');
-  // Sync bottom nav
   document.querySelectorAll('.bnav-btn').forEach(function(b){b.classList.remove('on');});
   var bn=document.getElementById('bn-'+t);if(bn)bn.classList.add('on');
   render();
+}
+
+function goForce(t){
+  // Temporarily show the tab if hidden so it becomes accessible
+  var wasHidden=hiddenTabs.indexOf(t)>-1;
+  if(wasHidden){
+    hiddenTabs=hiddenTabs.filter(function(x){return x!==t;});
+    saveHiddenTabs();
+  }
+  go(t);
 }
 function render(){var el=document.getElementById('cnt');if(curTab==='home')el.innerHTML=rHome();else if(curTab==='list')el.innerHTML=rList();else if(curTab==='tasks')el.innerHTML=rTasks();else if(curTab==='contacts')el.innerHTML=rContacts();else if(curTab==='files')el.innerHTML=rFiles();else if(curTab==='ai')el.innerHTML=rAI();else if(curTab==='cal')el.innerHTML=rCal();else if(curTab==='stats')el.innerHTML=rStats();else if(curTab==='fees')el.innerHTML=rFees();else if(curTab==='tools'){el.innerHTML=rTools();setTimeout(renderToolCharts,100);}else if(curTab==='live'){el.innerHTML=rLive();startLiveTick();}else if(curTab==='archive')el.innerHTML=rArchive();else if(curTab==='letterhead')el.innerHTML=rLetterhead();else if(curTab==='legal')el.innerHTML=rLegal();else if(curTab==='reports')el.innerHTML=rReports();else if(curTab==='share')el.innerHTML=rShare();else if(curTab==='settings')el.innerHTML=rSettings();applyHiddenTabs();startTick();}
 function secHdr(icon,title){return'<div class="sec-hdr"><span>'+icon+'</span>'+title+'</div>';}
@@ -3685,8 +3694,8 @@ function rSettings(){
     if(t.locked)h+='<div style="font-size:9px;color:var(--text3)">ثابت دائماً</div>';
     else if(hidden)h+='<div style="font-size:9px;color:#f87171">مخفي من شريط التبويبات</div>';
     h+='</div>';
-    // Open button - always accessible
-    h+='<button onclick="go(\''+t.k+'\')" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;flex-shrink:0">فتح</button>';
+    // Open button - always accessible even if hidden
+    h+='<button onclick="goForce(\''+t.k+'\')" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;flex-shrink:0">فتح ↗</button>';
     // Toggle switch (not for locked)
     if(!t.locked){
       h+='<label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0">';
