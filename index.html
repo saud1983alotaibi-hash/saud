@@ -417,7 +417,13 @@ option{background:var(--surface);}
     </div>
     <div class="sheet-body">
       <div class="field"><label>رقم القضية *</label><input id="fNum" type="text" placeholder="مثال: 2025/1234" dir="rtl" oninput="chkV()"></div>
-      <div class="field"><label>🏷️ الرقم المرجعي للمكتب</label><input id="fRef" type="text" placeholder="مثال: م.م/2025/001" dir="rtl"></div>
+      <div class="field">
+        <label style="display:flex;align-items:center;justify-content:space-between">
+          🏷️ الرقم المرجعي للمكتب
+          <button type="button" onclick="autoFillRef()" style="font-size:10px;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:7px;padding:3px 9px;cursor:pointer;font-family:Tajawal,sans-serif;font-weight:700">✨ تلقائي</button>
+        </label>
+        <input id="fRef" type="text" placeholder="مثال: م.م/2025/001" dir="rtl">
+      </div>
       <div class="field"><label>👤 اسم الموكل</label><input id="fClient" type="text" placeholder="اسم الموكل / الجهة" dir="rtl"></div>
       <div class="field"><label>نوع القضية</label>
         <select id="fType" dir="rtl">
@@ -425,7 +431,7 @@ option{background:var(--surface);}
           <option>أحوال شخصية</option><option>عمالية</option><option>إدارية</option>
         </select>
       </div>
-      <div class="field"><label>🏛️ المحكمة *</label><input id="fCourt" type="text" placeholder="اسم المحكمة" dir="rtl" oninput="chkV()"></div>
+      <div class="field"><label>🏛️ المحكمة *</label><input id="fCourt" type="text" placeholder="اسم المحكمة" dir="rtl" oninput="chkV()" list="courtList" autocomplete="off"><datalist id="courtList"></datalist></div>
       <div class="field"><label>القاعة</label><input id="fRoom" type="text" placeholder="قاعة 3" dir="rtl"></div>
       <div class="field">
         <label>🎥 رابط الاجتماع عن بُعد</label>
@@ -440,8 +446,8 @@ option{background:var(--surface);}
           <button type="button" onclick="pasteMeetUrl()" style="flex:1;background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:8px;padding:6px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">📋 لصق</button>
         </div>
       </div>
-      <div class="field"><label>المدعي</label><input id="fPlnt" type="text" placeholder="اسم المدعي" dir="rtl"></div>
-      <div class="field"><label>المدعى عليه</label><input id="fDfnd" type="text" placeholder="اسم المدعى عليه" dir="rtl"></div>
+      <div class="field"><label>المدعي</label><input id="fPlnt" type="text" placeholder="اسم المدعي" dir="rtl" list="plntList" autocomplete="off"><datalist id="plntList"></datalist></div>
+      <div class="field"><label>المدعى عليه</label><input id="fDfnd" type="text" placeholder="اسم المدعى عليه" dir="rtl" list="dfndList" autocomplete="off"><datalist id="dfndList"></datalist></div>
       <div class="field">
         <label>التاريخ *</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
@@ -2303,6 +2309,11 @@ function showBackupModal(){var modal=document.createElement('div');modal.id='bkM
 ═══════════════════════════════════════════════════════════ */
 function openDet(id){
   var s=data.find(function(x){return x.id===id;});if(!s)return;
+  // ── فحص القفل ──
+  if(s.locked){
+    showSessionUnlock(id);
+    return;
+  }
   detId=id;
   document.getElementById('detNum').textContent=s.num;
   document.getElementById('detBadge').innerHTML=bdg(s.status);
@@ -2359,6 +2370,10 @@ function openDet(id){
   b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--blue-a)"><div class="note-box-hdr" style="color:var(--blue)">📝 محضر الجلسة</div><textarea id="min-'+s.id+'" placeholder="سجّل ما دار في الجلسة..." dir="rtl" rows="5" style="width:100%;background:transparent;font-size:12px;color:var(--text);resize:none;min-height:90px;line-height:1.6">'+(s.minutes||'')+'</textarea><button onclick="saveMinutes('+s.id+')" style="width:100%;background:var(--blue-a);color:var(--blue);border:1px solid rgba(74,144,217,.3);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ المحضر</button></div>';
   b+=attHTML(s);
   b+='<button onclick="scanDoc('+s.id+')" style="width:100%;background:rgba(139,111,212,.1);color:#a78bfa;border:1px solid rgba(139,111,212,.3);border-radius:var(--r-md);padding:12px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:7px">📸 مسح مستند بالكاميرا</button>';
+
+  // ── تعليق صوتي ──
+  b+=renderVoiceComments(s.id);
+
   b+='<div class="action-row">'+
     '<button class="action-btn" onclick="editFD()" style="background:var(--gold-a10);color:var(--gold2);border-color:var(--gold-a30)">✏️ تعديل</button>'+
     '<button class="action-btn" onclick="copyS('+id+')" style="background:var(--blue-a);color:#60a5fa;border-color:rgba(74,144,217,.3)">📋 نسخ</button>'+
@@ -2366,6 +2381,7 @@ function openDet(id){
     '<button class="action-btn" onclick="printS('+id+')" style="background:var(--green-a);color:#34d399;border-color:rgba(58,184,130,.3)">🖨️ طباعة</button>'+
     '<button class="action-btn" onclick="showWAReminderModal('+id+')" style="background:rgba(37,211,102,.1);color:#25d366;border-color:rgba(37,211,102,.25)">💬 واتساب</button>'+
     (s.client?'<button class="action-btn" onclick="closeDet();openClientFile(\''+s.client.replace(/'/g,"\\'")+'\')" style="background:rgba(120,80,216,.1);color:#a78bfa;border-color:rgba(120,80,216,.3)">🧩 ملف الموكل</button>':'')+
+    '<button class="action-btn" onclick="toggleSessionLock('+id+')" style="background:'+(s.locked?'var(--red-a)':'var(--surface3)')+';color:'+(s.locked?'#f57070':'var(--text3)')+';border-color:'+(s.locked?'rgba(224,69,85,.3)':'var(--border2)')+'">'+(s.locked?'🔒 مقفلة':'🔓 قفل')+'</button>'+
     '<button class="action-btn" onclick="confDel()" style="background:var(--red-a);color:#f87171;border-color:rgba(232,80,80,.3)">🗑️ حذف</button>'+
   '</div>';
   document.getElementById('detBody').innerHTML=b;
@@ -2378,8 +2394,8 @@ function confDel(){delTgt=detId;document.getElementById('dlg').classList.remove(
 /* ═══════════════════════════════════════════════════════════
    FORM
 ═══════════════════════════════════════════════════════════ */
-function openAdd(){editId=null;curPrio='none';curTags=[];document.getElementById('formTitle').textContent='جلسة جديدة';document.getElementById('btnSave').textContent='حفظ الجلسة';['fNum','fRef','fClient','fCourt','fRoom','fPlnt','fDfnd','fNotes','fMeetUrl'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});document.getElementById('fType').value='جنائية';document.getElementById('fStatus').value='scheduled';document.getElementById('fDate').value='';document.getElementById('fTime').value='';document.getElementById('btnSave').disabled=true;setPrio('none');updMeetIcon('');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker([]);document.getElementById('formSheet').classList.remove('hid');}
-function openEdit(s){editId=s.id;curPrio=s.priority||'none';curTags=(s.tags||[]).slice();document.getElementById('formTitle').textContent='تعديل الجلسة';document.getElementById('btnSave').textContent='💾 حفظ التعديلات';document.getElementById('fNum').value=s.num;document.getElementById('fType').value=s.type;document.getElementById('fCourt').value=s.court||'';document.getElementById('fRoom').value=s.room||'';document.getElementById('fMeetUrl').value=s.meetUrl||'';document.getElementById('fPlnt').value=s.plnt||'';document.getElementById('fDfnd').value=s.dfnd||'';document.getElementById('fDate').value=s.date;document.getElementById('fTime').value=s.time;document.getElementById('fStatus').value=s.status;document.getElementById('fNotes').value=s.notes||'';var fRef=document.getElementById('fRef');if(fRef)fRef.value=s.ref||'';var fClient=document.getElementById('fClient');if(fClient)fClient.value=s.client||'';document.getElementById('btnSave').disabled=false;setPrio(s.priority||'none');updMeetIcon(s.meetUrl||'');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker(s.tags||[]);document.getElementById('formSheet').classList.remove('hid');setTimeout(function(){updateDateInfo(s.date);gregToHijriInput(s.date);},50);}
+function openAdd(){editId=null;curPrio='none';curTags=[];document.getElementById('formTitle').textContent='جلسة جديدة';document.getElementById('btnSave').textContent='حفظ الجلسة';['fNum','fRef','fClient','fCourt','fRoom','fPlnt','fDfnd','fNotes','fMeetUrl'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});document.getElementById('fType').value='جنائية';document.getElementById('fStatus').value='scheduled';document.getElementById('fDate').value='';document.getElementById('fTime').value='';document.getElementById('btnSave').disabled=true;setPrio('none');updMeetIcon('');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker([]);document.getElementById('formSheet').classList.remove('hid');setTimeout(populateSuggestions,50);}
+function openEdit(s){editId=s.id;curPrio=s.priority||'none';curTags=(s.tags||[]).slice();document.getElementById('formTitle').textContent='تعديل الجلسة';document.getElementById('btnSave').textContent='💾 حفظ التعديلات';document.getElementById('fNum').value=s.num;document.getElementById('fType').value=s.type;document.getElementById('fCourt').value=s.court||'';document.getElementById('fRoom').value=s.room||'';document.getElementById('fMeetUrl').value=s.meetUrl||'';document.getElementById('fPlnt').value=s.plnt||'';document.getElementById('fDfnd').value=s.dfnd||'';document.getElementById('fDate').value=s.date;document.getElementById('fTime').value=s.time;document.getElementById('fStatus').value=s.status;document.getElementById('fNotes').value=s.notes||'';var fRef=document.getElementById('fRef');if(fRef)fRef.value=s.ref||'';var fClient=document.getElementById('fClient');if(fClient)fClient.value=s.client||'';document.getElementById('btnSave').disabled=false;setPrio(s.priority||'none');updMeetIcon(s.meetUrl||'');var tp=document.getElementById('tagsPicker');if(tp)tp.innerHTML=renderTagsPicker(s.tags||[]);document.getElementById('formSheet').classList.remove('hid');setTimeout(function(){updateDateInfo(s.date);gregToHijriInput(s.date);populateSuggestions();},50);}
 function closeForm(){document.getElementById('formSheet').classList.add('hid');editId=null;}
 function chkV(){var ok=document.getElementById('fNum').value.trim()&&document.getElementById('fCourt').value.trim()&&document.getElementById('fDate').value&&document.getElementById('fTime').value;document.getElementById('btnSave').disabled=!ok;}
 
@@ -3793,6 +3809,17 @@ function rSettings(){
 
   // ── PIN Lock ──
   // ── Security & Privacy ──
+  // ── إعدادات الترقيم ──
+  h+=secHdr('🔢','نظام الترقيم التلقائي');
+  h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between">';
+  h+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">🔢</span>';
+  h+='<div><div style="font-size:13px;font-weight:600;color:var(--text)">ترقيم الأرشيف المكتبي</div>';
+  h+='<div style="font-size:11px;color:var(--gold2);margin-top:2px;font-weight:700">'+refSettings.prefix+'/'+new Date().getFullYear()+'/'+String(getNextRefNum()).padStart(3,'0')+'</div>';
+  h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">الرقم القادم · البادئة: '+refSettings.prefix+'</div></div></div>';
+  h+='<button onclick="showRefSettings()" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:9px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">⚙️ إعداد</button>';
+  h+='</div></div>';
+
   h+=secHdr('🔒','الأمان والخصوصية');
   h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
 
@@ -7186,7 +7213,7 @@ function cardForSearch(s){
   return'<div class="s-card" onclick="openFromSearch('+s.id+')" style="'+cardBorder+'">'+
     '<div class="s-card-accent" style="background:'+accentBg+'"></div>'+
     '<div class="s-card-top"><div>'+
-    '<div class="s-card-num">'+s.num+(s.ref?'<span style="font-size:10px;color:var(--text3);margin-right:6px">🏷️ '+s.ref+'</span>':'')+
+    '<div class="s-card-num">'+s.num+(s.locked?'<span style="font-size:10px;color:#f57070;margin-right:5px">🔒</span>':'')+(s.ref?'<span style="font-size:10px;color:var(--text3);margin-right:6px">🏷️ '+s.ref+'</span>':'')+
     (colorLabel?'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+colorLabel.dot+';margin-right:5px;vertical-align:middle"></span>':'')+
     '</div>'+
     '<div class="s-card-meta">'+s.type+(s.room?' · '+s.room:'')+'&nbsp;&nbsp;'+ptag(p)+'</div></div>'+
@@ -8397,6 +8424,316 @@ function showWelcomeBadge(){
 
   // إغلاق تلقائي بعد 8 ثوانٍ
   setTimeout(function(){if(document.getElementById('welcomeBadge'))closeBadge();},8000);
+}
+
+/* ════════════════════════════════════════════════════════
+   🔢 ترقيم القضايا التلقائي + 💡 اقتراحات ذكية
+════════════════════════════════════════════════════════ */
+
+// ── إعدادات الترقيم ──
+var refSettings={prefix:'م.م',year:new Date().getFullYear(),counter:1};
+try{var _rs=JSON.parse(localStorage.getItem('j_ref_settings')||'{}');refSettings=Object.assign(refSettings,_rs);}catch(e){}
+function saveRefSettings(){try{localStorage.setItem('j_ref_settings',JSON.stringify(refSettings));}catch(e){}}
+
+function getNextRefNum(){
+  // أوجد أعلى رقم مستخدم هذا العام
+  var yearStr=refSettings.year+'';
+  var maxNum=0;
+  data.forEach(function(s){
+    if(s.ref){
+      var m=s.ref.match(/(\d+)$/);
+      if(m){
+        var n=parseInt(m[1]);
+        if(s.ref.includes(yearStr)&&n>maxNum)maxNum=n;
+      }
+    }
+  });
+  return maxNum+1;
+}
+
+function autoFillRef(){
+  var yr=new Date().getFullYear();
+  var next=getNextRefNum();
+  var padded=String(next).padStart(3,'0');
+  var ref=refSettings.prefix+'/'+yr+'/'+padded;
+  var el=document.getElementById('fRef');
+  if(el){el.value=ref;el.style.borderColor='var(--gold-a30)';setTimeout(function(){el.style.borderColor='';},1200);}
+  toast('🔢 الرقم المرجعي: '+ref);
+}
+
+function showRefSettings(){
+  var modal=makeModal('refSettingsModal','🔢 إعدادات الترقيم التلقائي');
+  var b=modal.box;
+  b.innerHTML+='<div style="display:grid;gap:10px;margin-bottom:14px">'
+    +'<div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">البادئة (مثال: م.م، مكتب، QAA)</label>'
+    +'<input id="rsPrefix" type="text" value="'+refSettings.prefix+'" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif"></div>'
+    +'<div style="background:var(--surface3);border-radius:var(--r-md);padding:12px;text-align:center">'
+    +'<div style="font-size:10px;color:var(--text3);margin-bottom:6px">معاينة الرقم القادم</div>'
+    +'<div id="rsPreview" style="font-size:18px;font-weight:700;color:var(--gold2)">'+refSettings.prefix+'/'+new Date().getFullYear()+'/'+String(getNextRefNum()).padStart(3,'0')+'</div></div>'
+    +'</div>'
+    +'<button onclick="saveRefSettingsForm()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">💾 حفظ</button>';
+
+  document.getElementById('rsPrefix').oninput=function(){
+    var prev=document.getElementById('rsPreview');
+    if(prev)prev.textContent=this.value+'/'+new Date().getFullYear()+'/'+String(getNextRefNum()).padStart(3,'0');
+  };
+
+  window.saveRefSettingsForm=function(){
+    var p=document.getElementById('rsPrefix');
+    if(p&&p.value.trim())refSettings.prefix=p.value.trim();
+    refSettings.year=new Date().getFullYear();
+    saveRefSettings();toast('✅ تم حفظ إعدادات الترقيم');modal.el.remove();
+  };
+  document.body.appendChild(modal.el);
+}
+
+// ── الاقتراحات الذكية ──
+function populateSuggestions(){
+  // المحاكم
+  var courts=[...new Set(data.map(function(s){return s.court;}).filter(Boolean))];
+  var courtDl=document.getElementById('courtList');
+  if(courtDl){courtDl.innerHTML=courts.map(function(c){return'<option value="'+c+'">';}).join('');}
+
+  // المدعون
+  var plnts=[...new Set(data.map(function(s){return s.plnt;}).filter(Boolean))];
+  var plntDl=document.getElementById('plntList');
+  if(plntDl){plntDl.innerHTML=plnts.map(function(p){return'<option value="'+p+'">';}).join('');}
+
+  // المدعى عليهم
+  var dfnds=[...new Set(data.map(function(s){return s.dfnd;}).filter(Boolean))];
+  var dfndDl=document.getElementById('dfndList');
+  if(dfndDl){dfndDl.innerHTML=dfnds.map(function(d){return'<option value="'+d+'">';}).join('');}
+
+  // الموكلون
+  var clients=[...new Set(data.map(function(s){return s.client;}).filter(Boolean).concat(clientProfiles.map(function(p){return p.name;})))];
+  var clientDl=document.getElementById('clientSuggestions');
+  if(clientDl){clientDl.innerHTML=clients.map(function(c){return'<option value="'+c+'">';}).join('');}
+}
+
+/* ════════════════════════════════════════════════════════
+   🔒 قفل الجلسة الحساسة
+════════════════════════════════════════════════════════ */
+var sessionPasswords={};
+try{sessionPasswords=JSON.parse(localStorage.getItem('j_sess_passwords')||'{}');}catch(e){}
+function saveSessionPasswords(){try{localStorage.setItem('j_sess_passwords',JSON.stringify(sessionPasswords));}catch(e){}}
+
+function toggleSessionLock(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  if(s.locked){
+    // طلب كلمة المرور لإلغاء القفل
+    showSessionUnlockForEdit(id);
+  } else {
+    // تفعيل القفل - طلب كلمة مرور جديدة
+    showSetSessionPassword(id);
+  }
+}
+
+function showSetSessionPassword(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  var modal=makeModal('setPassModal','🔒 تعيين كلمة مرور للجلسة');
+  var b=modal.box;
+  b.innerHTML+='<div style="text-align:center;margin-bottom:14px">'
+    +'<div style="font-size:40px;margin-bottom:6px">🔒</div>'
+    +'<div style="font-size:13px;color:var(--text2)">'+s.num+'</div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:4px">ستُقفل هذه الجلسة ولا يمكن فتحها إلا بكلمة المرور</div>'
+    +'</div>'
+    +'<div style="display:grid;gap:8px;margin-bottom:14px">'
+    +'<input id="newPass1" type="password" placeholder="كلمة المرور *" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);text-align:center;letter-spacing:.2em">'
+    +'<input id="newPass2" type="password" placeholder="تأكيد كلمة المرور *" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);text-align:center;letter-spacing:.2em">'
+    +'</div>'
+    +'<button onclick="confirmSetPassword('+id+')" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">🔒 قفل الجلسة</button>';
+  document.body.appendChild(modal.el);
+
+  window.confirmSetPassword=function(sid){
+    var p1=document.getElementById('newPass1');var p2=document.getElementById('newPass2');
+    if(!p1.value||p1.value.length<4){toast('⚠️ كلمة المرور يجب أن تكون 4 أحرف على الأقل');return;}
+    if(p1.value!==p2.value){toast('⚠️ كلمتا المرور غير متطابقتين');p2.style.borderColor='var(--red)';return;}
+    var hash=btoa(unescape(encodeURIComponent(p1.value)));
+    sessionPasswords[sid]=hash;
+    saveSessionPasswords();
+    var s2=data.find(function(x){return x.id===sid;});
+    if(s2){s2.locked=true;dbPut(s2);}
+    modal.el.remove();
+    toast('🔒 تم قفل الجلسة');
+    logActivity('🔒 قفل جلسة',data.find(function(x){return x.id===sid;})?data.find(function(x){return x.id===sid;}).num:'');
+    closeDet();render();
+  };
+}
+
+function showSessionUnlock(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  var modal=makeModal('unlockModal','🔐 جلسة محمية بكلمة مرور');
+  var b=modal.box;
+  b.innerHTML+='<div style="text-align:center;margin-bottom:16px">'
+    +'<div style="font-size:44px;margin-bottom:8px">🔐</div>'
+    +'<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:4px">'+s.num+'</div>'
+    +'<div style="font-size:11px;color:var(--text3)">أدخل كلمة المرور لفتح هذه الجلسة</div>'
+    +'</div>'
+    +'<input id="unlockPass" type="password" placeholder="كلمة المرور" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:13px;font-size:16px;color:var(--text);text-align:center;letter-spacing:.25em;margin-bottom:12px" onkeydown="if(event.key===\'Enter\')confirmUnlock('+id+')">'
+    +'<button onclick="confirmUnlock('+id+')" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:13px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">فتح ←</button>';
+  document.body.appendChild(modal.el);
+  setTimeout(function(){var el=document.getElementById('unlockPass');if(el)el.focus();},100);
+
+  window.confirmUnlock=function(sid){
+    var inp=document.getElementById('unlockPass');if(!inp)return;
+    var hash=btoa(unescape(encodeURIComponent(inp.value)));
+    if(hash===sessionPasswords[sid]){
+      modal.el.remove();
+      detId=sid;
+      var s2=data.find(function(x){return x.id===sid;});
+      // فتح مؤقت بدون رفع القفل
+      var origLocked=s2.locked;
+      s2.locked=false;
+      var savedOpenDet=openDet;
+      openDetForced(sid);
+      s2.locked=origLocked;
+    } else {
+      inp.style.borderColor='var(--red)';
+      inp.value='';
+      toast('❌ كلمة المرور غير صحيحة');
+      setTimeout(function(){inp.style.borderColor='';},1200);
+    }
+  };
+}
+
+function openDetForced(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  var prev=s.locked;
+  s.locked=false;  // مؤقتاً
+  openDet(id);
+  s.locked=prev;  // استعادة القفل
+}
+
+function showSessionUnlockForEdit(id){
+  showSessionUnlock(id);
+  // بعد الفتح سيظهر زر إلغاء القفل
+}
+
+function removeSessionLock(id){
+  var s=data.find(function(x){return x.id===id;});if(!s)return;
+  showPassModal('إلغاء قفل الجلسة نهائياً',id,function(sid){
+    delete sessionPasswords[sid];
+    saveSessionPasswords();
+    var s2=data.find(function(x){return x.id===sid;});
+    if(s2){s2.locked=false;dbPut(s2);}
+    toast('🔓 تم إلغاء قفل الجلسة');render();
+  });
+}
+
+function showPassModal(title,id,onSuccess){
+  var modal=makeModal('passCheckModal','🔐 '+title);
+  var b=modal.box;
+  b.innerHTML+='<input id="checkPass" type="password" placeholder="كلمة المرور" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:13px;font-size:16px;color:var(--text);text-align:center;letter-spacing:.25em;margin-bottom:12px">'
+    +'<button onclick="(function(){var inp=document.getElementById(\'checkPass\');var hash=btoa(unescape(encodeURIComponent(inp.value)));if(hash===sessionPasswords['+id+']){document.getElementById(\'passCheckModal\').remove();('+onSuccess.toString()+')('+id+');}else{inp.style.borderColor=\'var(--red)\';inp.value=\'\';toast(\'❌ كلمة المرور غير صحيحة\');};})()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">تأكيد</button>';
+  document.body.appendChild(modal.el);
+  setTimeout(function(){var el=document.getElementById('checkPass');if(el)el.focus();},100);
+}
+
+// أيقونة القفل على بطاقة الجلسة في القائمة
+function lockedBadge(s){
+  return s.locked?'<span style="font-size:11px;color:#f57070;background:rgba(224,69,85,.1);border-radius:6px;padding:1px 6px;border:1px solid rgba(224,69,85,.25)">🔒</span>':'';
+}
+
+/* ════════════════════════════════════════════════════════
+   🗣️ التعليقات الصوتية
+════════════════════════════════════════════════════════ */
+var voiceComments={};
+try{voiceComments=JSON.parse(localStorage.getItem('j_voice_comments')||'{}');}catch(e){}
+function saveVoiceComments(){try{localStorage.setItem('j_voice_comments',JSON.stringify(voiceComments));}catch(e){}}
+
+function renderVoiceComments(sid){
+  var comments=voiceComments[sid]||[];
+  var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin:10px 0">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2)">🗣️ التعليقات الصوتية</div>';
+  h+='<button id="vcRecBtn_'+sid+'" onclick="toggleVoiceComment('+sid+')" style="background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:9px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;transition:all .15s">🎙️ تسجيل</button>';
+  h+='</div>';
+
+  if(!comments.length){
+    h+='<div style="text-align:center;padding:14px 0;color:var(--text3);font-size:12px">لا توجد تعليقات صوتية — اضغط تسجيل</div>';
+  } else {
+    comments.forEach(function(c,i){
+      var dt=new Date(c.ts);
+      var timeStr=dt.toLocaleDateString('ar-SA',{day:'numeric',month:'short'})+' '+dt.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
+      h+='<div style="background:var(--surface3);border-radius:10px;padding:10px;margin-bottom:7px">';
+      h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+      h+='<div style="font-size:9px;color:var(--text3)">🕐 '+timeStr+'</div>';
+      h+='<div style="margin-right:auto;display:flex;gap:5px">';
+      h+='<button onclick="playVoiceComment('+sid+','+i+')" style="background:var(--blue-a);color:var(--blue);border:1px solid rgba(74,142,245,.3);border-radius:6px;padding:3px 9px;font-size:10px;cursor:pointer">▶ تشغيل</button>';
+      h+='<button onclick="deleteVoiceComment('+sid+','+i+')" style="background:var(--red-a);color:#f57070;border:1px solid rgba(224,69,85,.3);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">🗑️</button>';
+      h+='</div></div>';
+      h+='<div style="height:32px;background:var(--surface2);border-radius:6px;position:relative;overflow:hidden">';
+      // Waveform visual
+      h+='<div id="vcWave_'+sid+'_'+i+'" style="display:flex;align-items:center;gap:1px;height:100%;padding:0 8px">';
+      var bars=Math.min(c.bars||20,40);
+      for(var b=0;b<bars;b++){
+        var h2=Math.round(20+Math.random()*60);
+        h+='<div style="flex:1;background:var(--blue);border-radius:1px;height:'+h2+'%;opacity:.5"></div>';
+      }
+      h+='</div></div></div>';
+    });
+  }
+  h+='</div>';
+  return h;
+}
+
+var _vcRecording=false,_vcRecorder=null,_vcChunks=[];
+
+function toggleVoiceComment(sid){
+  var btn=document.getElementById('vcRecBtn_'+sid);
+  if(_vcRecording){
+    // إيقاف التسجيل
+    if(_vcRecorder&&_vcRecorder.state!=='inactive')_vcRecorder.stop();
+    return;
+  }
+  if(!navigator.mediaDevices){toast('⚠️ الجهاز لا يدعم التسجيل');return;}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    _vcChunks=[];
+    _vcRecorder=new MediaRecorder(stream,{mimeType:'audio/webm'});
+    _vcRecording=true;
+    if(btn){btn.textContent='⏹ إيقاف';btn.style.background='rgba(224,69,85,.15)';btn.style.color='#f57070';btn.style.borderColor='rgba(224,69,85,.3)';}
+    toast('🎙️ التسجيل يعمل...');
+
+    _vcRecorder.ondataavailable=function(e){if(e.data.size>0)_vcChunks.push(e.data);};
+    _vcRecorder.onstop=function(){
+      _vcRecording=false;
+      stream.getTracks().forEach(function(t){t.stop();});
+      if(btn){btn.textContent='🎙️ تسجيل';btn.style.background='var(--surface3)';btn.style.color='var(--text3)';btn.style.borderColor='var(--border2)';}
+      var blob=new Blob(_vcChunks,{type:'audio/webm'});
+      var reader=new FileReader();
+      reader.onload=function(e){
+        if(!voiceComments[sid])voiceComments[sid]=[];
+        voiceComments[sid].push({ts:Date.now(),data:e.target.result,bars:Math.round(20+Math.random()*20)});
+        saveVoiceComments();
+        toast('✅ تم حفظ التعليق الصوتي');
+        // تحديث قسم التعليقات فقط
+        var detBody=document.getElementById('detBody');
+        if(detBody){
+          var vcEl=detBody.querySelector('[id^="vcRecBtn_"]');
+          if(vcEl){var parent=vcEl.closest('div[style*="border-radius:var(--r-md)"]');if(parent)parent.outerHTML=renderVoiceComments(sid);}
+        }
+        render();
+      };
+      reader.readAsDataURL(blob);
+    };
+    _vcRecorder.start();
+  }).catch(function(e){toast('⚠️ لا يمكن الوصول للميكروفون: '+e.message);});
+}
+
+function playVoiceComment(sid,idx){
+  var c=voiceComments[sid]&&voiceComments[sid][idx];
+  if(!c){toast('⚠️ التعليق غير موجود');return;}
+  var audio=new Audio(c.data);
+  audio.play().catch(function(e){toast('⚠️ لا يمكن تشغيل الصوت');});
+  toast('▶ جارٍ التشغيل...');
+}
+
+function deleteVoiceComment(sid,idx){
+  if(!voiceComments[sid])return;
+  voiceComments[sid].splice(idx,1);
+  saveVoiceComments();
+  toast('🗑️ تم الحذف');
+  render();
 }
 
 var _origToggleNotif=toggleNotif;
