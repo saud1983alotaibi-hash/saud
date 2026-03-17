@@ -4453,6 +4453,21 @@ function rLegal(){
   var cats=allCats.concat(userCats);
   var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
   h+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">📚 المكتبة القانونية</div>';
+  // Sub-tabs
+  var legalTab=window._legalSubTab||'lib';
+  h+='</div>';
+  h+='<div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto">';
+  [['lib','📚 الأنظمة'],['contracts','📄 العقود'],['terms','📖 المصطلحات'],['args','⚖️ الحجج']].forEach(function(t){
+    var on=legalTab===t[0];
+    h+='<button onclick="window._legalSubTab=\''+t[0]+'\';render()" style="flex-shrink:0;padding:7px 14px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid;background:'+(on?'var(--gold-a10)':'var(--surface2)')+';color:'+(on?'var(--gold2)':'var(--text3)')+';border-color:'+(on?'var(--gold-a30)':'var(--border2)')+'">'+t[1]+'</button>';
+  });
+  h+='</div>';
+  if(legalTab!=='lib'){
+    if(legalTab==='contracts')return h+rContracts();
+    if(legalTab==='terms')return h+rTerms();
+    if(legalTab==='args')return h+rArgs();
+  }
+  h+='<div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:12px">';
   h+='<div style="display:flex;gap:6px">';
   h+='<button onclick="showAddLegalModal()" style="background:var(--gold);color:#0a0905;border-radius:9px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">+ إضافة</button>';
   h+='<label style="display:flex;align-items:center;gap:4px;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:9px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">📥 استيراد<input type="file" accept=".pdf,.docx,.doc,.txt" style="display:none" onchange="importLegalDoc(this)"></label>';
@@ -4532,6 +4547,330 @@ function openBOEMain(){
   window.open('https://laws.boe.gov.sa','_blank');
   toast('🌐 جارٍ فتح بوابة الأنظمة السعودية...');
 }
+
+/* ════════════════════════════════════════════════════════
+   📄 مكتبة العقود
+════════════════════════════════════════════════════════ */
+var CONTRACT_TEMPLATES=[
+  {id:'work',icon:'👔',title:'عقد عمل',desc:'عقد توظيف بين صاحب العمل والموظف',category:'عمالية',
+   body:`عقد عمل
+
+بتاريخ: ___________
+
+الطرف الأول (صاحب العمل): ___________
+الطرف الثاني (الموظف): ___________
+المسمى الوظيفي: ___________
+الراتب الشهري: ___________ ريال
+مدة العقد: ___________
+مكان العمل: ___________
+
+البنود والشروط:
+1. يلتزم الطرف الثاني بأداء عمله بكل أمانة وإخلاص.
+2. يلتزم الطرف الأول بصرف الراتب المتفق عليه في موعده.
+3. مدة الإشعار عند إنهاء العقد: ___________.
+4. يخضع هذا العقد لأحكام نظام العمل السعودي.
+
+توقيع صاحب العمل: ___________        توقيع الموظف: ___________`},
+  {id:'rent',icon:'🏠',title:'عقد إيجار',desc:'عقد إيجار عقار سكني أو تجاري',category:'مدنية',
+   body:`عقد إيجار
+
+بتاريخ: ___________
+
+المؤجر: ___________
+المستأجر: ___________
+العقار: ___________
+الغرض من الإيجار: ___________
+مبلغ الإيجار السنوي: ___________ ريال
+مدة الإيجار: من ___________ إلى ___________
+مبلغ التأمين: ___________ ريال
+
+الشروط:
+1. لا يحق للمستأجر التأجير من الباطن إلا بإذن المؤجر.
+2. يتحمل المستأجر الصيانة البسيطة وصاحب العقار الصيانة الكبيرة.
+3. عند انتهاء المدة يُسلَّم العقار بحالته الأصلية.
+
+توقيع المؤجر: ___________        توقيع المستأجر: ___________`},
+  {id:'partnership',icon:'🤝',title:'عقد شراكة',desc:'عقد شراكة تجارية بين طرفين',category:'تجارية',
+   body:`عقد شراكة تجارية
+
+بتاريخ: ___________
+
+الشريك الأول: ___________  الحصة: ___%
+الشريك الثاني: ___________  الحصة: ___%
+اسم المشروع: ___________
+نشاط الشركة: ___________
+رأس المال: ___________ ريال
+مدة الشراكة: ___________
+
+الأرباح والخسائر: تُوزَّع بنسبة الحصص المتفق عليها أعلاه.
+القرارات: تُتَّخذ بالاتفاق بين الشريكين.
+إنهاء الشراكة: بإشعار كتابي قبل ___________ شهر.
+
+توقيع الشريك الأول: ___________        توقيع الشريك الثاني: ___________`},
+  {id:'service',icon:'🔧',title:'عقد خدمات',desc:'عقد تقديم خدمات مهنية أو استشارية',category:'تجارية',
+   body:`عقد تقديم خدمات
+
+بتاريخ: ___________
+
+مقدم الخدمة: ___________
+المستفيد: ___________
+نوع الخدمة: ___________
+المقابل المالي: ___________ ريال
+مدة تقديم الخدمة: ___________
+آلية الدفع: ___________
+
+الشروط:
+1. يلتزم مقدم الخدمة بتقديم الخدمة المتفق عليها في الوقت المحدد.
+2. في حال التأخير يُطبَّق غرامة ___________%.
+3. حقوق الملكية الفكرية للمخرجات تعود لـ ___________.
+
+توقيع مقدم الخدمة: ___________        توقيع المستفيد: ___________`},
+  {id:'confidential',icon:'🔒',title:'اتفاقية سرية (NDA)',desc:'اتفاقية عدم إفصاح عن معلومات سرية',category:'تجارية',
+   body:`اتفاقية عدم الإفصاح (NDA)
+
+بتاريخ: ___________
+
+الطرف المُفصِح: ___________
+الطرف المُتلقِّي: ___________
+الغرض: ___________
+مدة الاتفاقية: ___________
+
+يلتزم الطرف المتلقي بـ:
+1. عدم الإفصاح عن أي معلومات سرية لأي طرف ثالث.
+2. استخدام المعلومات فقط للغرض المحدد أعلاه.
+3. إعادة أو إتلاف المعلومات السرية عند انتهاء الاتفاقية.
+
+العقوبات: يحق للطرف المُفصِح المطالبة بالتعويض عند الإخلال.
+
+توقيع المُفصِح: ___________        توقيع المُتلقِّي: ___________`},
+];
+var userContracts=[];
+try{userContracts=JSON.parse(localStorage.getItem('j_user_contracts')||'[]');}catch(e){}
+function saveUserContracts(){try{localStorage.setItem('j_user_contracts',JSON.stringify(userContracts));}catch(e){}}
+
+function rContracts(){
+  var h=secHdr('📄','مكتبة العقود');
+  h+='<button onclick="showAddContractModal()" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;font-family:Tajawal,sans-serif">+ إضافة نموذج مخصص</button>';
+  var all=CONTRACT_TEMPLATES.concat(userContracts);
+  all.forEach(function(c){
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px">';
+    h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+    h+='<span style="font-size:24px">'+c.icon+'</span>';
+    h+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+c.title+'</div>';
+    h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">'+c.desc+'</div></div>';
+    h+='<span style="font-size:9px;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:8px;padding:2px 8px;font-weight:700">'+c.category+'</span>';
+    h+='</div>';
+    h+='<div style="display:flex;gap:6px">';
+    h+='<button onclick="viewContract(\''+c.id+'\')" style="flex:1;background:var(--blue-a);color:var(--blue);border:1px solid rgba(74,142,245,.3);border-radius:8px;padding:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">👁️ عرض وتعديل</button>';
+    h+='<button onclick="printContract(\''+c.id+'\')" style="flex:1;background:var(--green-a);color:var(--green);border:1px solid rgba(40,184,112,.3);border-radius:8px;padding:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">🖨️ طباعة</button>';
+    if(c.custom)h+='<button onclick="deleteUserContract(\''+c.id+'\')" style="background:var(--red-a);color:#f57070;border:1px solid rgba(224,69,85,.3);border-radius:8px;padding:7px 10px;font-size:11px;cursor:pointer">🗑️</button>';
+    h+='</div></div>';
+  });
+  return h;
+}
+
+function viewContract(id){
+  var all=CONTRACT_TEMPLATES.concat(userContracts);
+  var c=all.find(function(x){return x.id===id;});if(!c)return;
+  var modal=document.createElement('div');modal.id='contractModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:650;display:flex;flex-direction:column;background:var(--surface);padding-top:var(--safe-top);direction:rtl;font-family:Tajawal,sans-serif';
+  var h='<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2)">';
+  h+='<span style="font-size:22px">'+c.icon+'</span>';
+  h+='<div style="flex:1;font-weight:700;color:var(--gold2)">'+c.title+'</div>';
+  h+='<button onclick="printContractContent()" style="background:var(--green-a);color:var(--green);border:1px solid rgba(40,184,112,.3);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">🖨️</button>';
+  h+='<button onclick="document.getElementById(\'contractModal\').remove()" style="background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">إغلاق</button>';
+  h+='</div>';
+  h+='<div style="flex:1;overflow-y:auto;padding:16px">';
+  h+='<textarea id="contractEditor" style="width:100%;min-height:70vh;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif;line-height:1.8;resize:none;direction:rtl">'+c.body+'</textarea>';
+  h+='</div>';
+  modal.innerHTML=h;document.body.appendChild(modal);
+}
+
+function printContractContent(){
+  var el=document.getElementById('contractEditor');
+  if(!el)return;
+  var pa=document.getElementById('pa');
+  pa.innerHTML='<div style="font-family:Traditional Arabic,Arial,sans-serif;direction:rtl;padding:30px;font-size:14px;line-height:2;white-space:pre-wrap;color:#000">'+el.value+'</div>';
+  setTimeout(function(){window.print();},100);
+}
+
+function printContract(id){viewContract(id);setTimeout(printContractContent,200);}
+
+function showAddContractModal(){
+  var modal=document.createElement('div');modal.id='addContractModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:660;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));font-family:Tajawal,sans-serif;direction:rtl;max-height:90vh;overflow-y:auto';
+  box.innerHTML='<div style="font-size:16px;font-weight:700;color:var(--gold2);margin-bottom:14px">📄 إضافة نموذج عقد مخصص</div>'+
+    '<input id="ucTitle" type="text" placeholder="اسم العقد *" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);display:block;margin-bottom:8px;font-family:Tajawal,sans-serif">'+
+    '<input id="ucDesc" type="text" placeholder="وصف مختصر" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);display:block;margin-bottom:8px;font-family:Tajawal,sans-serif">'+
+    '<textarea id="ucBody" placeholder="نص العقد..." dir="rtl" rows="8" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text);display:block;margin-bottom:12px;font-family:Tajawal,sans-serif;line-height:1.7;resize:none"></textarea>'+
+    '<button onclick="saveUserContract()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">💾 حفظ</button>';
+  modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function saveUserContract(){
+  var t=document.getElementById('ucTitle');var b=document.getElementById('ucBody');
+  if(!t||!t.value.trim()){toast('⚠️ أدخل اسم العقد');return;}
+  var d=document.getElementById('ucDesc');
+  userContracts.push({id:'uc_'+Date.now(),icon:'📝',title:t.value.trim(),desc:d?d.value.trim():'',body:b?b.value:'',category:'مخصص',custom:true});
+  saveUserContracts();toast('✅ تم حفظ العقد');document.getElementById('addContractModal').remove();render();
+}
+function deleteUserContract(id){userContracts=userContracts.filter(function(x){return x.id!==id;});saveUserContracts();toast('🗑️ تم الحذف');render();}
+
+/* ════════════════════════════════════════════════════════
+   📖 قاموس المصطلحات القانونية
+════════════════════════════════════════════════════════ */
+var LEGAL_TERMS=[
+  {term:'لائحة الدعوى',def:'الوثيقة التي يقدمها المدعي إلى المحكمة تتضمن موضوع الدعوى وأطرافها وطلباتها وأسانيدها القانونية.'},
+  {term:'الدفع الشكلي',def:'دفع يتعلق بشكل الدعوى لا بموضوعها، كالدفع بعدم الاختصاص أو بانتفاء الصفة أو المصلحة.'},
+  {term:'الدفع الموضوعي',def:'دفع يتناول أصل الحق المتنازع عليه ويهدف إلى رد الدعوى من حيث الموضوع.'},
+  {term:'التقادم',def:'انقضاء الحق في المطالبة القضائية بمرور مدة زمنية معينة دون اتخاذ إجراءات قانونية.'},
+  {term:'الحكم الغيابي',def:'حكم يصدر في غياب المدعى عليه بعد تبليغه قانوناً وتخلفه عن الحضور.'},
+  {term:'الاستئناف',def:'طعن في الحكم الابتدائي أمام المحكمة الأعلى درجة خلال المدة القانونية المحددة.'},
+  {term:'النقض',def:'طعن في الأحكام النهائية أمام المحكمة العليا لمخالفة نص نظامي أو خطأ في تطبيق الأنظمة.'},
+  {term:'الخبير القضائي',def:'شخص متخصص تنتدبه المحكمة لإبداء رأيه الفني في مسائل تتطلب خبرة متخصصة.'},
+  {term:'التسوية الودية',def:'حل النزاع بالاتفاق بين الطرفين دون اللجوء إلى القضاء أو قبل صدور الحكم.'},
+  {term:'الإنابة القضائية',def:'طلب محكمة من محكمة أخرى القيام ببعض إجراءات التقاضي في دائرة اختصاصها.'},
+  {term:'الحجز التحفظي',def:'إجراء احترازي يمنع المدين من التصرف في أمواله ريثما يصدر حكم نهائي في الدعوى.'},
+  {term:'التنفيذ الجبري',def:'اتخاذ الإجراءات القانونية لإلزام المحكوم عليه بتنفيذ الحكم القضائي قسراً.'},
+];
+var userTerms=[];
+try{userTerms=JSON.parse(localStorage.getItem('j_user_terms')||'[]');}catch(e){}
+function saveUserTerms(){try{localStorage.setItem('j_user_terms',JSON.stringify(userTerms));}catch(e){}}
+
+function rTerms(){
+  var all=LEGAL_TERMS.concat(userTerms);
+  var h='<div style="position:relative;margin-bottom:10px">';
+  h+='<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3)">🔍</span>';
+  h+='<input id="termsSearch" type="search" placeholder="ابحث في المصطلحات..." dir="rtl" oninput="filterTerms(this.value)" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-md);padding:10px 40px 10px 14px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif">';
+  h+='</div>';
+  h+=secHdr('📖','المصطلحات القانونية ('+all.length+')');
+  h+='<div id="termsList">';
+  h+=renderTermsList(all,'');
+  h+='</div>';
+  h+='<button onclick="showAddTermModal()" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;font-family:Tajawal,sans-serif">+ إضافة مصطلح</button>';
+  return h;
+}
+
+function renderTermsList(terms,q){
+  var list=q?terms.filter(function(t){return t.term.includes(q)||t.def.includes(q);}):terms;
+  if(!list.length)return'<div style="text-align:center;padding:20px;color:var(--text3)">لا توجد نتائج</div>';
+  return list.map(function(t){
+    return'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:7px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+      '<div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:5px">'+t.term+'</div>'+
+      (t.custom?'<button onclick="deleteUserTerm(\''+t.term+'\')" style="background:none;color:var(--text3);font-size:12px;cursor:pointer;border:none;padding:0">✕</button>':'')+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--text2);line-height:1.7">'+t.def+'</div></div>';
+  }).join('');
+}
+
+function filterTerms(q){
+  var el=document.getElementById('termsList');
+  if(el)el.innerHTML=renderTermsList(LEGAL_TERMS.concat(userTerms),q);
+}
+
+function showAddTermModal(){
+  var modal=document.createElement('div');modal.id='addTermModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:660;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));font-family:Tajawal,sans-serif;direction:rtl';
+  box.innerHTML='<div style="font-size:16px;font-weight:700;color:var(--gold2);margin-bottom:14px">📖 إضافة مصطلح قانوني</div>'+
+    '<input id="newTermWord" type="text" placeholder="المصطلح *" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);display:block;margin-bottom:8px;font-family:Tajawal,sans-serif">'+
+    '<textarea id="newTermDef" placeholder="تعريف المصطلح *" dir="rtl" rows="4" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);display:block;margin-bottom:12px;font-family:Tajawal,sans-serif;resize:none;line-height:1.7"></textarea>'+
+    '<button onclick="saveUserTerm()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">💾 حفظ</button>';
+  modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function saveUserTerm(){
+  var w=document.getElementById('newTermWord');var d=document.getElementById('newTermDef');
+  if(!w||!w.value.trim()||!d||!d.value.trim()){toast('⚠️ أدخل المصطلح وتعريفه');return;}
+  userTerms.push({term:w.value.trim(),def:d.value.trim(),custom:true});
+  saveUserTerms();toast('✅ تم حفظ المصطلح');document.getElementById('addTermModal').remove();render();
+}
+function deleteUserTerm(term){userTerms=userTerms.filter(function(x){return x.term!==term;});saveUserTerms();toast('🗑️ تم الحذف');render();}
+
+/* ════════════════════════════════════════════════════════
+   ⚖️ أرشيف الحجج والأسانيد
+════════════════════════════════════════════════════════ */
+var legalArgs=[];
+try{legalArgs=JSON.parse(localStorage.getItem('j_legal_args')||'[]');}catch(e){}
+function saveLegalArgs(){try{localStorage.setItem('j_legal_args',JSON.stringify(legalArgs));}catch(e){}}
+
+function rArgs(){
+  var h='<div style="display:flex;gap:8px;margin-bottom:12px">';
+  h+='<div style="flex:1;position:relative">';
+  h+='<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3)">🔍</span>';
+  h+='<input id="argsSearch" type="search" placeholder="ابحث في الحجج..." dir="rtl" oninput="filterArgs(this.value)" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-md);padding:10px 40px 10px 14px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif">';
+  h+='</div>';
+  h+='<button onclick="showAddArgModal()" style="background:var(--gold);color:#040608;border-radius:var(--r-md);padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Tajawal,sans-serif">+ إضافة</button>';
+  h+='</div>';
+  h+=secHdr('⚖️','أرشيف الحجج والأسانيد ('+legalArgs.length+')');
+  h+='<div id="argsList">';
+  h+=renderArgsList(legalArgs,'');
+  h+='</div>';
+  return h;
+}
+
+function renderArgsList(args,q){
+  var list=q?args.filter(function(a){return a.title.includes(q)||a.text.includes(q)||(a.caseType&&a.caseType.includes(q));}):args;
+  if(!list.length)return'<div style="text-align:center;padding:30px 0;color:var(--text3)"><div style="font-size:36px;opacity:.2;margin-bottom:8px">⚖️</div>لا توجد حجج محفوظة بعد</div>';
+  return list.slice().reverse().map(function(a){
+    var typeBg={'جنائية':'rgba(224,69,85,.1)','مدنية':'rgba(74,142,245,.1)','تجارية':'rgba(200,168,75,.1)','عمالية':'rgba(40,184,112,.1)'}[a.caseType]||'var(--surface3)';
+    var typeClr={'جنائية':'#f57070','مدنية':'var(--blue)','تجارية':'var(--gold2)','عمالية':'var(--green)'}[a.caseType]||'var(--text3)';
+    return'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
+      '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+a.title+'</div>'+
+      (a.caseType?'<span style="font-size:9px;background:'+typeBg+';color:'+typeClr+';border-radius:8px;padding:2px 8px;margin-top:3px;display:inline-block;font-weight:700">'+a.caseType+'</span>':'')+
+      '</div>'+
+      '<div style="display:flex;gap:4px">'+
+      '<button onclick="copyArg(\''+a.id+'\')" style="background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:7px;padding:4px 8px;font-size:10px;cursor:pointer">📋</button>'+
+      '<button onclick="deleteArg(\''+a.id+'\')" style="background:var(--red-a);color:#f57070;border:1px solid rgba(224,69,85,.3);border-radius:7px;padding:4px 8px;font-size:10px;cursor:pointer">🗑️</button>'+
+      '</div></div>'+
+      '<div style="font-size:12px;color:var(--text2);line-height:1.75;white-space:pre-wrap;background:var(--surface3);border-radius:8px;padding:10px;margin-top:6px">'+a.text+'</div>'+
+      (a.source?'<div style="font-size:10px;color:var(--text3);margin-top:5px">📌 '+a.source+'</div>':'')+
+      '</div>';
+  }).join('');
+}
+
+function filterArgs(q){
+  var el=document.getElementById('argsList');
+  if(el)el.innerHTML=renderArgsList(legalArgs,q);
+}
+
+function showAddArgModal(){
+  var modal=document.createElement('div');modal.id='addArgModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:660;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));font-family:Tajawal,sans-serif;direction:rtl;max-height:90vh;overflow-y:auto';
+  box.innerHTML='<div style="font-size:16px;font-weight:700;color:var(--gold2);margin-bottom:14px">⚖️ إضافة حجة أو سند قانوني</div>'+
+    '<input id="argTitle" type="text" placeholder="عنوان الحجة *" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);display:block;margin-bottom:8px;font-family:Tajawal,sans-serif">'+
+    '<select id="argType" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);display:block;margin-bottom:8px">'+
+    '<option value="">نوع القضية (اختياري)</option>'+
+    '<option>جنائية</option><option>مدنية</option><option>تجارية</option><option>عمالية</option><option>إدارية</option><option>أحوال شخصية</option>'+
+    '</select>'+
+    '<textarea id="argText" placeholder="نص الحجة أو السند... (مادة، نص حكم، مبدأ قانوني)" dir="rtl" rows="5" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);display:block;margin-bottom:8px;font-family:Tajawal,sans-serif;resize:none;line-height:1.7"></textarea>'+
+    '<input id="argSource" type="text" placeholder="المصدر (مثال: المادة 45 نظام العمل)" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);display:block;margin-bottom:12px;font-family:Tajawal,sans-serif">'+
+    '<button onclick="saveArg()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">💾 حفظ في الأرشيف</button>';
+  modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function saveArg(){
+  var t=document.getElementById('argTitle');var x=document.getElementById('argText');
+  if(!t||!t.value.trim()||!x||!x.value.trim()){toast('⚠️ أدخل العنوان والنص');return;}
+  var tp=document.getElementById('argType');var s=document.getElementById('argSource');
+  legalArgs.push({id:'arg_'+Date.now(),title:t.value.trim(),text:x.value.trim(),caseType:tp?tp.value:'',source:s?s.value.trim():''});
+  saveLegalArgs();toast('✅ تم حفظ الحجة في الأرشيف');document.getElementById('addArgModal').remove();render();
+}
+function deleteArg(id){legalArgs=legalArgs.filter(function(x){return x.id!==id;});saveLegalArgs();toast('🗑️ تم الحذف');render();}
+function copyArg(id){var a=legalArgs.find(function(x){return x.id===id;});if(!a)return;navigator.clipboard&&navigator.clipboard.writeText(a.title+'\n'+a.text+(a.source?'\nالمصدر: '+a.source:'')).then(function(){toast('📋 تم نسخ الحجة');});}
 
 function openBOESystem(key){
   // Search for the system on BOE
@@ -6949,11 +7288,11 @@ function setSessionColor(sid,colorId){
    ✅ Checklist تلقائية لكل نوع قضية
 ════════════════════════════════════════════════════════ */
 var CASE_CHECKLISTS={
-  'جنائية':['دراسة لائحة الاتهام','مراجعة الأدلة المادية','فحص تقارير الطب الشرعي','إعداد قائمة الشهود','تقديم الدفوع الشكلية','إعداد مرافعة الدفاع','متابعة صدور الحكم','دراسة خيار الاستئناف'],
+  'جنائية':['الاطلاع على ملف القضية ومرفقاتها','دراسة لائحة الاتهام','مراجعة الأدلة المادية','فحص تقارير الطب الشرعي إن وجدت','إعداد قائمة الشهود','تقديم الدفوع الشكلية','إعداد مرافعة الدفاع','متابعة صدور الحكم','دراسة خيار الاستئناف','دراسة خيار النقض'],
   'مدنية':['دراسة عقد أو وثيقة النزاع','تقديم لائحة الدعوى','الرد على اللائحة المقابلة','طلب الخبرة إن لزم','تبادل المذكرات','إعداد المرافعة الختامية','متابعة صدور الحكم','التنفيذ'],
   'تجارية':['مراجعة العقود والمستندات','تقديم الدعوى للمحكمة التجارية','الرد على دفوع الخصم','طلب الأوامر التحفظية','تبادل المذكرات القانونية','المرافعة الختامية','صدور الحكم','التنفيذ الجبري'],
   'أحوال شخصية':['جمع وثائق الأحوال المدنية','تقديم الدعوى','الوساطة والصلح','جلسات الإثبات','الخبرة الاجتماعية','صدور الحكم','تسجيل الحكم'],
-  'عمالية':['جمع عقد العمل والمستندات','رفع الشكوى للمحكمة العمالية','جلسة التسوية الودية','تبادل الردود','المرافعة','الحكم الابتدائي','الاستئناف إن لزم'],
+  'عمالية':['جمع عقد العمل والمستندات','تقديم شكوى لمكتب العمل','جلسة التسوية الودية (محضر عدم التسوية)','رفع الشكوى للمحكمة العمالية','تبادل الردود والمذكرات','المرافعة','الحكم الابتدائي','الاستئناف إن لزم','النقض إن لزم'],
   'إدارية':['مراجعة القرار الإداري','تقديم التظلم الإداري','رفع الدعوى لديوان المظالم','تبادل المذكرات','المرافعة','صدور الحكم','التنفيذ'],
 };
 
