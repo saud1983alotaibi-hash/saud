@@ -1622,8 +1622,11 @@ function card(s){
   var c=ST[s.status],p=s.priority||'none';
   var att=(s.attachments||[]).length,hasMemo=s.memo&&s.memo.trim().length>0;
   var dlBadge=deadlineBadge(s);
-  return'<div class="s-card" onclick="openDet('+s.id+')">'+
-    '<div class="s-card-accent" style="background:'+c.clr+'"></div>'+
+  var colorLabel=s.colorLabel?getLabelColor(s.colorLabel):null;
+  var cardBorder=colorLabel?'border-color:'+colorLabel.border+';background:'+colorLabel.bg:'';
+  var accentBg=colorLabel?colorLabel.dot:c.clr;
+  return'<div class="s-card" onclick="openDet('+s.id+')" style="'+cardBorder+'">'+
+    '<div class="s-card-accent" style="background:'+accentBg+'"></div>'+
     '<div class="s-card-top"><div><div class="s-card-num">'+s.num+(s.ref?'<span style="font-size:10px;font-weight:600;color:var(--text3);margin-right:6px;font-family:Tajawal,sans-serif">🏷️ '+s.ref+'</span>':'')+'</div>'+
     '<div class="s-card-meta">'+s.type+(s.room?' · '+s.room:'')+'&nbsp;&nbsp;'+ptag(p)+'</div></div>'+
     '<div class="s-card-time"><div class="s-card-timestr">'+s.time+'</div><div class="s-card-date">'+fmtS(s.date)+'</div><div style="font-size:9px;color:var(--gold2);margin-top:1px">'+toHijriShort(s.date)+'</div></div></div>'+
@@ -2322,8 +2325,15 @@ function openDet(id){
   b+=aiExtraButtons(s.id);
   // Stage tracker
   b+=buildStageTrackerHTML(s);
+  // ── Checklist ──
+  b+='<div class="checklist-section">'+renderChecklist(s.id)+'</div>';
   // ── Deadline Calculator inside session ──
   b+=buildDeadlineCalcHTML(s);
+  // ── Extra action buttons ──
+  b+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">';
+  b+='<button onclick="showReadingMode('+s.id+')" style="background:rgba(74,142,245,.08);color:var(--blue);border:1px solid rgba(74,142,245,.2);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">📖 وضع القراءة</button>';
+  b+='<button onclick="showColorLabelPicker('+s.id+')" style="background:rgba(200,168,75,.08);color:var(--gold2);border:1px solid rgba(200,168,75,.2);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">🎨 تصنيف بلون</button>';
+  b+='</div>';
 
   b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--border2)"><div class="note-box-hdr" style="color:var(--text2)">💬 ملاحظة سريعة</div><textarea id="qn-'+s.id+'" class="note-box textarea" placeholder="ملاحظة سريعة..." dir="rtl" rows="2">'+(s.quickNote||'')+'</textarea><button onclick="saveQuickNote('+s.id+')" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ</button></div>';
   b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--gold-a20)"><div class="note-box-hdr" style="color:var(--gold2)">🔒 مذكرة سرية</div><textarea id="memo-'+s.id+'" placeholder="ملاحظاتك السرية..." dir="rtl" rows="4" style="width:100%;background:transparent;font-size:12px;color:var(--text);resize:none;min-height:72px;line-height:1.6">'+(s.memo||'')+'</textarea><button onclick="saveMemo('+s.id+')" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ المذكرة</button></div>';
@@ -3367,6 +3377,7 @@ openDB().then(function(){return dbAll();}).then(function(rows){
   checkAutoBackup();
   logActivity('🚀 فتح التطبيق','');
   render();
+  initSwipeGestures();
   // Show PIN lock if enabled
   if(pinEnabled&&pinCode){pinLocked=true;showPinLock();}
   // Apply hidden tabs
@@ -5671,23 +5682,132 @@ function aiSmartMemo(sid){
   },350);
 }
 
-/* ── قاعدة أحكام قضائية ── */
+/* ── مواقع السوابق القضائية ── */
+var precedentSites=[
+  {id:'moj',name:'منظومة الأحكام القضائية',url:'https://judgments.moj.gov.sa',icon:'⚖️',desc:'وزارة العدل السعودية'},
+  {id:'boe',name:'هيئة الخبراء — نظام',url:'https://laws.boe.gov.sa',icon:'📜',desc:'الأنظمة والتشريعات'},
+  {id:'diwan',name:'ديوان المظالم',url:'https://www.bog.gov.sa',icon:'🏛️',desc:'المحكمة الإدارية العليا'},
+  {id:'coc',name:'محكمة الاستئناف التجارية',url:'https://coc.gov.sa',icon:'🏢',desc:'القضايا التجارية'},
+];
+try{var _ps=JSON.parse(localStorage.getItem('j_prec_sites')||'[]');if(_ps.length)precedentSites=precedentSites.concat(_ps);}catch(e){}
+function savePrecedentSites(){
+  var custom=precedentSites.filter(function(s){return s.custom;});
+  try{localStorage.setItem('j_prec_sites',JSON.stringify(custom));}catch(e){}
+}
+
 function aiSearchPrecedents(sid){
   var s=data.find(function(x){return x.id===sid;});if(!s)return;
-  go('ai');
-  setTimeout(function(){
-    var prompt='ابحث في قاعدة الأحكام القضائية السعودية وأنظمة وزارة العدل عن:\n\n'+
-      'نوع القضية: '+s.type+'\n'+
-      'المحكمة: '+(s.court||'')+'\n'+
-      'موضوع الدعوى: '+(s.notes||'')+'\n\n'+
-      'قدّم:\n'+
-      '📋 أحكام مشابهة ذات صلة (مع أرقامها إن أمكن)\n'+
-      '📖 المبادئ القضائية المستقرة في هذا النوع\n'+
-      '⚖️ الاتجاه القضائي الغالب\n'+
-      '📌 المواد النظامية الأكثر تطبيقاً\n'+
-      '💡 كيفية الاستفادة من هذه السوابق في قضيتك';
-    sendAI(prompt);
-  },350);
+  showPrecedentsModal(s);
+}
+
+function showPrecedentsModal(s){
+  var existing=document.getElementById('precedentsModal');if(existing)existing.remove();
+  var modal=document.createElement('div');modal.id='precedentsModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(10px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:2px solid var(--gold-a30);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));max-height:92vh;overflow-y:auto;font-family:Tajawal,sans-serif;direction:rtl';
+
+  function buildBox(){
+    var h='<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">';
+    h+='<div style="width:42px;height:42px;border-radius:12px;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚖️</div>';
+    h+='<div><div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">السوابق القضائية</div>';
+    h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+s.num+' · '+s.type+'</div></div></div>';
+
+    // ── تحليل بالذكاء الاصطناعي ──
+    h+='<div style="background:rgba(16,163,127,.08);border:1px solid rgba(16,163,127,.2);border-radius:var(--r-md);padding:13px;margin-bottom:14px">';
+    h+='<div style="font-size:11px;font-weight:700;color:#2ecc9a;margin-bottom:8px">🤖 تحليل بالذكاء الاصطناعي</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">';
+    h+='<button onclick="runAIPrecedent(\'precedents\','+s.id+')" style="background:rgba(16,163,127,.1);color:#2ecc9a;border:1px solid rgba(16,163,127,.25);border-radius:10px;padding:10px 6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;text-align:center">📋 أحكام مشابهة<br><span style=\'font-size:9px;opacity:.8\'>من السجل القضائي</span></button>';
+    h+='<button onclick="runAIPrecedent(\'principles\','+s.id+')" style="background:rgba(16,163,127,.1);color:#2ecc9a;border:1px solid rgba(16,163,127,.25);border-radius:10px;padding:10px 6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;text-align:center">📖 المبادئ القضائية<br><span style=\'font-size:9px;opacity:.8\'>المستقرة في النوع</span></button>';
+    h+='<button onclick="runAIPrecedent(\'strategy\','+s.id+')" style="background:rgba(16,163,127,.1);color:#2ecc9a;border:1px solid rgba(16,163,127,.25);border-radius:10px;padding:10px 6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;text-align:center">💡 الاستراتيجية<br><span style=\'font-size:9px;opacity:.8\'>بناءً على السوابق</span></button>';
+    h+='<button onclick="runAIPrecedent(\'articles\','+s.id+')" style="background:rgba(16,163,127,.1);color:#2ecc9a;border:1px solid rgba(16,163,127,.25);border-radius:10px;padding:10px 6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif;text-align:center">📌 المواد الأكثر<br><span style=\'font-size:9px;opacity:.8\'>تطبيقاً في هذا النوع</span></button>';
+    h+='</div></div>';
+
+    // ── البحث في المواقع ──
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px">🔍 البحث المباشر في المواقع</div>';
+
+    // Search field
+    var searchTerms=s.type+(s.court?' '+s.court:'')+( s.notes?' '+s.notes.substring(0,30):'');
+    h+='<div style="position:relative;margin-bottom:10px">';
+    h+='<input id="precSearchTerm" type="text" value="'+searchTerms+'" dir="rtl" placeholder="مصطلح البحث..." style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif">';
+    h+='</div>';
+
+    // Sites grid
+    h+='<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">';
+    precedentSites.forEach(function(site){
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;display:flex;align-items:center;gap:10px">';
+      h+='<span style="font-size:20px;flex-shrink:0">'+site.icon+'</span>';
+      h+='<div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--text)">'+site.name+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">'+site.desc+'</div></div>';
+      h+='<div style="display:flex;gap:5px">';
+      h+='<button onclick="searchInSite(\''+site.url+'\',\''+site.id+'\')" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">بحث</button>';
+      if(site.custom)h+='<button onclick="removePrecedentSite(\''+site.id+'\')" style="background:var(--red-a);color:#f57070;border:1px solid rgba(224,69,85,.3);border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer">✕</button>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+
+    // Add custom site
+    h+='<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px;margin-bottom:14px">';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">➕ إضافة موقع مخصص</div>';
+    h+='<input id="newSiteName" type="text" placeholder="اسم الموقع" dir="rtl" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:12px;color:var(--text);margin-bottom:7px;display:block;font-family:Tajawal,sans-serif">';
+    h+='<input id="newSiteUrl" type="url" placeholder="https://..." dir="ltr" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:12px;color:var(--text);margin-bottom:7px;display:block">';
+    h+='<button onclick="addPrecedentSite()" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">إضافة الموقع</button>';
+    h+='</div>';
+
+    h+='<button onclick="document.getElementById(\'precedentsModal\').remove()" style="width:100%;background:none;color:var(--text3);padding:10px;font-size:13px;cursor:pointer">إغلاق</button>';
+    box.innerHTML=h;
+  }
+
+  window.runAIPrecedent=function(type,sid){
+    var s2=data.find(function(x){return x.id===sid;});if(!s2)return;
+    var prompts={
+      precedents:'ابحث في السجل القضائي السعودي عن أحكام مشابهة لقضية '+s2.type+' في '+( s2.court||'المحاكم السعودية')+'.\n\nموضوع الدعوى: '+(s2.notes||'غير محدد')+'\nالمدعي: '+(s2.plnt||'')+'\nالمدعى عليه: '+(s2.dfnd||'')+'\n\nقدّم:\n• أحكام مشابهة موثقة مع أرقامها وتواريخها إن أمكن\n• نسبة الحكم لصالح المدعي مقابل المدعى عليه في هذا النوع\n• أبرز الحيثيات القضائية المتكررة',
+      principles:'استعرض المبادئ القضائية المستقرة في قضايا '+s2.type+' بالمملكة العربية السعودية.\n\nالمحكمة: '+(s2.court||'')+'\n\nقدّم:\n• المبادئ القضائية الثابتة (5-7 مبادئ)\n• الاتجاه القضائي الغالب في هذا النوع\n• الأسباب الشائعة للقبول والرفض',
+      strategy:'بناءً على السوابق القضائية في قضايا '+s2.type+'، ضع استراتيجية دفاعية لقضية:\n\nالمدعي: '+(s2.plnt||'')+'\nالمدعى عليه: '+(s2.dfnd||'')+'\nالمحكمة: '+(s2.court||'')+'\nالوقائع: '+(s2.notes||'')+'\n\nقدّم خطة عمل مرحلية ومقترحات للدفوع الشكلية والموضوعية',
+      articles:'حدد المواد النظامية الأكثر تطبيقاً في قضايا '+s2.type+' بالمحاكم السعودية.\n\nقدّم:\n• المواد الأكثر استشهاداً في أحكام المحاكم\n• كيفية توظيف كل مادة في الدفاع\n• النظام الأنسب للاحتجاج به في هذه القضية تحديداً'
+    };
+    modal.remove();
+    go('ai');
+    setTimeout(function(){sendAI(prompts[type]);},350);
+  };
+
+  window.searchInSite=function(baseUrl,siteId){
+    var term=document.getElementById('precSearchTerm');
+    var q=term?term.value.trim():s.type;
+    var searchUrls={
+      moj:'https://judgments.moj.gov.sa/search?q='+encodeURIComponent(q),
+      boe:'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/search?q='+encodeURIComponent(q),
+      diwan:'https://www.bog.gov.sa/search?q='+encodeURIComponent(q),
+      coc:'https://coc.gov.sa/search?q='+encodeURIComponent(q),
+    };
+    var url=searchUrls[siteId]||baseUrl+'?q='+encodeURIComponent(q);
+    window.open(url,'_blank');
+    logActivity('🔍 بحث سوابق',q+' في '+siteId);
+  };
+
+  window.addPrecedentSite=function(){
+    var name=document.getElementById('newSiteName').value.trim();
+    var url=document.getElementById('newSiteUrl').value.trim();
+    if(!name||!url){toast('⚠️ أدخل الاسم والرابط');return;}
+    if(!url.startsWith('http')){toast('⚠️ الرابط يجب أن يبدأ بـ https://');return;}
+    var newSite={id:'custom_'+Date.now(),name:name,url:url,icon:'🌐',desc:'موقع مخصص',custom:true};
+    precedentSites.push(newSite);
+    savePrecedentSites();
+    toast('✅ تم إضافة الموقع: '+name);
+    buildBox();
+  };
+
+  window.removePrecedentSite=function(id){
+    precedentSites=precedentSites.filter(function(x){return x.id!==id;});
+    savePrecedentSites();
+    toast('🗑️ تم حذف الموقع');
+    buildBox();
+  };
+
+  buildBox();
+  modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
 }
 
 /* ════════════════════════════════════════════════════════
@@ -6667,6 +6787,244 @@ function saveEncryption(){
   document.getElementById('encModal').remove();
   logActivity('🔐 تفعيل التشفير','تم تفعيل تشفير البيانات');
   toast('✅ تم تفعيل التشفير');render();
+}
+
+/* ════════════════════════════════════════════════════════
+   📱 وضع القراءة
+════════════════════════════════════════════════════════ */
+function showReadingMode(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var existing=document.getElementById('readingModal');if(existing)existing.remove();
+  var modal=document.createElement('div');modal.id='readingModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:700;background:#0a0d15;overflow-y:auto;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);direction:rtl;font-family:Tajawal,sans-serif';
+
+  var hijriDate='';
+  try{hijriDate=new Date(s.date+'T00:00:00').toLocaleDateString('ar-SA-u-ca-islamic',{year:'numeric',month:'long',day:'numeric'});}catch(e){}
+  var dayName=(['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'])[new Date(s.date+'T00:00:00').getDay()];
+
+  var h='<div style="max-width:600px;margin:0 auto;padding:28px 24px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">';
+  h+='<button onclick="document.getElementById(\'readingModal\').remove()" style="background:rgba(255,255,255,.07);color:#aaa;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:Tajawal,sans-serif">← عودة</button>';
+  h+='<div style="display:flex;gap:8px">';
+  h+='<button onclick="adjustReadingFont(-2)" style="background:rgba(255,255,255,.07);color:#aaa;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer">A-</button>';
+  h+='<button onclick="adjustReadingFont(2)" style="background:rgba(255,255,255,.07);color:#aaa;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 12px;font-size:16px;cursor:pointer">A+</button>';
+  h+='</div></div>';
+
+  // Case header
+  h+='<div style="border-bottom:1px solid rgba(200,168,75,.2);padding-bottom:20px;margin-bottom:24px">';
+  h+='<div style="font-size:11px;font-weight:700;color:rgba(200,168,75,.6);letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px">ملف القضية</div>';
+  h+='<div id="rdTitle" style="font-family:Scheherazade New,serif;font-size:28px;font-weight:700;color:#e8c96a;line-height:1.3;margin-bottom:8px">'+s.num+'</div>';
+  h+='<div id="rdType" style="font-size:18px;color:#c0cce0;margin-bottom:6px">'+s.type+(s.court?' · '+s.court:'')+'</div>';
+  h+='<div style="font-size:14px;color:#6878a0">يوم '+dayName+' '+s.date+(hijriDate?' · '+hijriDate:'')+'  الساعة '+s.time+'</div>';
+  h+='</div>';
+
+  // Parties
+  if(s.plnt||s.dfnd){
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">';
+    if(s.plnt){h+='<div style="background:rgba(40,184,112,.07);border:1px solid rgba(40,184,112,.15);border-radius:12px;padding:14px">';
+    h+='<div style="font-size:10px;font-weight:700;color:rgba(40,184,112,.7);margin-bottom:6px;letter-spacing:.1em">المدعي</div>';
+    h+='<div id="rdPlnt" style="font-size:17px;font-weight:700;color:#edf2fa">'+s.plnt+'</div></div>';}
+    if(s.dfnd){h+='<div style="background:rgba(224,69,85,.07);border:1px solid rgba(224,69,85,.15);border-radius:12px;padding:14px">';
+    h+='<div style="font-size:10px;font-weight:700;color:rgba(224,69,85,.7);margin-bottom:6px;letter-spacing:.1em">المدعى عليه</div>';
+    h+='<div id="rdDfnd" style="font-size:17px;font-weight:700;color:#edf2fa">'+s.dfnd+'</div></div>';}
+    h+='</div>';
+  }
+
+  // Stage
+  if(s.stage){h+='<div style="background:rgba(200,168,75,.06);border:1px solid rgba(200,168,75,.15);border-radius:12px;padding:14px;margin-bottom:24px">'
+    +'<div style="font-size:10px;font-weight:700;color:rgba(200,168,75,.6);margin-bottom:6px;letter-spacing:.1em">المرحلة الحالية</div>'
+    +'<div id="rdStage" style="font-size:20px;font-weight:700;color:#e8c96a">'+s.stage+'</div></div>';}
+
+  // Notes
+  if(s.notes){h+='<div style="margin-bottom:24px">';
+    h+='<div style="font-size:10px;font-weight:700;color:#6878a0;letter-spacing:.1em;margin-bottom:10px">الملاحظات</div>';
+    h+='<div id="rdNotes" style="font-size:17px;color:#c0cce0;line-height:1.9;white-space:pre-wrap">'+s.notes+'</div></div>';}
+
+  // Minutes
+  if(s.minutes){h+='<div style="margin-bottom:24px">';
+    h+='<div style="font-size:10px;font-weight:700;color:#6878a0;letter-spacing:.1em;margin-bottom:10px">محضر الجلسة</div>';
+    h+='<div id="rdMinutes" style="font-size:17px;color:#c0cce0;line-height:1.9;white-space:pre-wrap">'+s.minutes+'</div></div>';}
+
+  h+='</div>';
+  modal.innerHTML=h;
+  document.body.appendChild(modal);
+  window._readingFontSize=17;
+}
+
+function adjustReadingFont(delta){
+  window._readingFontSize=(window._readingFontSize||17)+delta;
+  var sz=Math.max(13,Math.min(28,window._readingFontSize));
+  ['rdNotes','rdMinutes','rdPlnt','rdDfnd','rdStage','rdType'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.fontSize=sz+'px';
+  });
+}
+
+/* ════════════════════════════════════════════════════════
+   📱 إيماءات السحب
+════════════════════════════════════════════════════════ */
+var _touchStartX=0,_touchStartY=0,_touchStartTime=0;
+
+function initSwipeGestures(){
+  var cnt=document.getElementById('cnt');
+  if(!cnt)return;
+  cnt.addEventListener('touchstart',function(e){
+    _touchStartX=e.touches[0].clientX;
+    _touchStartY=e.touches[0].clientY;
+    _touchStartTime=Date.now();
+  },{passive:true});
+  cnt.addEventListener('touchend',function(e){
+    if(!e.changedTouches.length)return;
+    var dx=e.changedTouches[0].clientX-_touchStartX;
+    var dy=e.changedTouches[0].clientY-_touchStartY;
+    var dt=Date.now()-_touchStartTime;
+    // Valid swipe: fast (<400ms), mostly horizontal, >60px
+    if(dt>400||Math.abs(dy)>Math.abs(dx)||Math.abs(dx)<60)return;
+    var tabs=['home','list','tasks','contacts','files','ai','cal','stats','fees','tools','live','archive','settings'];
+    var visible=tabs.filter(function(t){return hiddenTabs.indexOf(t)===-1;});
+    var cur=visible.indexOf(curTab);
+    if(cur===-1)return;
+    if(dx>0&&cur>0){go(visible[cur-1]);toast('← '+visible[cur-1]);} // swipe right = go back
+    else if(dx<0&&cur<visible.length-1){go(visible[cur+1]);toast('→ '+visible[cur+1]);} // swipe left = next
+  },{passive:true});
+}
+
+/* ════════════════════════════════════════════════════════
+   🎨 تصنيف القضايا بألوان
+════════════════════════════════════════════════════════ */
+var LABEL_COLORS=[
+  {id:'red',name:'أحمر',bg:'rgba(224,69,85,.15)',border:'rgba(224,69,85,.4)',dot:'#e04555'},
+  {id:'orange',name:'برتقالي',bg:'rgba(216,144,48,.15)',border:'rgba(216,144,48,.4)',dot:'#d89030'},
+  {id:'gold',name:'ذهبي',bg:'rgba(200,168,75,.15)',border:'rgba(200,168,75,.4)',dot:'#c8a84b'},
+  {id:'green',name:'أخضر',bg:'rgba(40,184,112,.15)',border:'rgba(40,184,112,.4)',dot:'#28b870'},
+  {id:'blue',name:'أزرق',bg:'rgba(74,142,245,.15)',border:'rgba(74,142,245,.4)',dot:'#4a8ef5'},
+  {id:'purple',name:'بنفسجي',bg:'rgba(120,80,216,.15)',border:'rgba(120,80,216,.4)',dot:'#7850d8'},
+  {id:'teal',name:'فيروزي',bg:'rgba(16,163,127,.15)',border:'rgba(16,163,127,.4)',dot:'#10a37f'},
+  {id:'gray',name:'رمادي',bg:'rgba(100,120,160,.1)',border:'rgba(100,120,160,.25)',dot:'#6080a0'},
+];
+
+function getLabelColor(colorId){
+  return LABEL_COLORS.find(function(c){return c.id===colorId;})||null;
+}
+
+function showColorLabelPicker(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var modal=document.createElement('div');modal.id='colorLabelModal';
+  modal.style.cssText='position:fixed;inset:0;z-index:650;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));font-family:Tajawal,sans-serif;direction:rtl';
+
+  var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">🎨 تصنيف القضية بلون</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">';
+  LABEL_COLORS.forEach(function(c){
+    var selected=s.colorLabel===c.id;
+    h+='<button onclick="setSessionColor('+sid+',\''+c.id+'\')" style="background:'+c.bg+';border:2px solid '+(selected?c.dot:c.border)+';border-radius:12px;padding:12px 6px;cursor:pointer;text-align:center;transition:all .15s">';
+    h+='<div style="width:22px;height:22px;border-radius:50%;background:'+c.dot+';margin:0 auto 5px;'+(selected?'box-shadow:0 0 0 3px rgba(255,255,255,.25)':'')+'"></div>';
+    h+='<div style="font-size:10px;font-weight:700;color:'+c.dot+'">'+c.name+'</div>';
+    if(selected)h+='<div style="font-size:9px;color:'+c.dot+';margin-top:2px">✓</div>';
+    h+='</button>';
+  });
+  h+='</div>';
+  if(s.colorLabel){
+    h+='<button onclick="setSessionColor('+sid+',null)" style="width:100%;background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:10px;padding:10px;font-size:12px;cursor:pointer;margin-bottom:8px;font-family:Tajawal,sans-serif">✕ إزالة التصنيف</button>';
+  }
+  h+='<button onclick="document.getElementById(\'colorLabelModal\').remove()" style="width:100%;background:none;color:var(--text3);padding:10px;font-size:13px;cursor:pointer">إغلاق</button>';
+
+  box.innerHTML=h;modal.appendChild(bg);modal.appendChild(box);document.body.appendChild(modal);
+}
+
+function setSessionColor(sid,colorId){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  s.colorLabel=colorId;
+  dbPut(s).then(function(){
+    var label=colorId?getLabelColor(colorId).name:'بلا لون';
+    toast('🎨 تم تغيير اللون: '+label);
+    var modal=document.getElementById('colorLabelModal');if(modal)modal.remove();
+    render();
+  });
+}
+
+/* ════════════════════════════════════════════════════════
+   ✅ Checklist تلقائية لكل نوع قضية
+════════════════════════════════════════════════════════ */
+var CASE_CHECKLISTS={
+  'جنائية':['دراسة لائحة الاتهام','مراجعة الأدلة المادية','فحص تقارير الطب الشرعي','إعداد قائمة الشهود','تقديم الدفوع الشكلية','إعداد مرافعة الدفاع','متابعة صدور الحكم','دراسة خيار الاستئناف'],
+  'مدنية':['دراسة عقد أو وثيقة النزاع','تقديم لائحة الدعوى','الرد على اللائحة المقابلة','طلب الخبرة إن لزم','تبادل المذكرات','إعداد المرافعة الختامية','متابعة صدور الحكم','التنفيذ'],
+  'تجارية':['مراجعة العقود والمستندات','تقديم الدعوى للمحكمة التجارية','الرد على دفوع الخصم','طلب الأوامر التحفظية','تبادل المذكرات القانونية','المرافعة الختامية','صدور الحكم','التنفيذ الجبري'],
+  'أحوال شخصية':['جمع وثائق الأحوال المدنية','تقديم الدعوى','الوساطة والصلح','جلسات الإثبات','الخبرة الاجتماعية','صدور الحكم','تسجيل الحكم'],
+  'عمالية':['جمع عقد العمل والمستندات','رفع الشكوى للمحكمة العمالية','جلسة التسوية الودية','تبادل الردود','المرافعة','الحكم الابتدائي','الاستئناف إن لزم'],
+  'إدارية':['مراجعة القرار الإداري','تقديم التظلم الإداري','رفع الدعوى لديوان المظالم','تبادل المذكرات','المرافعة','صدور الحكم','التنفيذ'],
+};
+
+function buildCaseChecklist(s){
+  var type=s.type||'مدنية';
+  var templateItems=CASE_CHECKLISTS[type]||CASE_CHECKLISTS['مدنية'];
+  var saved=s.checklist||[];
+  // Merge template with saved state
+  var items=templateItems.map(function(item,i){
+    var existing=saved.find(function(x){return x.text===item;});
+    return{text:item,done:existing?existing.done:false};
+  });
+  // Add any custom items
+  saved.filter(function(x){return templateItems.indexOf(x.text)===-1;}).forEach(function(x){items.push(x);});
+  return items;
+}
+
+function renderChecklist(sid){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return'';
+  var items=buildCaseChecklist(s);
+  var doneCount=items.filter(function(x){return x.done;}).length;
+  var pct=items.length>0?Math.round((doneCount/items.length)*100):0;
+
+  var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px;margin:10px 0">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--text2)">✅ خطوات القضية</div>';
+  h+='<div style="font-size:11px;font-weight:700;color:var(--gold2)">'+doneCount+'/'+items.length+' ('+pct+'%)</div></div>';
+  h+='<div style="background:var(--surface3);border-radius:4px;height:5px;overflow:hidden;margin-bottom:10px">';
+  h+='<div style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:'+pct+'%;border-radius:4px;transition:width .4s"></div></div>';
+
+  items.forEach(function(item,i){
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)" onclick="toggleChecklistItem('+sid+','+i+')" style="cursor:pointer">';
+    h+='<div style="width:20px;height:20px;border-radius:6px;border:2px solid '+(item.done?'var(--green)':'var(--border2)')+';background:'+(item.done?'var(--green)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s">';
+    if(item.done)h+='<div style="color:#fff;font-size:11px;font-weight:700">✓</div>';
+    h+='</div>';
+    h+='<div style="font-size:12px;color:'+(item.done?'var(--text3)':'var(--text)')+';'+(item.done?'text-decoration:line-through;':'')+'flex:1">'+item.text+'</div>';
+    h+='</div>';
+  });
+
+  // Add custom item
+  h+='<div style="display:flex;gap:7px;margin-top:8px">';
+  h+='<input id="newChkItem_'+sid+'" type="text" placeholder="أضف خطوة مخصصة..." dir="rtl" style="flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif">';
+  h+='<button onclick="addChecklistItem('+sid+')" style="background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">+</button>';
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+
+function toggleChecklistItem(sid,idx){
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var items=buildCaseChecklist(s);
+  items[idx].done=!items[idx].done;
+  s.checklist=items;
+  dbPut(s).then(function(){
+    var detBody=document.getElementById('detBody');
+    if(detBody){
+      var chkEl=detBody.querySelector('.checklist-section');
+      if(chkEl)chkEl.outerHTML='<div class="checklist-section">'+renderChecklist(sid)+'</div>';
+    }
+    render();
+  });
+}
+
+function addChecklistItem(sid){
+  var inp=document.getElementById('newChkItem_'+sid);
+  if(!inp||!inp.value.trim())return;
+  var s=data.find(function(x){return x.id===sid;});if(!s)return;
+  var items=buildCaseChecklist(s);
+  items.push({text:inp.value.trim(),done:false});
+  s.checklist=items;
+  dbPut(s).then(function(){toast('✅ تمت الإضافة');render();});
 }
 
 var _origToggleNotif=toggleNotif;
