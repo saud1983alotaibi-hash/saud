@@ -342,6 +342,7 @@ option{background:var(--surface);}
       <div class="hdr-actions">
         <button class="btn-icon" id="btnTheme" onclick="toggleTheme()" title="تبديل المظهر">🌙</button>
         <button class="btn-icon" onclick="showColorPicker()" title="تخصيص الألوان">🎨</button>
+        <button class="btn-icon" onclick="showMeetingsModal()" title="مواعيد المكتب" id="btnMeetings">🤝</button>
         <button class="btn-icon" onclick="showClientFiles()" title="ملفات الموكلين" id="btnClients">🧩</button>
         <button class="btn-icon" onclick="showGlobalSearch()" title="بحث موحد" id="btnSearch">🔍</button>
         <button class="btn-icon" onclick="printProfessionalReport()" title="تقرير PDF احترافي">🖨️</button>
@@ -1753,6 +1754,21 @@ function rHome(){
 
   if(todayS.length){h+=secHdr('📅','جلسات اليوم')+'<div class="stagger">';todayS.forEach(function(s){h+=card(s);});h+='</div>';}
   if(upcoming.length){h+=secHdr('🔜','قادمة قريباً')+'<div class="stagger">';upcoming.forEach(function(s){h+=card(s);});h+='</div>';}
+  // ── مواعيد المكتب اليوم ──
+  var todayMeetings=officeMeetings.filter(function(m){return m.date===today();}).sort(function(a,b){return a.time.localeCompare(b.time);});
+  if(todayMeetings.length){
+    h+=secHdr('📆','مواعيد المكتب اليوم');
+    todayMeetings.forEach(function(m){
+      var typeIcons={'normal':'📋','urgent':'🔴','followup':'🔄','signing':'✍️'};
+      h+='<div onclick="showMeetingsModal()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 13px;margin-bottom:7px;cursor:pointer;display:flex;align-items:center;gap:10px">';
+      h+='<div style="width:38px;height:38px;border-radius:10px;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+(typeIcons[m.type]||'📋')+'</div>';
+      h+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+m.clientName+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">⏰ '+m.time+(m.duration?' · '+m.duration+' دقيقة':'')+(m.caseNum?' · 📋 '+m.caseNum:'')+'</div></div>';
+      if(m.phone)h+='<a href="https://wa.me/'+m.phone.replace(/[^0-9]/g,'')+'" onclick="event.stopPropagation()" style="background:rgba(37,211,102,.1);color:#25d366;border:1px solid rgba(37,211,102,.2);border-radius:8px;padding:5px 10px;font-size:11px;text-decoration:none;font-weight:700">💬</a>';
+      h+='</div>';
+    });
+  }
+
   h+=rWeek();
   h+='<div style="background:rgba(16,163,127,0.08);border:1px solid rgba(16,163,127,0.2);border-radius:var(--r-md);padding:14px;margin-top:14px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="go(\'ai\')">';
   h+='<div style="font-size:28px">⚖️</div><div><div style="font-size:13px;font-weight:700;color:#2ecc9a">سعود – مستشارك القانوني</div><div style="font-size:11px;color:var(--text3);margin-top:3px">اسأله عن جلساتك أو أي سؤال قانوني</div></div><div style="margin-right:auto;font-size:18px;color:#10a37f">›</div>';
@@ -3427,6 +3443,7 @@ openDB().then(function(){return dbAll();}).then(function(rows){
   logActivity('🚀 فتح التطبيق','');
   render();
   initSwipeGestures();
+  rescheduleAllMeetingReminders();
   // Show PIN lock if enabled
   if(pinEnabled&&pinCode){pinLocked=true;showPinLock();}
   // Apply hidden tabs
@@ -8094,6 +8111,197 @@ function showAddClientForm(){
     saveClientProfiles();toast('✅ تم إضافة الموكل');document.getElementById('addClientModal').remove();showClientFiles();
   };
   document.body.appendChild(modal.el);
+}
+
+/* ════════════════════════════════════════════════════════
+   📆 اجتماعات المكتب
+════════════════════════════════════════════════════════ */
+var officeMeetings=[];
+try{officeMeetings=JSON.parse(localStorage.getItem('j_meetings')||'[]');}catch(e){}
+function saveMeetings(){try{localStorage.setItem('j_meetings',JSON.stringify(officeMeetings));}catch(e){}}
+
+function showMeetingsModal(){
+  var modal=makeModal('meetingsModal','📆 اجتماعات المكتب');
+  var b=modal.box;
+
+  var now=new Date();
+  var upcoming=officeMeetings.filter(function(m){return new Date(m.date+'T'+m.time)>=now;}).sort(function(a,b){return(a.date+a.time).localeCompare(b.date+b.time);});
+  var past=officeMeetings.filter(function(m){return new Date(m.date+'T'+m.time)<now;}).sort(function(a,b){return b.date.localeCompare(a.date);});
+
+  var h='<button onclick="showAddMeetingForm()" style="width:100%;background:linear-gradient(135deg,var(--gold),#9a7030);color:#040608;border-radius:var(--r-md);padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;font-family:Tajawal,sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 2px 14px rgba(200,168,75,.3)">📅 + تحديد موعد جديد</button>';
+
+  if(!officeMeetings.length){
+    h+='<div style="text-align:center;padding:36px 0"><div style="font-size:52px;opacity:.15;margin-bottom:10px">📆</div><div style="color:var(--text3);font-size:13px">لا توجد مواعيد مكتبية</div></div>';
+  } else {
+    if(upcoming.length){
+      h+=secHdr('📅','القادمة ('+upcoming.length+')');
+      upcoming.forEach(function(m){h+=renderMeetingCard(m,false);});
+    }
+    if(past.length){
+      h+=secHdr('🗂️','السابقة ('+past.length+')');
+      past.slice(0,5).forEach(function(m){h+=renderMeetingCard(m,true);});
+    }
+  }
+  b.innerHTML+=h;
+
+  window.showAddMeetingForm=function(){buildMeetingForm(null,b);};
+  document.body.appendChild(modal.el);
+}
+
+function renderMeetingCard(m,isPast){
+  var now=new Date();
+  var mDate=new Date(m.date+'T'+m.time);
+  var diff=mDate-now;
+  var diffHrs=Math.round(diff/3600000);
+  var diffDays=Math.round(diff/86400000);
+  var countdown='';
+  if(!isPast){
+    if(diffHrs<1)countdown='<span style="color:#f57070;font-weight:700;font-size:10px">خلال أقل من ساعة!</span>';
+    else if(diffHrs<24)countdown='<span style="color:#f0b040;font-weight:700;font-size:10px">خلال '+diffHrs+' ساعة</span>';
+    else countdown='<span style="color:#28b870;font-size:10px">بعد '+diffDays+' يوم</span>';
+  }
+
+  var dayNames=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  var dayName=dayNames[mDate.getDay()];
+  var h='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:13px;margin-bottom:9px;'+(isPast?'opacity:.65':'')+'border-right:3px solid '+(isPast?'var(--text3)':m.type==='urgent'?'var(--red)':m.type==='followup'?'var(--blue)':'var(--gold)')+'">';
+
+  // Header row
+  h+='<div style="display:flex;align-items:flex-start;gap:11px;margin-bottom:9px">';
+  h+='<div style="background:'+(isPast?'var(--surface3)':m.type==='urgent'?'var(--red-a)':m.type==='followup'?'var(--blue-a)':'var(--gold-a10)')+';border:1px solid '+(isPast?'var(--border)':m.type==='urgent'?'rgba(224,69,85,.3)':m.type==='followup'?'rgba(74,142,245,.3)':'var(--gold-a20)')+';border-radius:11px;padding:8px 11px;text-align:center;flex-shrink:0;min-width:52px">';
+  h+='<div style="font-size:17px;font-weight:900;color:'+(isPast?'var(--text2)':m.type==='urgent'?'#f57070':m.type==='followup'?'var(--blue)':'var(--gold2)')+'">'+m.date.split('-')[2]+'</div>';
+  h+='<div style="font-size:9px;color:var(--text3);margin-top:1px">'+dayName+'</div></div>';
+
+  h+='<div style="flex:1">';
+  h+='<div style="font-size:14px;font-weight:700;color:var(--text)">'+m.clientName+'</div>';
+  h+='<div style="font-size:11px;color:var(--text3);margin-top:2px">⏰ '+m.time+(m.duration?' · '+m.duration+' دقيقة':'')+(m.caseNum?' · 📋 '+m.caseNum:'')+'</div>';
+  h+='<div style="margin-top:4px">'+countdown+'</div></div>';
+
+  h+='<div style="display:flex;flex-direction:column;gap:4px">';
+  if(!isPast)h+='<button onclick="editMeeting(\''+m.id+'\')" style="background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:7px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:Tajawal,sans-serif">✏️</button>';
+  h+='<button onclick="deleteMeeting(\''+m.id+'\')" style="background:var(--red-a);color:#f57070;border:1px solid rgba(224,69,85,.3);border-radius:7px;padding:4px 8px;font-size:10px;cursor:pointer">🗑️</button>';
+  h+='</div></div>';
+
+  // Type badge
+  var typeLabels={'normal':'📋 استشارة عادية','urgent':'🔴 عاجل','followup':'🔄 متابعة','signing':'✍️ توقيع وثيقة'};
+  h+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:'+(m.notes?'9':'0')+'px">';
+  h+='<span style="font-size:10px;background:var(--surface3);color:var(--text3);border-radius:8px;padding:2px 9px;font-weight:600">'+(typeLabels[m.type]||m.type)+'</span>';
+  if(m.phone)h+='<a href="https://wa.me/'+m.phone.replace(/[^0-9]/g,'')+'" style="font-size:10px;color:#25d366;text-decoration:none;background:rgba(37,211,102,.1);border-radius:8px;padding:2px 9px;border:1px solid rgba(37,211,102,.2)">💬 واتساب</a>';
+  h+='</div>';
+
+  if(m.notes)h+='<div style="background:var(--surface3);border-radius:9px;padding:9px 11px;font-size:12px;color:var(--text2);line-height:1.7">'+m.notes+'</div>';
+
+  h+='</div>';
+  return h;
+}
+
+function buildMeetingForm(existingId,container){
+  var existing=existingId?officeMeetings.find(function(x){return x.id===existingId;}):null;
+  var old=document.getElementById('meetingForm');if(old)old.remove();
+
+  var fh='<div id="meetingForm" style="background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
+  fh+='<div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:12px">'+(existing?'✏️ تعديل الموعد':'📅 موعد جديد')+'</div>';
+
+  // Client name
+  fh+='<div style="margin-bottom:9px"><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px;letter-spacing:.05em">👤 اسم الموكل *</label>';
+  fh+='<input id="mtClient" type="text" placeholder="اسم الموكل..." dir="rtl" value="'+(existing?existing.clientName:'')+'" list="clientSuggestions" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif">';
+  // Suggestions from existing clients
+  var allClientNames=getAllClients().map(function(c){return c.name;});
+  fh+='<datalist id="clientSuggestions">'+allClientNames.map(function(n){return'<option value="'+n+'">';}).join('')+'</datalist></div>';
+
+  // Date & Time
+  fh+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">';
+  fh+='<div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">📅 التاريخ *</label>';
+  fh+='<input id="mtDate" type="date" value="'+(existing?existing.date:today())+'" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text);color-scheme:dark"></div>';
+  fh+='<div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">⏰ الوقت *</label>';
+  fh+='<input id="mtTime" type="time" value="'+(existing?existing.time:'09:00')+'" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)"></div>';
+  fh+='</div>';
+
+  // Duration & Type
+  fh+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">';
+  fh+='<div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">⏱️ المدة (دقيقة)</label>';
+  fh+='<input id="mtDuration" type="number" value="'+(existing?existing.duration:'60')+'" min="15" step="15" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)"></div>';
+  fh+='<div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">🏷️ نوع الاجتماع</label>';
+  fh+='<select id="mtType" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text)">';
+  [['normal','📋 استشارة عادية'],['followup','🔄 متابعة'],['signing','✍️ توقيع وثيقة'],['urgent','🔴 عاجل']].forEach(function(t){
+    fh+='<option value="'+t[0]+'"'+(existing&&existing.type===t[0]?' selected':'')+'>'+t[1]+'</option>';
+  });
+  fh+='</select></div></div>';
+
+  // Phone & Case
+  fh+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">';
+  fh+='<div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">📱 جوال للتذكير</label>';
+  fh+='<input id="mtPhone" type="tel" placeholder="+966..." dir="ltr" value="'+(existing?existing.phone||'':'')+'" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text)"></div>';
+  fh+='<div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">📋 رقم القضية</label>';
+  fh+='<input id="mtCaseNum" type="text" placeholder="اختياري" dir="rtl" value="'+(existing?existing.caseNum||'':'')+'" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif"></div>';
+  fh+='</div>';
+
+  // Notes
+  fh+='<div style="margin-bottom:12px"><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">📝 ملاحظات الاجتماع</label>';
+  fh+='<textarea id="mtNotes" placeholder="موضوع الاجتماع، نقاط للنقاش..." dir="rtl" rows="3" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif;line-height:1.7;resize:none">'+(existing?existing.notes||'':'')+'</textarea></div>';
+
+  fh+='<div style="display:grid;grid-template-columns:1fr auto;gap:7px">';
+  fh+='<button onclick="saveMeeting('+(existing?'\''+existing.id+'\'':'null')+')" style="background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:Tajawal,sans-serif">💾 '+(existing?'تعديل':'حفظ الموعد')+'</button>';
+  fh+='<button onclick="document.getElementById(\'meetingForm\').remove()" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px 14px;font-size:13px;cursor:pointer">إلغاء</button>';
+  fh+='</div></div>';
+
+  container.insertAdjacentHTML('afterbegin',fh);
+}
+
+function saveMeeting(existingId){
+  var cl=document.getElementById('mtClient');var dt=document.getElementById('mtDate');var tm=document.getElementById('mtTime');
+  if(!cl||!cl.value.trim()||!dt||!dt.value||!tm||!tm.value){toast('⚠️ أدخل الموكل والتاريخ والوقت');return;}
+  var dur=document.getElementById('mtDuration');var tp=document.getElementById('mtType');
+  var ph=document.getElementById('mtPhone');var cn=document.getElementById('mtCaseNum');var nt=document.getElementById('mtNotes');
+  var meetObj={id:existingId||'mt_'+Date.now(),clientName:cl.value.trim(),date:dt.value,time:tm.value,duration:dur?parseInt(dur.value)||60:60,type:tp?tp.value:'normal',phone:ph?ph.value.trim():'',caseNum:cn?cn.value.trim():'',notes:nt?nt.value.trim():''};
+  if(existingId){officeMeetings=officeMeetings.map(function(x){return x.id===existingId?meetObj:x;});}
+  else{officeMeetings.push(meetObj);}
+  saveMeetings();
+  logActivity(existingId?'✏️ تعديل موعد':'📅 موعد جديد',meetObj.clientName+' — '+meetObj.date+' '+meetObj.time);
+  scheduleMeetingReminder(meetObj);
+  toast('✅ تم حفظ الموعد');
+  document.getElementById('meetingsModal').remove();
+  showMeetingsModal();
+}
+
+function deleteMeeting(id){
+  if(!confirm('حذف هذا الموعد؟'))return;
+  officeMeetings=officeMeetings.filter(function(x){return x.id!==id;});
+  saveMeetings();toast('🗑️ تم الحذف');
+  document.getElementById('meetingsModal').remove();
+  showMeetingsModal();
+}
+
+function editMeeting(id){
+  var modal=document.getElementById('meetingsModal');
+  if(modal){var b=modal.querySelector('div[style*="border-radius:22px"]');if(b)buildMeetingForm(id,b);}
+}
+
+function scheduleMeetingReminder(m){
+  if(!notifOn||Notification.permission!=='granted')return;
+  var mTime=new Date(m.date+'T'+m.time+':00');
+  var now=new Date();
+  // تنبيه قبل ساعة
+  var d1h=mTime-now-3600000;
+  if(d1h>0)setTimeout(function(){
+    new Notification('📅 موعد مكتبي بعد ساعة',{body:'موعد مع '+m.clientName+(m.caseNum?' — '+m.caseNum:''),tag:'meeting-1h-'+m.id});
+  },d1h);
+  // تنبيه قبل 15 دقيقة
+  var d15=mTime-now-900000;
+  if(d15>0)setTimeout(function(){
+    new Notification('⏰ موعد مكتبي بعد 15 دقيقة',{body:m.clientName+(m.notes?' — '+m.notes.substring(0,50):''),requireInteraction:true,tag:'meeting-15m-'+m.id});
+  },d15);
+  // تنبيه يوم قبل (8م)
+  var dayBefore=new Date(m.date+'T20:00:00');dayBefore.setDate(dayBefore.getDate()-1);
+  var dDay=dayBefore-now;
+  if(dDay>0)setTimeout(function(){
+    new Notification('📆 تذكير موعد غداً',{body:'موعد مع '+m.clientName+' غداً الساعة '+m.time,tag:'meeting-day-'+m.id});
+  },dDay);
+}
+
+// إعادة جدولة التنبيهات عند بدء التطبيق
+function rescheduleAllMeetingReminders(){
+  var now=new Date();
+  officeMeetings.filter(function(m){return new Date(m.date+'T'+m.time)>now;}).forEach(scheduleMeetingReminder);
 }
 
 var _origToggleNotif=toggleNotif;
