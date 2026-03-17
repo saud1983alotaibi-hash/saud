@@ -2335,7 +2335,7 @@ function openDet(id){
   b+='<button onclick="showColorLabelPicker('+s.id+')" style="background:rgba(200,168,75,.08);color:var(--gold2);border:1px solid rgba(200,168,75,.2);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">🎨 تصنيف بلون</button>';
   b+='</div>';
 
-  b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--border2)"><div class="note-box-hdr" style="color:var(--text2)">💬 ملاحظة سريعة</div><textarea id="qn-'+s.id+'" class="note-box textarea" placeholder="ملاحظة سريعة..." dir="rtl" rows="2">'+(s.quickNote||'')+'</textarea><button onclick="saveQuickNote('+s.id+')" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ</button></div>';
+  b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--border2)"><div class="note-box-hdr" style="color:var(--text2);display:flex;align-items:center;justify-content:space-between">💬 ملاحظة سريعة<button id="voiceBtn_qn-'+s.id+'" onclick="startVoiceNote(\'qn-'+s.id+'\')" style="background:var(--surface3);color:var(--text3);border:1px solid var(--border2);border-radius:7px;padding:2px 8px;font-size:11px;cursor:pointer;font-family:Tajawal,sans-serif">🎙️</button></div><textarea id="qn-'+s.id+'" class="note-box textarea" placeholder="ملاحظة سريعة..." dir="rtl" rows="2">'+(s.quickNote||'')+'</textarea><button onclick="saveQuickNote('+s.id+')" style="width:100%;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ</button></div>';
   b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--gold-a20)"><div class="note-box-hdr" style="color:var(--gold2)">🔒 مذكرة سرية</div><textarea id="memo-'+s.id+'" placeholder="ملاحظاتك السرية..." dir="rtl" rows="4" style="width:100%;background:transparent;font-size:12px;color:var(--text);resize:none;min-height:72px;line-height:1.6">'+(s.memo||'')+'</textarea><button onclick="saveMemo('+s.id+')" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ المذكرة</button></div>';
   b+='<div class="note-box" style="background:var(--surface2);border:1px solid var(--blue-a)"><div class="note-box-hdr" style="color:var(--blue)">📝 محضر الجلسة</div><textarea id="min-'+s.id+'" placeholder="سجّل ما دار في الجلسة..." dir="rtl" rows="5" style="width:100%;background:transparent;font-size:12px;color:var(--text);resize:none;min-height:90px;line-height:1.6">'+(s.minutes||'')+'</textarea><button onclick="saveMinutes('+s.id+')" style="width:100%;background:var(--blue-a);color:var(--blue);border:1px solid rgba(74,144,217,.3);border-radius:9px;padding:7px;font-weight:700;font-size:11px;cursor:pointer;margin-top:5px">💾 حفظ المحضر</button></div>';
   b+=attHTML(s);
@@ -2974,6 +2974,53 @@ function delFee(id){fees=fees.filter(function(x){return x.id!==id;});saveFees();
 ═══════════════════════════════════════════════════════════ */
 function rTools(){
   var h='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2);margin-bottom:14px">🛠️ الأدوات القانونية</div>';
+
+  // ── الحاسبات المتخصصة ──
+  h+=secHdr('📐','الحاسبات القانونية المتخصصة');
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
+  [
+    {icon:'💼',title:'مكافأة نهاية الخدمة',fn:'showGratuityCal()'},
+    {icon:'⏱️',title:'الفوائد التأخيرية',fn:'showInterestCal()'},
+    {icon:'👨‍👩‍👧',title:'حاسبة النفقة',fn:'showAlimonyСal()'},
+    {icon:'⚖️',title:'المواعيد القانونية',fn:'showFeeCalcModal()'},
+  ].forEach(function(c){
+    h+='<button onclick="'+c.fn+'" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 10px;cursor:pointer;text-align:center;transition:all .12s;font-family:Tajawal,sans-serif" onmousedown="this.style.transform=\'scale(.96)\'" onmouseup="this.style.transform=\'scale(1)\'">';
+    h+='<div style="font-size:24px;margin-bottom:6px">'+c.icon+'</div>';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text)">'+c.title+'</div>';
+    h+='</button>';
+  });
+  h+='</div>';
+
+  // ── المتابعة الذكية ──
+  h+=secHdr('🔔','المتابعة الذكية');
+  h+='<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:14px">';
+  [
+    {icon:'📜',title:'الوكالات الشرعية',desc:'متابعة تواريخ الانتهاء',fn:'showPoATracker()'},
+    {icon:'⚙️',title:'أوامر التنفيذ',desc:'تتبع الأحكام مرحلة بمرحلة',fn:'showExecutionTracker()'},
+    {icon:'🏅',title:'التراخيص والاشتراكات',desc:'تنبيه قبل الانتهاء بشهر',fn:'showLicenseTracker()'},
+  ].forEach(function(t){
+    h+='<button onclick="'+t.fn+'" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;font-family:Tajawal,sans-serif;text-align:right;width:100%">';
+    h+='<span style="font-size:22px;flex-shrink:0">'+t.icon+'</span>';
+    h+='<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+t.title+'</div>';
+    h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+t.desc+'</div></div>';
+    h+='<span style="margin-right:auto;font-size:16px;color:var(--text3)">←</span>';
+    h+='</button>';
+  });
+  h+='</div>';
+
+  // ── الأتمتة ──
+  h+=secHdr('⚡','أتمتة وإنتاجية');
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
+  [
+    {icon:'🔄',title:'جلسات مكررة',fn:'showRecurringModal()'},
+    {icon:'📊',title:'تصدير Excel',fn:'exportToExcel()'},
+  ].forEach(function(c){
+    h+='<button onclick="'+c.fn+'" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 10px;cursor:pointer;text-align:center;font-family:Tajawal,sans-serif">';
+    h+='<div style="font-size:24px;margin-bottom:6px">'+c.icon+'</div>';
+    h+='<div style="font-size:11px;font-weight:700;color:var(--text)">'+c.title+'</div>';
+    h+='</button>';
+  });
+  h+='</div>';
 
   // Charts section
   h+=secHdr('📊','إحصائيات تفاعلية');
@@ -7394,6 +7441,445 @@ function addChecklistItem(sid){
   items.push({text:inp.value.trim(),done:false});
   s.checklist=items;
   dbPut(s).then(function(){toast('✅ تمت الإضافة');render();});
+}
+
+/* ════════════════════════════════════════════════════════
+   📐 حاسبة مكافأة نهاية الخدمة
+════════════════════════════════════════════════════════ */
+function showGratuityCal(){
+  var modal=makeModal('gratuityCal','💼 حاسبة مكافأة نهاية الخدمة');
+  var b=modal.box;
+  b.innerHTML+=`
+  <div style="display:grid;gap:10px;margin-bottom:14px">
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">الراتب الأساسي (ريال)</label>
+    <input id="grSalary" type="number" placeholder="مثال: 8000" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif"></div>
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">مدة الخدمة</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <input id="grYears" type="number" placeholder="السنوات" min="0" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif">
+    <input id="grMonths" type="number" placeholder="الأشهر" min="0" max="11" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif">
+    </div></div>
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">سبب الإنهاء</label>
+    <select id="grReason" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)">
+    <option value="employer">إنهاء من صاحب العمل</option>
+    <option value="employee">استقالة الموظف</option>
+    </select></div>
+  </div>
+  <button onclick="calcGratuity()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif;margin-bottom:10px">احسب المكافأة</button>
+  <div id="grResult"></div>`;
+  document.body.appendChild(modal.el);
+}
+function calcGratuity(){
+  var sal=parseFloat(document.getElementById('grSalary').value)||0;
+  var yrs=parseInt(document.getElementById('grYears').value)||0;
+  var mon=parseInt(document.getElementById('grMonths').value)||0;
+  var reason=document.getElementById('grReason').value;
+  if(!sal){toast('⚠️ أدخل الراتب');return;}
+  var totalMonths=yrs*12+mon;
+  if(totalMonths<24){document.getElementById('grResult').innerHTML='<div style="background:var(--red-a);border:1px solid rgba(224,69,85,.3);border-radius:var(--r-md);padding:12px;color:#f57070;font-size:13px;text-align:center">⚠️ مدة الخدمة أقل من سنتين — لا يستحق مكافأة نهاية خدمة وفق نظام العمل.</div>';return;}
+  var daily=sal/30;
+  var reward=0;
+  // وفق نظام العمل السعودي
+  if(reason==='employer'){
+    // الفصل: راتب شهر عن كل سنة للسنوات 1-5، شهرين عن كل سنة فوق 5
+    var first5=Math.min(yrs,5)*sal;
+    var above5=yrs>5?(yrs-5)*sal*2:0;
+    reward=first5+above5+(mon/12)*sal;
+  } else {
+    // الاستقالة: ثلث الراتب للسنوات 2-5، ثلثان 5-10، كامل فوق 10
+    if(yrs<2){reward=0;}
+    else if(yrs<=5){reward=(yrs+(mon/12))*(sal/3);}
+    else if(yrs<=10){reward=(yrs+(mon/12))*(sal*2/3);}
+    else{reward=(yrs+(mon/12))*sal;}
+  }
+  var el=document.getElementById('grResult');
+  el.innerHTML='<div style="background:var(--green-a);border:1px solid rgba(40,184,112,.3);border-radius:var(--r-md);padding:14px;text-align:center">'+
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:4px">المكافأة المستحقة (تقريبي)</div>'+
+    '<div style="font-size:28px;font-weight:900;color:#28b870">'+reward.toLocaleString('ar-SA',{maximumFractionDigits:0})+' ر.س</div>'+
+    '<div style="font-size:10px;color:var(--text3);margin-top:6px">مدة الخدمة: '+yrs+' سنة '+mon+' شهر</div>'+
+    '<div style="font-size:9px;color:var(--text3);margin-top:4px">* تقديري وفق نظام العمل السعودي — يُنصح بمراجعة المختص</div></div>';
+}
+
+/* ════════════════════════════════════════════════════════
+   ⏱️ حاسبة الفوائد التأخيرية
+════════════════════════════════════════════════════════ */
+function showInterestCal(){
+  var modal=makeModal('interestCal','⏱️ حاسبة الفوائد التأخيرية');
+  var b=modal.box;
+  b.innerHTML+=`
+  <div style="display:grid;gap:10px;margin-bottom:14px">
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">المبلغ الأصلي (ريال)</label>
+    <input id="intPrincipal" type="number" placeholder="مثال: 50000" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">تاريخ المطالبة</label>
+    <input id="intFrom" type="date" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text);color-scheme:dark"></div>
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">تاريخ التنفيذ</label>
+    <input id="intTo" type="date" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text);color-scheme:dark"></div>
+    </div>
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">نسبة الفائدة السنوية (%)</label>
+    <input id="intRate" type="number" value="2" step="0.5" min="0" max="20" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)"></div>
+  </div>
+  <button onclick="calcInterest()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif;margin-bottom:10px">احسب الفوائد</button>
+  <div id="intResult"></div>`;
+  document.body.appendChild(modal.el);
+}
+function calcInterest(){
+  var p=parseFloat(document.getElementById('intPrincipal').value)||0;
+  var from=document.getElementById('intFrom').value;
+  var to=document.getElementById('intTo').value;
+  var rate=parseFloat(document.getElementById('intRate').value)||2;
+  if(!p||!from||!to){toast('⚠️ أدخل جميع البيانات');return;}
+  var days=Math.max(0,Math.round((new Date(to)-new Date(from))/86400000));
+  var interest=p*(rate/100)*(days/365);
+  var total=p+interest;
+  document.getElementById('intResult').innerHTML='<div style="background:var(--gold-a10);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:14px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div style="text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">الفوائد</div><div style="font-size:20px;font-weight:900;color:var(--gold2)">'+interest.toLocaleString('ar-SA',{maximumFractionDigits:2})+'</div></div>'
+    +'<div style="text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">الإجمالي</div><div style="font-size:20px;font-weight:900;color:var(--gold2)">'+total.toLocaleString('ar-SA',{maximumFractionDigits:2})+'</div></div>'
+    +'</div><div style="font-size:10px;color:var(--text3);text-align:center;margin-top:8px">'+days+' يوم · نسبة '+rate+'% سنوياً</div></div>';
+}
+
+/* ════════════════════════════════════════════════════════
+   👨‍👩‍👧 حاسبة النفقة
+════════════════════════════════════════════════════════ */
+function showAlimonyСal(){
+  var modal=makeModal('alimonyCal','👨‍👩‍👧 حاسبة النفقة التقديرية');
+  var b=modal.box;
+  b.innerHTML+=`
+  <div style="background:var(--amber-a);border:1px solid rgba(216,144,48,.3);border-radius:10px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--amber)">⚠️ هذه الحاسبة تقديرية فقط — النفقة الفعلية يحددها القاضي.</div>
+  <div style="display:grid;gap:10px;margin-bottom:14px">
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">دخل الملزم الشهري (ريال)</label>
+    <input id="alIncome" type="number" placeholder="مثال: 15000" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif"></div>
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">عدد الأطفال المستحقين</label>
+    <input id="alChildren" type="number" value="1" min="0" max="15" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)"></div>
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">نفقة الزوجة</label>
+    <select id="alSpouse" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)">
+    <option value="yes">تشمل نفقة الزوجة</option><option value="no">بدون نفقة الزوجة</option></select></div>
+  </div>
+  <button onclick="calcAlimony()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif;margin-bottom:10px">احسب النفقة</button>
+  <div id="alResult"></div>`;
+  document.body.appendChild(modal.el);
+}
+function calcAlimony(){
+  var income=parseFloat(document.getElementById('alIncome').value)||0;
+  var children=parseInt(document.getElementById('alChildren').value)||0;
+  var withSpouse=document.getElementById('alSpouse').value==='yes';
+  if(!income){toast('⚠️ أدخل الدخل');return;}
+  // تقدير مبني على نسب شائعة في القضاء السعودي
+  var childRate=children>0?(children===1?0.15:children===2?0.22:children===3?0.28:Math.min(0.35,0.28+(children-3)*0.03)):0;
+  var spouseRate=withSpouse?0.15:0;
+  var totalRate=childRate+spouseRate;
+  var childAlimony=income*childRate;
+  var spouseAlimony=income*spouseRate;
+  var total=income*totalRate;
+  document.getElementById('alResult').innerHTML='<div style="background:var(--blue-a);border:1px solid rgba(74,142,245,.3);border-radius:var(--r-md);padding:14px">'
+    +(children>0?'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;color:var(--text2)">نفقة الأطفال ('+children+')</span><span style="font-weight:700;color:var(--blue)">'+childAlimony.toLocaleString('ar-SA',{maximumFractionDigits:0})+' ر.س</span></div>':'')
+    +(withSpouse?'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;color:var(--text2)">نفقة الزوجة</span><span style="font-weight:700;color:var(--blue)">'+spouseAlimony.toLocaleString('ar-SA',{maximumFractionDigits:0})+' ر.س</span></div>':'')
+    +'<div style="border-top:1px solid rgba(74,142,245,.2);padding-top:8px;display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700;color:var(--text)">الإجمالي الشهري</span><span style="font-size:18px;font-weight:900;color:var(--blue)">'+total.toLocaleString('ar-SA',{maximumFractionDigits:0})+' ر.س</span></div>'
+    +'<div style="font-size:9px;color:var(--text3);margin-top:6px;text-align:center">تقديري — القاضي هو من يحدد النفقة الفعلية</div></div>';
+}
+
+/* ════════════════════════════════════════════════════════
+   📜 متابعة الوكالات الشرعية
+════════════════════════════════════════════════════════ */
+var powerOfAttorneys=[];
+try{powerOfAttorneys=JSON.parse(localStorage.getItem('j_poa')||'[]');}catch(e){}
+function savePoA(){try{localStorage.setItem('j_poa',JSON.stringify(powerOfAttorneys));}catch(e){}}
+
+function showPoATracker(){
+  var modal=makeModal('poaTracker','📜 الوكالات الشرعية');
+  var b=modal.box;
+  var h='<button onclick="showAddPoAForm()" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;font-family:Tajawal,sans-serif">+ إضافة وكالة</button>';
+  if(!powerOfAttorneys.length){h+='<div style="text-align:center;padding:20px;color:var(--text3)"><div style="font-size:36px;opacity:.2;margin-bottom:8px">📜</div>لا توجد وكالات مسجلة</div>';}
+  else{
+    powerOfAttorneys.forEach(function(p){
+      var exp=new Date(p.expiry+'T00:00:00');
+      var now=new Date();
+      var daysLeft=Math.round((exp-now)/86400000);
+      var clr=daysLeft<0?'#f57070':daysLeft<=30?'#f0b040':'#28b870';
+      var status=daysLeft<0?'منتهية منذ '+Math.abs(daysLeft)+' يوم':daysLeft===0?'تنتهي اليوم!':'متبقي '+daysLeft+' يوم';
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px;border-right:3px solid '+clr+'">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      h+='<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+p.name+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3);margin-top:2px">'+p.type+(p.caseNum?' · '+p.caseNum:'')+'</div></div>';
+      h+='<div style="text-align:left"><div style="font-size:11px;font-weight:700;color:'+clr+'">'+status+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3)">'+p.expiry+'</div></div></div>';
+      h+='<div style="margin-top:8px;display:flex;justify-content:flex-end"><button onclick="deletePoA(\''+p.id+'\')" style="background:var(--red-a);color:#f57070;border:1px solid rgba(224,69,85,.3);border-radius:7px;padding:4px 9px;font-size:10px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ حذف</button></div>';
+      h+='</div>';
+    });
+  }
+  b.innerHTML+=h;
+  window.showAddPoAForm=function(){
+    var formH='<div id="poaForm" style="background:var(--surface3);border-radius:var(--r-md);padding:12px;margin-bottom:12px">';
+    formH+='<input id="poaName" type="text" placeholder="اسم الموكّل *" dir="rtl" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block;font-family:Tajawal,sans-serif">';
+    formH+='<input id="poaType" type="text" placeholder="نوع الوكالة (قضائية، عامة...)" dir="rtl" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block;font-family:Tajawal,sans-serif">';
+    formH+='<input id="poaCaseNum" type="text" placeholder="رقم القضية (اختياري)" dir="rtl" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block;font-family:Tajawal,sans-serif">';
+    formH+='<div style="margin-bottom:7px"><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">تاريخ الانتهاء</label>';
+    formH+='<input id="poaExpiry" type="date" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);color-scheme:dark"></div>';
+    formH+='<button onclick="addPoA()" style="width:100%;background:var(--gold);color:#040608;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">حفظ</button></div>';
+    b.insertAdjacentHTML('afterbegin',formH);
+  };
+  window.addPoA=function(){
+    var n=document.getElementById('poaName');var e=document.getElementById('poaExpiry');
+    if(!n||!n.value.trim()||!e||!e.value){toast('⚠️ أدخل الاسم وتاريخ الانتهاء');return;}
+    var t=document.getElementById('poaType');var c=document.getElementById('poaCaseNum');
+    powerOfAttorneys.push({id:'poa_'+Date.now(),name:n.value.trim(),type:t?t.value.trim():'',caseNum:c?c.value.trim():'',expiry:e.value});
+    savePoA();toast('✅ تم حفظ الوكالة');document.getElementById('poaTracker').remove();showPoATracker();
+  };
+  window.deletePoA=function(id){powerOfAttorneys=powerOfAttorneys.filter(function(x){return x.id!==id;});savePoA();document.getElementById('poaTracker').remove();showPoATracker();};
+  document.body.appendChild(modal.el);
+}
+
+/* ════════════════════════════════════════════════════════
+   ⚙️ متابعة أوامر التنفيذ
+════════════════════════════════════════════════════════ */
+var executionOrders=[];
+try{executionOrders=JSON.parse(localStorage.getItem('j_execution')||'[]');}catch(e){}
+function saveExecution(){try{localStorage.setItem('j_execution',JSON.stringify(executionOrders));}catch(e){}}
+
+var EXECUTION_STAGES=['صدور الحكم','تقديم طلب التنفيذ','قيد الطلب','الإخطار بالتنفيذ','الحجز على الأموال','البيع أو التسليم','إغلاق ملف التنفيذ'];
+
+function showExecutionTracker(){
+  var modal=makeModal('execTracker','⚙️ أوامر التنفيذ');
+  var b=modal.box;
+  var h='<button onclick="showAddExecForm()" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;font-family:Tajawal,sans-serif">+ إضافة أمر تنفيذ</button>';
+  if(!executionOrders.length){h+='<div style="text-align:center;padding:20px;color:var(--text3)"><div style="font-size:36px;opacity:.2;margin-bottom:8px">⚙️</div>لا توجد أوامر تنفيذ</div>';}
+  else{
+    executionOrders.forEach(function(e){
+      var si=EXECUTION_STAGES.indexOf(e.stage);
+      var pct=si>=0?Math.round(((si+1)/EXECUTION_STAGES.length)*100):0;
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">';
+      h+='<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+e.caseNum+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3);margin-top:1px">'+e.party+'</div></div>';
+      h+='<div style="background:var(--gold-a10);border:1px solid var(--gold-a20);border-radius:8px;padding:3px 8px;font-size:10px;font-weight:700;color:var(--gold2)">'+pct+'%</div></div>';
+      h+='<div style="background:var(--surface3);border-radius:4px;height:5px;margin-bottom:8px;overflow:hidden"><div style="height:100%;background:var(--gold);width:'+pct+'%"></div></div>';
+      h+='<div style="font-size:11px;color:var(--text2);margin-bottom:8px">📌 '+e.stage+'</div>';
+      h+='<div style="display:flex;gap:5px;flex-wrap:wrap">';
+      EXECUTION_STAGES.forEach(function(st){
+        var active=st===e.stage;
+        h+='<button onclick="updateExecStage(\''+e.id+'\',\''+st+'\')" style="font-size:9px;padding:3px 7px;border-radius:5px;cursor:pointer;border:1px solid;background:'+(active?'var(--gold)':'var(--surface3)')+';color:'+(active?'#040608':'var(--text3)')+';border-color:'+(active?'var(--gold)':'var(--border2)')+';font-family:Tajawal,sans-serif">'+st+'</button>';
+      });
+      h+='</div>';
+      h+='<div style="margin-top:8px;display:flex;justify-content:flex-end"><button onclick="deleteExec(\''+e.id+'\')" style="background:var(--red-a);color:#f57070;border:1px solid rgba(224,69,85,.3);border-radius:7px;padding:4px 9px;font-size:10px;cursor:pointer;font-family:Tajawal,sans-serif">🗑️ حذف</button></div>';
+      h+='</div>';
+    });
+  }
+  b.innerHTML+=h;
+  window.showAddExecForm=function(){
+    var fh='<div id="execForm" style="background:var(--surface3);border-radius:var(--r-md);padding:12px;margin-bottom:12px">';
+    fh+='<input id="exCaseNum" type="text" placeholder="رقم القضية *" dir="rtl" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block;font-family:Tajawal,sans-serif">';
+    fh+='<input id="exParty" type="text" placeholder="المحكوم عليه" dir="rtl" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block;font-family:Tajawal,sans-serif">';
+    fh+='<input id="exAmount" type="number" placeholder="المبلغ المحكوم به (ريال)" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block">';
+    fh+='<button onclick="addExec()" style="width:100%;background:var(--gold);color:#040608;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">حفظ</button></div>';
+    b.insertAdjacentHTML('afterbegin',fh);
+  };
+  window.addExec=function(){
+    var n=document.getElementById('exCaseNum');if(!n||!n.value.trim()){toast('⚠️ أدخل رقم القضية');return;}
+    var p=document.getElementById('exParty');var a=document.getElementById('exAmount');
+    executionOrders.push({id:'ex_'+Date.now(),caseNum:n.value.trim(),party:p?p.value.trim():'',amount:parseFloat(a?a.value:0)||0,stage:EXECUTION_STAGES[0]});
+    saveExecution();toast('✅ تم الإضافة');document.getElementById('execTracker').remove();showExecutionTracker();
+  };
+  window.updateExecStage=function(id,stage){var e=executionOrders.find(function(x){return x.id===id;});if(e){e.stage=stage;saveExecution();document.getElementById('execTracker').remove();showExecutionTracker();}};
+  window.deleteExec=function(id){executionOrders=executionOrders.filter(function(x){return x.id!==id;});saveExecution();document.getElementById('execTracker').remove();showExecutionTracker();};
+  document.body.appendChild(modal.el);
+}
+
+/* ════════════════════════════════════════════════════════
+   🏅 متابعة التراخيص والاشتراكات
+════════════════════════════════════════════════════════ */
+var licenses=[];
+try{licenses=JSON.parse(localStorage.getItem('j_licenses')||'[]');}catch(e){}
+function saveLicenses(){try{localStorage.setItem('j_licenses',JSON.stringify(licenses));}catch(e){}}
+
+function showLicenseTracker(){
+  var modal=makeModal('licenseTracker','🏅 التراخيص والاشتراكات');
+  var b=modal.box;
+  // Add default suggestions if empty
+  var defaultLicenses=[{name:'ترخيص مزاولة المهنة',icon:'📋'},{name:'عضوية هيئة المحامين',icon:'⚖️'},{name:'ترخيص المكتب التجاري',icon:'🏢'}];
+  var h='<button onclick="showAddLicenseForm()" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:10px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;font-family:Tajawal,sans-serif">+ إضافة ترخيص أو اشتراك</button>';
+  if(!licenses.length){
+    h+='<div style="margin-bottom:12px">';
+    h+='<div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-weight:700">اقتراحات سريعة:</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    defaultLicenses.forEach(function(d){
+      h+='<button onclick="quickAddLicense(\''+d.name+'\',\''+d.icon+'\')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:Tajawal,sans-serif">'+d.icon+' '+d.name+'</button>';
+    });
+    h+='</div></div>';
+    h+='<div style="text-align:center;padding:15px;color:var(--text3)"><div style="font-size:32px;opacity:.2;margin-bottom:8px">🏅</div>لا توجد تراخيص مسجلة</div>';
+  } else {
+    var now=new Date();
+    licenses.sort(function(a,b){return new Date(a.expiry)-new Date(b.expiry);}).forEach(function(l){
+      var exp=new Date(l.expiry+'T00:00:00');
+      var daysLeft=Math.round((exp-now)/86400000);
+      var clr=daysLeft<0?'#f57070':daysLeft<=30?'#f0b040':daysLeft<=90?'var(--amber)':'#28b870';
+      var status=daysLeft<0?'⛔ منتهية منذ '+Math.abs(daysLeft)+' يوم':daysLeft===0?'⚠️ تنتهي اليوم':daysLeft<=30?'⚠️ متبقي '+daysLeft+' يوم':'✅ متبقي '+daysLeft+' يوم';
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:8px;border-right:3px solid '+clr+'">';
+      h+='<div style="display:flex;align-items:center;gap:10px">';
+      h+='<span style="font-size:22px">'+l.icon+'</span>';
+      h+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+l.name+'</div>';
+      h+='<div style="font-size:10px;color:'+clr+';margin-top:2px;font-weight:600">'+status+'</div>';
+      h+='<div style="font-size:10px;color:var(--text3)">ينتهي: '+l.expiry+'</div></div>';
+      h+='<button onclick="deleteLicense(\''+l.id+'\')" style="background:none;color:var(--text3);font-size:14px;cursor:pointer;border:none">✕</button>';
+      h+='</div></div>';
+    });
+  }
+  b.innerHTML+=h;
+
+  window.quickAddLicense=function(name,icon){
+    var exp=prompt('تاريخ الانتهاء (YYYY-MM-DD):');
+    if(!exp)return;
+    licenses.push({id:'lic_'+Date.now(),name:name,icon:icon,expiry:exp});
+    saveLicenses();document.getElementById('licenseTracker').remove();showLicenseTracker();
+  };
+  window.showAddLicenseForm=function(){
+    var fh='<div id="licForm" style="background:var(--surface3);border-radius:var(--r-md);padding:12px;margin-bottom:12px">';
+    fh+='<input id="licName" type="text" placeholder="اسم الترخيص أو الاشتراك *" dir="rtl" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);margin-bottom:7px;display:block;font-family:Tajawal,sans-serif">';
+    fh+='<div style="margin-bottom:7px"><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">تاريخ الانتهاء</label><input id="licExpiry" type="date" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:12px;color:var(--text);color-scheme:dark"></div>';
+    fh+='<button onclick="addLicense()" style="width:100%;background:var(--gold);color:#040608;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">حفظ</button></div>';
+    b.insertAdjacentHTML('afterbegin',fh);
+  };
+  window.addLicense=function(){
+    var n=document.getElementById('licName');var e=document.getElementById('licExpiry');
+    if(!n||!n.value.trim()||!e||!e.value){toast('⚠️ أدخل الاسم وتاريخ الانتهاء');return;}
+    licenses.push({id:'lic_'+Date.now(),name:n.value.trim(),icon:'🏅',expiry:e.value});
+    saveLicenses();toast('✅ تم الحفظ');document.getElementById('licenseTracker').remove();showLicenseTracker();
+  };
+  window.deleteLicense=function(id){licenses=licenses.filter(function(x){return x.id!==id;});saveLicenses();document.getElementById('licenseTracker').remove();showLicenseTracker();};
+  document.body.appendChild(modal.el);
+}
+
+/* ════════════════════════════════════════════════════════
+   🔄 الجلسات المكررة
+════════════════════════════════════════════════════════ */
+function showRecurringModal(){
+  var modal=makeModal('recurringModal','🔄 إنشاء جلسات مكررة');
+  var b=modal.box;
+  b.innerHTML+=`
+  <div style="display:grid;gap:10px;margin-bottom:14px">
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">استنساخ من جلسة موجودة</label>
+    <select id="recBase" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;color:var(--text)">
+    <option value="">— اختر جلسة —</option>
+    ${data.map(function(s){return'<option value="'+s.id+'">'+s.num+' · '+s.court+'</option>';}).join('')}
+    </select></div>
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">التكرار</label>
+    <select id="recInterval" dir="rtl" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)">
+    <option value="7">أسبوعي (كل 7 أيام)</option>
+    <option value="14">كل أسبوعين</option>
+    <option value="30">شهري (كل 30 يوم)</option>
+    </select></div>
+    <div><label style="font-size:10px;color:var(--text3);font-weight:700;display:block;margin-bottom:4px">عدد مرات التكرار</label>
+    <input id="recCount" type="number" value="3" min="1" max="12" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--text)"></div>
+  </div>
+  <button onclick="createRecurringSessions()" style="width:100%;background:var(--gold);color:#040608;border-radius:var(--r-md);padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:Tajawal,sans-serif">إنشاء الجلسات</button>
+  <div id="recResult"></div>`;
+  document.body.appendChild(modal.el);
+}
+
+function createRecurringSessions(){
+  var baseId=parseInt(document.getElementById('recBase').value);
+  var interval=parseInt(document.getElementById('recInterval').value);
+  var count=parseInt(document.getElementById('recCount').value)||3;
+  if(!baseId){toast('⚠️ اختر جلسة');return;}
+  var base=data.find(function(x){return x.id===baseId;});if(!base)return;
+  var created=0;
+  var lastDate=new Date(base.date+'T00:00:00');
+  for(var i=0;i<count;i++){
+    lastDate=new Date(lastDate.getTime()+interval*86400000);
+    var newS=Object.assign({},base,{
+      id:Date.now()+i,
+      date:lastDate.toISOString().split('T')[0],
+      status:'scheduled',
+      memo:'',minutes:'',quickNote:'',checklist:[],attachments:[]
+    });
+    data.push(newS);
+    dbPut(newS);
+    created++;
+  }
+  schedNotifs();
+  toast('✅ تم إنشاء '+created+' جلسات مكررة');
+  document.getElementById('recurringModal').remove();
+  render();
+}
+
+/* ════════════════════════════════════════════════════════
+   📊 تصدير Excel
+════════════════════════════════════════════════════════ */
+function exportToExcel(){
+  if(typeof XLSX==='undefined'){toast('⏳ جارٍ تحميل مكتبة Excel...');var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=function(){doExportExcel();};document.head.appendChild(s);return;}
+  doExportExcel();
+}
+function doExportExcel(){
+  var rows=[['رقم القضية','النوع','المحكمة','المدعي','المدعى عليه','التاريخ','الوقت','الحالة','الأهمية','الموكل','الرقم المرجعي','المرحلة','ملاحظات']];
+  data.forEach(function(s){
+    rows.push([s.num,s.type,s.court||'',s.plnt||'',s.dfnd||'',s.date,s.time,ST[s.status]?ST[s.status].lbl:s.status,s.priority||'',s.client||'',s.ref||'',s.stage||'',s.notes||'']);
+  });
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:20},{wch:12},{wch:18},{wch:15},{wch:15},{wch:12},{wch:8},{wch:10},{wch:10},{wch:15},{wch:15},{wch:18},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws,'الجلسات');
+  // Fees sheet
+  if(fees.length){
+    var fRows=[['الوصف','المبلغ','الحالة','الموكل','التاريخ']];
+    fees.forEach(function(f){fRows.push([f.desc,f.amount,f.status||'pending',f.client||'',f.date||'']);});
+    var fWs=XLSX.utils.aoa_to_sheet(fRows);
+    XLSX.utils.book_append_sheet(wb,fWs,'الأتعاب');
+  }
+  XLSX.writeFile(wb,'jalsat_'+today()+'.xlsx');
+  toast('📊 تم تصدير Excel');
+  logActivity('📊 تصدير Excel',data.length+' جلسة');
+}
+
+/* ════════════════════════════════════════════════════════
+   🎙️ التسجيل الصوتي
+════════════════════════════════════════════════════════ */
+function startVoiceNote(targetId){
+  var SpeechRecog=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecog){toast('⚠️ المتصفح لا يدعم التسجيل الصوتي');return;}
+  var btn=document.getElementById('voiceBtn_'+targetId);
+  var target=document.getElementById(targetId);
+  if(!target)return;
+  if(window._voiceRecActive){window._voiceRecActive=false;if(window._voiceRec)window._voiceRec.stop();if(btn){btn.textContent='🎙️';btn.style.background='var(--surface3)';}return;}
+  var r=new SpeechRecog();
+  r.lang='ar-SA';r.continuous=true;r.interimResults=true;
+  window._voiceRec=r;window._voiceRecActive=true;
+  if(btn){btn.textContent='🔴';btn.style.background='rgba(224,69,85,.15)';}
+  toast('🎙️ التسجيل يعمل — تحدث الآن...');
+  r.onresult=function(e){
+    var interim='',final='';
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    if(final)target.value+=(target.value?'\n':'')+final;
+  };
+  r.onend=function(){
+    window._voiceRecActive=false;
+    if(btn){btn.textContent='🎙️';btn.style.background='var(--surface3)';}
+  };
+  r.onerror=function(e){
+    window._voiceRecActive=false;
+    if(btn){btn.textContent='🎙️';btn.style.background='var(--surface3)';}
+    toast('⚠️ '+e.error);
+  };
+  r.start();
+}
+
+/* ── مساعد: إنشاء مودال ── */
+function makeModal(id,title){
+  var existing=document.getElementById(id);if(existing)existing.remove();
+  var modal=document.createElement('div');modal.id=id;
+  modal.style.cssText='position:fixed;inset:0;z-index:650;display:flex;align-items:flex-end;justify-content:center';
+  var bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(10px)';
+  bg.onclick=function(){modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:relative;background:var(--surface);border-radius:22px 22px 0 0;border-top:2px solid var(--gold-a30);width:100%;max-width:430px;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));font-family:Tajawal,sans-serif;direction:rtl;max-height:92vh;overflow-y:auto';
+  var hdr='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
+  hdr+='<div style="font-family:Scheherazade New,serif;font-size:18px;color:var(--gold2)">'+title+'</div>';
+  hdr+='<button onclick="document.getElementById(\''+id+'\').remove()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:13px">✕</button>';
+  hdr+='</div>';
+  box.innerHTML=hdr;
+  modal.appendChild(bg);modal.appendChild(box);
+  return{el:modal,box:box};
 }
 
 var _origToggleNotif=toggleNotif;
