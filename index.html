@@ -3654,6 +3654,37 @@ function rSettings(){
   h+='<div id="cfResult" style="display:none;margin-top:10px;background:var(--surface3);border-radius:10px;padding:12px"></div>';
   h+='</div>';
 
+  // ── Quick Access Buttons ──
+  h+=secHdr('🚀','الوصول السريع للتبويبات');
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">';
+  var quickTabs=[
+    {k:'home',icon:'🏠',lbl:'الرئيسية'},
+    {k:'list',icon:'⚖️',lbl:'الجلسات'},
+    {k:'tasks',icon:'📋',lbl:'المهمات'},
+    {k:'contacts',icon:'👤',lbl:'الأطراف'},
+    {k:'files',icon:'📁',lbl:'الملفات'},
+    {k:'ai',icon:'🤖',lbl:'سعود AI'},
+    {k:'cal',icon:'📅',lbl:'التقويم'},
+    {k:'stats',icon:'📊',lbl:'التقارير'},
+    {k:'fees',icon:'💰',lbl:'الأتعاب'},
+    {k:'tools',icon:'🛠️',lbl:'الأدوات'},
+    {k:'live',icon:'🔴',lbl:'مباشر'},
+    {k:'archive',icon:'🗄️',lbl:'الأرشيف'},
+    {k:'letterhead',icon:'📝',lbl:'المستندات'},
+    {k:'legal',icon:'📚',lbl:'المكتبة'},
+    {k:'reports',icon:'📈',lbl:'تقارير+'},
+    {k:'share',icon:'🤝',lbl:'المشاركة'},
+  ];
+  quickTabs.forEach(function(t){
+    var hidden=hiddenTabs.indexOf(t.k)>-1;
+    h+='<button onclick="goForce(\''+t.k+'\')" style="display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--surface2);border:1.5px solid '+(hidden?'var(--border)':'var(--border2)')+';border-radius:var(--r-md);padding:12px 6px;cursor:pointer;transition:all .15s;opacity:'+(hidden?'0.55':'1')+'" onmousedown="this.style.transform=\'scale(.94)\'" onmouseup="this.style.transform=\'scale(1)\'">';
+    h+='<span style="font-size:22px">'+t.icon+'</span>';
+    h+='<span style="font-size:10px;font-weight:700;color:'+(hidden?'var(--text3)':'var(--text)')+'">'+t.lbl+'</span>';
+    if(hidden)h+='<span style="font-size:8px;color:#f87171;font-weight:600">مخفي</span>';
+    h+='</button>';
+  });
+  h+='</div>';
+
   // ── Hide/Show Tabs ──
   h+=secHdr('🎨','تخصيص التبويبات');
   h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">';
