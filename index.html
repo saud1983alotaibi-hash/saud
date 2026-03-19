@@ -20371,5 +20371,185 @@ html,body,#app,button,input,select,textarea{font-family:var(--app-font)!importan
 })();
 </script>
 
+
+<style id="v49-focus-fix-style">
+.v49-hero{position:relative;overflow:hidden;background:linear-gradient(160deg,rgba(200,168,75,.14),rgba(14,21,39,.96) 44%,rgba(8,12,24,.98));border:1px solid var(--gold-a20);border-radius:24px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.22)}
+.v49-hero:before{content:'';position:absolute;inset:auto auto -28px -28px;width:120px;height:120px;border-radius:50%;background:rgba(200,168,75,.10);filter:blur(24px)}
+.v49-hero-head{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.v49-hero-title{font-size:24px;font-weight:900;color:var(--gold2);line-height:1.05}
+.v49-hero-sub{font-size:12px;line-height:1.85;color:var(--text2);margin-top:6px;max-width:440px}
+.v49-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:rgba(255,255,255,.04);border-radius:999px;padding:7px 11px;font-size:11px;font-weight:800;color:var(--gold2)}
+.v49-grid{display:grid;gap:10px}
+.v49-grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.v49-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.v49-kpi{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:16px;padding:12px}
+.v49-kpi .l{font-size:10px;color:var(--text3)}
+.v49-kpi .v{font-size:20px;font-weight:900;color:var(--text);margin-top:4px}
+.v49-chiprow{display:flex;gap:8px;overflow:auto;padding-bottom:2px;scrollbar-width:none}
+.v49-chip{flex:0 0 auto;border:1px solid var(--border);background:var(--surface2);color:var(--text2);border-radius:999px;padding:8px 12px;font:700 12px Tajawal,sans-serif;cursor:pointer}
+.v49-chip.on{background:var(--gold-a10);color:var(--gold2);border-color:var(--gold-a30)}
+.v49-acc{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.v49-acc summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.v49-acc summary::-webkit-details-marker{display:none}
+.v49-acc[open] summary{border-bottom:1px solid var(--border)}
+.v49-acc-title{display:flex;align-items:flex-start;gap:10px;min-width:0;flex:1}
+.v49-acc-badge{width:36px;height:36px;border-radius:12px;background:rgba(200,168,75,.11);border:1px solid rgba(200,168,75,.18);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.v49-acc-title strong{display:block;font-size:14px;color:var(--text)}
+.v49-acc-title span{display:block;font-size:10px;color:var(--text3);line-height:1.8;margin-top:3px}
+.v49-acc-body{padding:14px}
+.v49-card{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:12px}
+.v49-list{display:grid;gap:8px}
+.v49-row-btn,.v49-action{appearance:none;-webkit-appearance:none;border:1px solid var(--border);background:var(--surface2);border-radius:16px;padding:12px;display:flex;align-items:flex-start;gap:10px;width:100%;text-align:right;cursor:pointer;font-family:Tajawal,sans-serif}
+.v49-row-btn .ico,.v49-action .ico{width:40px;height:40px;border-radius:13px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.v49-row-btn .ttl,.v49-action .ttl{font-size:13px;font-weight:800;color:var(--text)}
+.v49-row-btn .sub,.v49-action .sub{font-size:10px;color:var(--text3);line-height:1.8;margin-top:4px}
+.v49-empty{background:var(--surface2);border:1px dashed var(--border2);border-radius:16px;padding:18px;text-align:center;color:var(--text2)}
+.v49-empty .ico{font-size:28px;opacity:.55;margin-bottom:6px}
+.v49-search{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:10px 12px}
+.v49-search input{flex:1;min-width:0;background:transparent;color:var(--text);font-size:13px}
+@media (max-width:420px){.v49-grid.cols-2,.v49-grid.cols-3{grid-template-columns:1fr 1fr}.v49-hero-title{font-size:22px}}
+</style>
+<script id="v49-focus-fix-script">
+(function(){
+  if(window.__v49FocusFixInstalled) return; window.__v49FocusFixInstalled=true;
+  function arr(v){ return Array.isArray(v) ? v : []; }
+  function esc(v){ v = v == null ? '' : String(v); return (typeof sanitize==='function') ? sanitize(v) : v.replace(/[&<>"']/g,function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+  function todayVal(){ try{ return typeof today==='function' ? today() : new Date().toISOString().split('T')[0]; }catch(e){ return new Date().toISOString().split('T')[0]; } }
+  function stat(icon,val,label){ return '<div class="v49-kpi"><div class="l">'+esc(label)+'</div><div class="v">'+icon+' '+esc(val)+'</div></div>'; }
+  function acc(icon,title,sub,body,open){ return '<details class="v49-acc"'+(open?' open':'')+'><summary><div class="v49-acc-title"><div class="v49-acc-badge">'+icon+'</div><div><strong>'+esc(title)+'</strong><span>'+esc(sub||'')+'</span></div></div><div class="v49-pill">عرض</div></summary><div class="v49-acc-body">'+body+'</div></details>'; }
+  function empty(icon,title){ return '<div class="v49-empty"><div class="ico">'+icon+'</div><div>'+esc(title)+'</div></div>'; }
+  function sessionBtn(s){ return '<button type="button" class="v49-row-btn" onclick="openDet('+s.id+')"><div class="ico">⚖️</div><div style="flex:1;min-width:0"><div class="ttl">'+esc(s.num||'بدون رقم')+'</div><div class="sub">🏛️ '+esc(s.court||'—')+' · 📅 '+esc(s.date||'—')+' · ⏰ '+esc(s.time||'—')+' · '+esc(s.type||'—')+'</div></div></button>'; }
+  function taskBtn(t){ var act = t.sid ? 'openDet('+parseInt(t.sid)+')' : 'go(\'tasks\')'; return '<button type="button" class="v49-row-btn" onclick="'+act+'"><div class="ico">📋</div><div style="flex:1;min-width:0"><div class="ttl">'+esc(t.title||'مهمة')+'</div><div class="sub">'+esc((t.priority==='high'?'عالية':'عادية')+(t.due?' · '+t.due:''))+'</div></div></button>'; }
+  function moreCard(k,icon,title,desc){ return '<button type="button" class="v49-action" onclick="go(\''+k+'\')"><div class="ico">'+icon+'</div><div style="flex:1;min-width:0"><div class="ttl">'+esc(title)+'</div><div class="sub">'+esc(desc)+'</div></div></button>'; }
+  function dateKey(s){ return String((s&&s.date)||'') + ' ' + String((s&&s.time)||''); }
+  function getStatusLabel(v){ try{ return (window.ST&&ST[v]&&ST[v].lbl) ? ST[v].lbl : (v||'—'); }catch(e){ return v||'—'; } }
+
+  window.rTodayDashboard=function(){
+    var td=todayVal(), sessions=arr(window.data).filter(function(s){ return s && s.date===td; }).sort(function(a,b){ return String(a.time||'').localeCompare(String(b.time||'')); });
+    var pending=arr(window.tasks).filter(function(t){ return t && !t.done; }).sort(function(a,b){ return String(a.due||'').localeCompare(String(b.due||'')); }).slice(0,6);
+    var upcoming=arr(window.data).filter(function(s){ return s && s.date>td && ['scheduled','inProgress'].indexOf(s.status)>-1; }).sort(function(a,b){ return dateKey(a).localeCompare(dateKey(b)); }).slice(0,5);
+    var remote=sessions.filter(function(s){ return !!s.meetUrl; }).slice(0,4);
+    var deadlines=[];
+    try{
+      if(window.sessionDeadlines){
+        Object.keys(sessionDeadlines).forEach(function(sid){
+          var info = typeof getDeadlineInfo==='function' ? getDeadlineInfo(parseInt(sid)) : null;
+          if(!info || info.remaining<0 || info.remaining>14) return;
+          var s = arr(window.data).find(function(x){ return x.id===parseInt(sid); }) || arr(window.archivedSessions).find(function(x){ return x.id===parseInt(sid); });
+          deadlines.push({s:s,info:info});
+        });
+        deadlines.sort(function(a,b){ return a.info.remaining - b.info.remaining; });
+      }
+    }catch(e){}
+    var hero='';
+    hero+='<div class="v49-hero"><div class="v49-hero-head"><div><div class="v49-hero-title">🌤️ اليوم</div><div class="v49-hero-sub">لوحة مركزة لليوم الحالي: الجلسات، المهمات، المواعيد العاجلة، والاجتماعات عن بُعد في واجهة مرتبة وقابلة للطي.</div></div><div class="v49-pill">'+esc(td)+'</div></div>';
+    hero+='<div class="v49-grid cols-3">'+stat('⚖️',sessions.length,'جلسات اليوم')+stat('📋',pending.length,'مهمات مفتوحة')+stat('⏰',deadlines.length,'مواعيد عاجلة')+'</div></div>';
+    var body='';
+    body+=hero;
+    body+=acc('📅','جلسات اليوم','الجلسات المجدولة أو الجارية لهذا اليوم', sessions.length?'<div class="v49-list">'+sessions.map(sessionBtn).join('')+'</div>':empty('📭','لا توجد جلسات لهذا اليوم'), true);
+    body+=acc('📋','المهمات المفتوحة','أقرب المهمات التي تحتاج متابعة', pending.length?'<div class="v49-list">'+pending.map(taskBtn).join('')+'</div>':empty('✅','لا توجد مهمات مفتوحة الآن'), false);
+    body+=acc('⏰','المواعيد العاجلة','مواعيد الطعون والتنبيهات خلال 14 يومًا', deadlines.length?'<div class="v49-list">'+deadlines.slice(0,6).map(function(item){ var s=item.s||{}; return '<button type="button" class="v49-row-btn" onclick="'+(s.id?'openDet('+s.id+')':'go(\'list\')')+'"><div class="ico">⏰</div><div style="flex:1"><div class="ttl">'+esc((s.num||'قضية')+' — '+item.info.text)+'</div><div class="sub">'+esc(s.court||'بدون محكمة')+' · '+esc(s.date||'')+'</div></div></button>'; }).join('')+'</div>':empty('🕊️','لا توجد مواعيد عاجلة قريبة'), false);
+    body+=acc('🎥','الاجتماعات عن بُعد','روابط الجلسات التي تحتوي على اجتماع عن بُعد', remote.length?'<div class="v49-list">'+remote.map(function(s){ return '<div class="v49-card"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div><div class="ttl">'+esc(s.num||'جلسة')+'</div><div class="sub">'+esc((s.time||'—')+' · '+(s.court||'—'))+'</div></div><div>'+(typeof meetJoinBtn==='function'?meetJoinBtn(s,'small'):'')+'</div></div></div>'; }).join('')+'</div>':empty('🎥','لا توجد جلسات عن بُعد اليوم'), false);
+    return body;
+  };
+
+  window.rHome=function(){
+    var td=todayVal(), sessions=arr(window.data), tasksA=arr(window.tasks);
+    var openSessions=sessions.filter(function(s){ return s && ['scheduled','inProgress'].indexOf(s.status)>-1; });
+    var todaySessions=openSessions.filter(function(s){ return s.date===td; }).sort(function(a,b){ return dateKey(a).localeCompare(dateKey(b)); });
+    var upcoming=openSessions.filter(function(s){ return s.date>=td; }).sort(function(a,b){ return dateKey(a).localeCompare(dateKey(b)); }).slice(0,6);
+    var pending=tasksA.filter(function(t){ return t && !t.done; });
+    var overdue=pending.filter(function(t){ return t.due && t.due<td; });
+    var urgent=pending.filter(function(t){ return t.priority==='high'; });
+    var qf=window._homeQF||'all';
+    var filtered=todaySessions;
+    if(qf==='all') filtered=upcoming;
+    else if(qf==='today') filtered=todaySessions;
+    else if(qf==='urgent') filtered=openSessions.filter(function(s){ return s.priority==='high'; }).sort(function(a,b){ return dateKey(a).localeCompare(dateKey(b)); }).slice(0,6);
+    else if(qf==='postponed') filtered=sessions.filter(function(s){ return s.status==='postponed'; }).sort(function(a,b){ return dateKey(a).localeCompare(dateKey(b)); }).slice(0,6);
+    else if(qf==='week'){ var next7=[]; for(var i=0;i<7;i++){ var d=new Date(); d.setDate(d.getDate()+i); next7.push(d.toISOString().split('T')[0]); } filtered=openSessions.filter(function(s){ return next7.indexOf(s.date)>-1; }).sort(function(a,b){ return dateKey(a).localeCompare(dateKey(b)); }); }
+    var hero='';
+    hero+='<div class="v49-hero"><div class="v49-hero-head"><div><div class="v49-hero-title">🏠 الرئيسية</div><div class="v49-hero-sub">واجهة تنفيذية هادئة تجمع ما تحتاجه بسرعة: القضايا والجلسات، المهمات، مؤشرات اليوم، والوصول المباشر إلى أهم المراكز بدون تكرار أو تزاحم.</div></div><div class="v49-pill">لوحة العمل الرئيسية</div></div>';
+    hero+='<div class="v49-grid cols-3">'+stat('⚖️',openSessions.length,'القضايا والجلسات النشطة')+stat('📅',todaySessions.length,'جلسات اليوم')+stat('📋',pending.length,'المهمات المفتوحة')+'</div>';
+    hero+='<div class="v49-chiprow" style="margin-top:10px">';
+    [['all','الكل'],['today','اليوم'],['week','هذا الأسبوع'],['urgent','العاجلة'],['postponed','المؤجلة']].forEach(function(it){ hero+='<button type="button" class="v49-chip'+(qf===it[0]?' on':'')+'" onclick="window._homeQF=\''+it[0]+'\';render(true)">'+it[1]+'</button>'; });
+    hero+='</div></div>';
+    var quick='<div class="v49-grid cols-2">'+
+      moreCard('list','⚖️','القضايا والجلسات','ملف القضية والجلسات والمرفقات')+
+      moreCard('tasks','📋','المهمات','الإضافة والمتابعة والفرز')+
+      moreCard('workspace','🧩','مركز الموكلين والملفات','الأطراف والملفات والأتعاب')+
+      moreCard('more','☰','المزيد','المراكز والأدوات في واجهة موحدة')+
+    '</div>';
+    var sessionsBody = filtered.length ? '<div class="v49-list">'+filtered.map(sessionBtn).join('')+'</div>' : empty('📭','لا توجد عناصر مطابقة لهذا الفلتر');
+    var tasksBody = (pending.length || overdue.length || urgent.length) ? '<div class="v49-grid cols-3">'+stat('📋',pending.length,'مفتوحة')+stat('⏳',overdue.length,'متأخرة')+stat('🔴',urgent.length,'عالية')+'</div><div class="v49-list" style="margin-top:10px">'+pending.slice(0,5).map(taskBtn).join('')+'</div>' : empty('✅','لا توجد مهمات معلقة الآن');
+    var body='';
+    body+=hero;
+    body+=acc('⚡','اختصارات سريعة','الدخول المباشر إلى أهم مسارات العمل', quick, true);
+    body+=acc('⚖️','القضايا والجلسات','العناصر حسب الفلتر المحدد في الأعلى', sessionsBody, true);
+    body+=acc('📋','المهمات','مؤشرات مختصرة وأقرب المهمات', tasksBody, false);
+    body+=acc('🧭','متابعة سريعة','الوصول إلى اليوم والتقويم والإحصاءات', '<div class="v49-grid cols-3">'+moreCard('today','🌤️','اليوم','لوحة العمل اليومية')+moreCard('cal','📅','التقويم','عرض المواعيد والجلسات')+moreCard('stats','📊','الإحصاءات','مؤشرات وتقارير العمل')+'</div>', false);
+    return body;
+  };
+
+  window.rWorkspaceHub=function(){
+    var view=window._workspaceView||'overview';
+    if(['overview','contacts','files','fees'].indexOf(view)===-1) view='overview';
+    var totalFees=arr(window.fees).reduce(function(sum,f){ return sum + (parseFloat(f&&f.amount)||0); },0);
+    var hero='<div class="v49-hero"><div class="v49-hero-head"><div><div class="v49-hero-title">🧩 مركز الموكلين والملفات</div><div class="v49-hero-sub">مركز موحّد للأطراف والملفات والأتعاب، بلا تكرار ولا بطاقات انتقال تعيدك لنفس المكان. كل قسم صار واضحًا وقابلًا للطي.</div></div><div class="v49-pill">'+esc(view==='overview'?'نظرة عامة':view==='contacts'?'الأطراف':view==='files'?'الملفات':'الأتعاب')+'</div></div><div class="v49-grid cols-3">'+stat('👥',arr(window.contacts).length,'الأطراف')+stat('📁',arr(window.wordFiles).length,'الملفات')+stat('💰',totalFees.toLocaleString('ar-SA'),'إجمالي الأتعاب')+'</div></div>';
+    var chips='<div class="v49-chiprow" style="margin-bottom:12px">';
+    [['overview','✨ الكل'],['contacts','👥 الأطراف'],['files','📁 الملفات'],['fees','💰 الأتعاب']].forEach(function(it){ chips+='<button type="button" class="v49-chip'+(view===it[0]?' on':'')+'" onclick="setWorkspaceView(\''+it[0]+'\')">'+it[1]+'</button>'; });
+    chips+='</div>';
+    if(view==='contacts') return hero+chips+acc('👥','الأطراف والموكلون','إدارة بيانات الموكلين والأطراف', typeof rContacts==='function'?rContacts():empty('👥','قسم الأطراف غير متاح الآن'), true);
+    if(view==='files') return hero+chips+acc('📁','الملفات والمرفقات','الملفات القانونية والمجلدات', typeof rFiles==='function'?rFiles():empty('📁','قسم الملفات غير متاح الآن'), true);
+    if(view==='fees') return hero+chips+acc('💰','الأتعاب والدفعات','سجلات الأتعاب والتحصيل', typeof rFees==='function'?rFees():empty('💰','قسم الأتعاب غير متاح الآن'), true);
+    var overview='';
+    overview+='<div class="v49-grid cols-3">'+stat('👥',arr(window.contacts).length,'سجلات أطراف')+stat('📁',arr(window.wordFiles).length,'ملفات محفوظة')+stat('💳',arr(window.fees).length,'قيود مالية')+'</div>';
+    overview+='<div class="v49-grid cols-2" style="margin-top:10px">'+
+      moreCard('workspace','👥','الأطراف','بيانات الموكلين والارتباطات')+
+      moreCard('workspace','📁','الملفات','المجلدات والمرفقات القانونية')+
+      moreCard('workspace','💰','الأتعاب','التحصيل والدفعات')+
+      moreCard('list','⚖️','القضايا والجلسات','ربط الملفات بالقضية والجلسة')+
+    '</div>';
+    return hero+chips+
+      acc('👥','الأطراف والموكلون','الوصول إلى البيانات الأساسية للأطراف', '<div class="v49-card">الوصول المباشر من الشريحة أعلاه إلى قسم الأطراف دون تكرار الواجهة.</div>', true)+
+      acc('📁','الملفات والمرفقات','حفظ وتنظيم الوثائق القانونية', '<div class="v49-card">استخدم شريحة الملفات للوصول إلى المجلدات والملفات دون أن تتكرر البطاقات داخل الصفحة.</div>', false)+
+      acc('💰','الأتعاب والدفعات','المبالغ والسجلات المرتبطة بالعمل', '<div class="v49-card">استخدم شريحة الأتعاب لعرض السجل المالي والتحصيلات بشكل مباشر.</div>', false)+
+      acc('✨','ملخص المركز','نظرة عامة مختصرة على مكونات المركز', overview, false);
+  };
+
+  window.buildMoreHub=function(){
+    var q=((window._moreHubSearch||'')+'').trim().toLowerCase();
+    var groups=[
+      {icon:'⚖️',title:'القضايا والمتابعة',sub:'التبويب الموحد للقضايا والجلسات ولوحة اليوم والتقويم والإحصاءات.',items:[['list','⚖️','القضايا والجلسات','ملف القضية والجلسات والمرفقات'],['today','🌤️','اليوم','ملخص اليوم والجلسات والمهمات'],['cal','📅','التقويم','المواعيد والجلسات في عرض واحد'],['stats','📊','الإحصاءات','تقارير ومؤشرات الأداء']]},
+      {icon:'🧩',title:'المراكز المهنية',sub:'المراكز الموحدة بعد إزالة التكرار من الواجهة.',items:[['workspace','🧩','مركز الموكلين والملفات','الأطراف والملفات والأتعاب'],['docsHub','📝','مركز المستندات والمعرفة','الصيغ والمراجع القانونية'],['tools','🛠️','الأدوات والتخصيص','الأدوات والنسخ والتخصيص']]},
+      {icon:'🤖',title:'التشغيل الذكي',sub:'المهمات والذكاء ولوحة المتابعة دون مسارات متكررة.',items:[['tasks','📋','المهمات','المتابعة والإضافة والفرز'],['ai','🤖','سعود AI','التحليل والمساعد الذكي'],['kanban','🧱','لوحة المتابعة','عرض مرئي لسير العمل'],['dashboard','📌','لوحة القيادة','ملخص تنفيذي سريع']]},
+      {icon:'👥',title:'الفريق',sub:'إدارة أعضاء الفريق والصلاحيات عند الحاجة.',items:[['team','👥','الفريق','إدارة الفريق وتوزيع العمل']]}
+    ];
+    var filtered=groups.map(function(g){
+      var items=g.items.filter(function(it){ var hay=(g.title+' '+g.sub+' '+it[2]+' '+it[3]).toLowerCase(); return !q || hay.indexOf(q)>-1; });
+      return {icon:g.icon,title:g.title,sub:g.sub,items:items};
+    }).filter(function(g){ return g.items.length; });
+    var hero='<div class="v49-hero"><div class="v49-hero-head"><div><div class="v49-hero-title">☰ المزيد</div><div class="v49-hero-sub">المسارات المتبقية بعد حذف التبويبات المتشابهة. واجهة أخف وقابلة للطي وبحث واحد فقط داخل التبويب.</div></div><div class="v49-pill">مراكز أقل · وصول أوضح</div></div><div class="v49-grid cols-3">'+stat('⚖️',arr(window.data).length,'القضايا والجلسات')+stat('📋',arr(window.tasks).length,'المهمات')+stat('💰',arr(window.fees).length,'الأتعاب')+'</div></div>';
+    var h=hero;
+    h+='<div class="v49-search"><span>🔎</span><input type="search" dir="rtl" placeholder="ابحث عن قسم أو أداة..." value="'+esc(window._moreHubSearch||'')+'" oninput="setMoreHubSearch(this.value)"><button type="button" class="v49-pill" onclick="setMoreHubSearch(\'\')">مسح</button></div>';
+    filtered.forEach(function(g,idx){
+      var body='<div class="v49-list">'+g.items.map(function(it){ return moreCard(it[0],it[1],it[2],it[3]); }).join('')+'</div>';
+      h+=acc(g.icon,g.title,g.sub,body,idx===0 && !q);
+    });
+    if(!filtered.length) h+=empty('🔎','لا توجد نتائج مطابقة للبحث الحالي');
+    return h;
+  };
+  window.rSettings=function(){ return buildMoreHub(); };
+
+  if(typeof TAB_LABELS==='object'){
+    TAB_LABELS.today='اليوم';
+    TAB_LABELS.home='الرئيسية';
+    TAB_LABELS.workspace='مركز الموكلين والملفات';
+    TAB_LABELS.settings='المزيد';
+  }
+  setTimeout(function(){ try{ if(['today','home','workspace','contacts','files','fees','settings'].indexOf(window.curTab)>-1 && typeof render==='function') render(true); }catch(e){} }, 0);
+})();
+</script>
+
 </body>
 </html>
