@@ -16741,53 +16741,131 @@ window.setSessionFormMode=function(mode){
  function aiNotesForSession(s){
    try{var hist=getSessionAIHistory(s.id)||[]; return hist.slice(-4);}catch(e){return [];}
  }
+
+ function caseSessionsForSession(s){
+   if(!s)return [];
+   return (data||[]).filter(function(x){return String((x&&x.num)||'').trim()===String((s&&s.num)||'').trim();}).sort(function(a,b){
+     return String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||''));
+   });
+ }
+ function caseFeesForSession(s){
+   if(!s)return [];
+   var cs=caseSessionsForSession(s), ids=cs.map(function(x){return x.id;});
+   return (fees||[]).filter(function(f){
+     if(f&&ids.indexOf(f.sessionId)>-1)return true;
+     if(f&&(!f.sessionId) && s.client && String(f.client||'').trim()===String(s.client||'').trim())return true;
+     return false;
+   }).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+ }
+ function caseContactsForSession(s){
+   if(!s)return [];
+   var names=[s.client,s.plnt,s.dfnd].map(function(x){return String(x||'').trim();}).filter(Boolean);
+   return (contacts||[]).filter(function(c){return names.indexOf(String((c&&c.name)||'').trim())>-1;});
+ }
+ function caseAttachmentsForSession(s){
+   var out=[];
+   caseSessionsForSession(s).forEach(function(cs){
+     (cs.attachments||[]).forEach(function(a,idx){out.push({sid:cs.id,num:cs.num,date:cs.date,name:(a&&a.name)||('مرفق '+(idx+1)),type:(a&&a.type)||'doc'});});
+   });
+   return out;
+ }
+ function caseAiNotesForSession(s){
+   var notes=[];
+   caseSessionsForSession(s).forEach(function(cs){
+     try{(getSessionAIHistory(cs.id)||[]).slice(-3).forEach(function(m){notes.push({sid:cs.id,date:cs.date||'',role:m.role,content:m.content||''});});}catch(e){}
+   });
+   return notes.slice(-8).reverse();
+ }
+ function caseActivityForSession(s){
+   var items=[];
+   caseSessionsForSession(s).forEach(function(cs){
+     items.push({date:cs.date||'',icon:'⚖️',title:'جلسة مرتبطة',meta:(cs.court||'—')+' · '+(cs.time||'—')});
+     (caseEvents[cs.id]||[]).forEach(function(ev){items.push({date:ev.date||'',icon:ev.icon||'📌',title:ev.title||'حدث',meta:ev.note||''});});
+   });
+   relatedTasksForSession(s).forEach(function(t){items.push({date:t.due||'',icon:t.done?'✅':'📋',title:t.title||'مهمة',meta:t.done?'منجزة':'مفتوحة'});});
+   caseFeesForSession(s).forEach(function(f){var st=f.status||(f.paid?'paid':'pending');items.push({date:f.date||'',icon:'💰',title:f.desc||'أتعاب',meta:(parseFloat(f.amount)||0).toLocaleString('ar-SA')+' ر.س · '+(st==='paid'?'مسدّد':st==='partial'?'جزئي':'معلّق')});});
+   items=items.filter(function(x){return x.date;}).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+   return items.slice(0,10);
+ }
+ function fmtCaseMoney(v){return (parseFloat(v)||0).toLocaleString('ar-SA')+' ر.س';}
+
+ 
  function buildSessionReadView(s){
    if(!s)return '<div class="unified-empty">تعذر تحميل بيانات القضية.</div>';
-   var relTasks=relatedTasksForSession(s), ups=upcomingForSession(s), aiNotes=aiNotesForSession(s), atts=s.attachments||[];
+   var caseSessions=caseSessionsForSession(s), relTasks=relatedTasksForSession(s), caseFees=caseFeesForSession(s), caseContacts=caseContactsForSession(s), aiNotes=caseAiNotesForSession(s), activity=caseActivityForSession(s), atts=caseAttachmentsForSession(s);
    var progressLabel=ST[s.status]?ST[s.status].lbl:'—';
+   var td=todaySafe();
+   var upcoming=caseSessions.filter(function(x){return String(x.date||'')>=td;});
+   var completed=caseSessions.filter(function(x){return x.status==='completed';}).length;
+   var openTasks=relTasks.filter(function(t){return !t.done;}).length;
+   var totalFees=caseFees.reduce(function(a,f){return a+(parseFloat(f.amount)||0);},0);
+   var paidFees=caseFees.filter(function(f){return f.status==='paid'||f.paid;}).reduce(function(a,f){return a+(parseFloat(f.amount)||0);},0);
+   var dueFees=Math.max(0,totalFees-paidFees);
+   var nextHearing=upcoming.length?upcoming[0]:null;
    var html='';
-   html+='<div class="smart-read-grid">';
-   [{v:sanitize(s.num||'—'),l:'رقم القضية'},{v:sanitize(s.court||'—'),l:'المحكمة'},{v:sanitize(progressLabel),l:'الحالة'},{v:sanitize(s.date||'—')+' · '+sanitize(s.time||'—'),l:'موعد الجلسة'}].forEach(function(item){html+='<div class="smart-read-stat"><div class="val" style="font-size:15px">'+item.v+'</div><div class="lbl">'+item.l+'</div></div>';});
-   html+='</div>';
-   html+='<div class="smart-section-card"><div class="smart-section-title">📌 بيانات الجلسة</div><div class="smart-read-details">';
-   [
-     ['نوع القضية',s.type||'—'],['الأهمية',PT[s.priority||'none']?PT[s.priority||'none'].lbl:'عادية'],['الموكل',s.client||'—'],['الرقم المرجعي',s.ref||'—'],['القاعة',s.room||'—'],['التاريخ الهجري',toHijriShort(s.date||todaySafe())||'—'],['الحالة',progressLabel],['الرابط المرئي',s.meetUrl?'<a href="'+sanitize(s.meetUrl)+'" target="_blank" style="color:var(--gold2)">فتح الرابط</a>':'—']
-   ].forEach(function(row){html+='<div class="smart-kv"><div class="k">'+row[0]+'</div><div class="v">'+row[1]+'</div></div>';});
+   html+='<div class="smart-section-card" style="background:linear-gradient(135deg,rgba(200,168,75,.16),rgba(255,255,255,.02));border-color:rgba(200,168,75,.25)">';
+   html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">';
+   html+='<div><div style="font-size:11px;font-weight:700;color:rgba(200,168,75,.72);letter-spacing:.15em;text-transform:uppercase;margin-bottom:7px">ملف قضية شامل</div><div style="font-size:22px;font-weight:900;color:var(--gold2);line-height:1.4">'+sanitize(s.num||'—')+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+sanitize(s.type||'—')+' · '+sanitize(s.court||'—')+'</div><div style="font-size:11px;color:var(--text3);margin-top:6px">الموكل: '+sanitize(s.client||'—')+' · الحالة الحالية: '+sanitize(progressLabel)+'</div></div>';
+   html+='<div style="display:grid;grid-template-columns:repeat(2,minmax(110px,1fr));gap:8px;min-width:min(100%,250px)">';
+   [{v:caseSessions.length,l:'جلسات مرتبطة',i:'⚖️'},{v:openTasks,l:'مهمات مفتوحة',i:'📋'},{v:atts.length,l:'مرفقات',i:'📎'},{v:fmtCaseMoney(dueFees),l:'مستحق',i:'💰'}].forEach(function(item){html+='<div style="background:rgba(255,255,255,.04);border:1px solid rgba(200,168,75,.16);border-radius:16px;padding:11px 12px"><div style="font-size:12px;margin-bottom:5px">'+item.i+'</div><div style="font-size:16px;font-weight:900;color:var(--text)">'+item.v+'</div><div style="font-size:10px;color:var(--text3);margin-top:3px">'+item.l+'</div></div>';});
    html+='</div></div>';
-   html+='<div class="smart-section-card"><div class="smart-section-title">👥 الأطراف</div><div class="smart-read-details">'+
-     '<div class="smart-kv"><div class="k">المدعي</div><div class="v">'+sanitize(s.plnt||'—')+'</div></div>'+
-     '<div class="smart-kv"><div class="k">المدعى عليه</div><div class="v">'+sanitize(s.dfnd||'—')+'</div></div>'+
-   '</div></div>';
-   html+='<div class="smart-section-card"><div class="smart-section-title">📎 المرفقات</div>';
-   if(atts.length){html+='<div class="smart-mini-list">'+atts.slice(0,8).map(function(a){var name=(a&&a.name)||'مرفق';return '<div class="smart-mini-item"><div class="t">'+sanitize(name)+'</div><div class="m">مرفق محفوظ داخل القضية</div></div>';}).join('')+'</div>';}
-   else html+='<div class="unified-empty">لا توجد مرفقات مرتبطة بهذه القضية حتى الآن.</div>';
+   html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">';
+   html+='<button class="smart-mode-btn good" type="button" onclick="showSessionAIChat('+s.id+')">⚖️ استشر سعود</button>';
+   html+='<button class="smart-mode-btn" type="button" onclick="showCaseTimeline('+s.id+')">📅 المسار الزمني</button>';
+   html+='<button class="smart-mode-btn" type="button" onclick="linkTaskToCurrentSession()">✅ إضافة مهمة</button>';
+   html+='<button class="smart-mode-btn" type="button" onclick="go(&quot;workspace&quot;)">👤 مركز الموكلين</button>';
+   if(caseSessions.length>1)html+='<button class="smart-mode-btn" type="button" onclick="showCaseMap('+s.id+')">🕸️ خريطة الارتباط</button>';
+   html+='</div>';
+   if(nextHearing){html+='<div style="margin-top:14px;background:rgba(47,128,237,.08);border:1px solid rgba(47,128,237,.22);border-radius:14px;padding:12px 14px"><div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">الجلسة الأقرب</div><div style="font-size:13px;color:var(--text2)">'+sanitize(nextHearing.date||'—')+' · '+sanitize(nextHearing.time||'—')+' · '+sanitize(nextHearing.court||'—')+'</div></div>';}
+   html+='</div>';
+   html+='<div class="smart-read-grid">';
+   [{v:sanitize(s.num||'—'),l:'رقم القضية'},{v:sanitize(s.court||'—'),l:'المحكمة الحالية'},{v:sanitize(progressLabel),l:'الحالة'},{v:(nextHearing?sanitize(nextHearing.date||'—')+' · '+sanitize(nextHearing.time||'—'):sanitize(s.date||'—')+' · '+sanitize(s.time||'—')),l:'الموعد المعتمد'}].forEach(function(item){html+='<div class="smart-read-stat"><div class="val" style="font-size:15px">'+item.v+'</div><div class="lbl">'+item.l+'</div></div>';});
+   html+='</div>';
+   html+='<div class="smart-section-card"><div class="smart-section-title">📌 ملخص القضية</div><div class="smart-read-details">';
+   [['نوع القضية',s.type||'—'],['الأهمية',PT[s.priority||'none']?PT[s.priority||'none'].lbl:'عادية'],['الموكل',s.client||'—'],['الرقم المرجعي',s.ref||'—'],['القاعة',s.room||'—'],['التاريخ الهجري',toHijriShort((nextHearing&&nextHearing.date)||s.date||todaySafe())||'—'],['عدد الجلسات المرتبطة',String(caseSessions.length||0)],['الجلسات المنتهية',String(completed)],['المهمات المفتوحة',String(openTasks)],['إجمالي الأتعاب',fmtCaseMoney(totalFees)],['المسدّد',fmtCaseMoney(paidFees)],['المتبقي',fmtCaseMoney(dueFees)],['الرابط المرئي',s.meetUrl?'<a href="'+sanitize(s.meetUrl)+'" target="_blank" style="color:var(--gold2)">فتح الرابط</a>':'—']].forEach(function(row){html+='<div class="smart-kv"><div class="k">'+row[0]+'</div><div class="v">'+row[1]+'</div></div>';});
+   html+='</div></div>';
+   html+='<div class="smart-section-card"><div class="smart-section-title">👥 الأطراف والارتباطات</div><div class="smart-read-details">';
+   html+='<div class="smart-kv"><div class="k">المدعي</div><div class="v">'+sanitize(s.plnt||'—')+'</div></div>';
+   html+='<div class="smart-kv"><div class="k">المدعى عليه</div><div class="v">'+sanitize(s.dfnd||'—')+'</div></div>';
+   html+='<div class="smart-kv"><div class="k">الموكل</div><div class="v">'+sanitize(s.client||'—')+'</div></div>';
+   if(caseContacts.length){caseContacts.forEach(function(c){html+='<div class="smart-kv"><div class="k">'+sanitize(c.role||'طرف')+'</div><div class="v">'+sanitize(c.name||'—')+(c.phone?' · '+sanitize(c.phone):'')+'</div></div>';});}
+   html+='</div></div>';
+   html+='<div class="smart-section-card"><div class="smart-section-title">⚖️ الجلسات المرتبطة بنفس رقم القضية</div>';
+   if(caseSessions.length){html+='<div class="smart-mini-list">'+caseSessions.map(function(cs){var st=ST[cs.status]?ST[cs.status].lbl:'—';var tag=cs.id===s.id?'الجلسة الحالية':'جلسة مرتبطة';return '<div class="smart-mini-item" '+(cs.id!==s.id?'onclick="openDet('+cs.id+')" style="cursor:pointer"':'')+'><div class="t">'+sanitize(cs.date||'—')+' · '+sanitize(cs.time||'—')+' <span style="font-size:10px;color:var(--gold2)">('+tag+')</span></div><div class="m">'+sanitize(cs.court||'—')+' · '+sanitize(st)+' · '+sanitize(cs.room||'بدون قاعة')+'</div></div>';}).join('')+'</div>';} else html+='<div class="unified-empty">لا توجد جلسات أخرى مرتبطة بهذه القضية.</div>';
    html+='</div>';
    html+='<div class="smart-section-card"><div class="smart-section-title">✅ المهمات المرتبطة</div>';
-   if(relTasks.length){html+='<div class="smart-mini-list">'+relTasks.slice(0,6).map(function(t){return '<div class="smart-mini-item"><div class="t">'+sanitize(t.title||'—')+'</div><div class="m">'+(t.due?'📅 '+sanitize(t.due)+' · ':'')+(t.done?'✅ منجزة':'⏳ مفتوحة')+'</div></div>';}).join('')+'</div>';}
-   else html+='<div class="unified-empty">لا توجد مهمات مرتبطة. يمكنك إضافتها مباشرة برقم القضية نفسه.</div>';
+   if(relTasks.length){html+='<div class="smart-mini-list">'+relTasks.slice(0,10).map(function(t){return '<div class="smart-mini-item"><div class="t">'+sanitize(t.title||'—')+'</div><div class="m">'+(t.due?'📅 '+sanitize(t.due)+' · ':'')+(t.done?'✅ منجزة':'⏳ مفتوحة')+' · '+(t.priority==='high'?'عالية':t.priority==='med'?'متوسطة':'عادية')+'</div></div>';}).join('')+'</div>';} else html+='<div class="unified-empty">لا توجد مهمات مرتبطة. أضف مهمة مرتبطة برقم القضية للمتابعة اليومية.</div>';
    html+='</div>';
-   html+='<div class="smart-section-card"><div class="smart-section-title">🗓️ المواعيد القادمة</div>';
-   if(ups.length){html+='<div class="smart-mini-list">'+ups.map(function(x){return '<div class="smart-mini-item"><div class="t">'+sanitize(x.date||'—')+' · '+sanitize(x.time||'—')+'</div><div class="m">'+sanitize(x.court||'—')+' · '+sanitize(ST[x.status]?ST[x.status].lbl:'—')+'</div></div>';}).join('')+'</div>';}
-   else html+='<div class="unified-empty">لا توجد مواعيد أخرى مرتبطة بنفس رقم القضية حاليًا.</div>';
+   html+='<div class="smart-section-card"><div class="smart-section-title">📎 المرفقات والوثائق</div>';
+   if(atts.length){html+='<div class="smart-mini-list">'+atts.slice(0,12).map(function(a){return '<div class="smart-mini-item"><div class="t">'+sanitize(a.name||'مرفق')+'</div><div class="m">'+sanitize(a.date||'—')+' · '+(a.sid===s.id?'الجلسة الحالية':'جلسة مرتبطة')+'</div></div>';}).join('')+'</div>';} else html+='<div class="unified-empty">لا توجد مرفقات محفوظة داخل ملف القضية حتى الآن.</div>';
+   html+='</div>';
+   html+='<div class="smart-section-card"><div class="smart-section-title">💰 الأتعاب المرتبطة بالقضية</div>';
+   if(caseFees.length){html+='<div class="smart-mini-list">'+caseFees.slice(0,10).map(function(f){var st=f.status||(f.paid?'paid':'pending');return '<div class="smart-mini-item"><div class="t">'+sanitize(f.desc||'أتعاب')+' · '+fmtCaseMoney(f.amount)+'</div><div class="m">'+sanitize(f.date||'—')+' · '+(st==='paid'?'✅ مسدّد':st==='partial'?'⚡ جزئي':'⏳ معلّق')+'</div></div>';}).join('')+'</div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px"><div class="smart-read-stat"><div class="val">'+fmtCaseMoney(totalFees)+'</div><div class="lbl">الإجمالي</div></div><div class="smart-read-stat"><div class="val">'+fmtCaseMoney(paidFees)+'</div><div class="lbl">المسدّد</div></div><div class="smart-read-stat"><div class="val">'+fmtCaseMoney(dueFees)+'</div><div class="lbl">المتبقي</div></div></div>';} else html+='<div class="unified-empty">لا توجد أتعاب مربوطة بهذه القضية بعد.</div>';
+   html+='</div>';
+   html+='<div class="smart-section-card"><div class="smart-section-title">📍 آخر النشاطات</div>';
+   if(activity.length){html+='<div class="smart-mini-list">'+activity.map(function(a){return '<div class="smart-mini-item"><div class="t">'+a.icon+' '+sanitize(a.title||'—')+'</div><div class="m">'+sanitize(a.date||'—')+(a.meta?' · '+sanitize(a.meta):'')+'</div></div>';}).join('')+'</div>';} else html+='<div class="unified-empty">لا يوجد سجل نشاط واضح بعد داخل هذه القضية.</div>';
    html+='</div>';
    html+='<div class="smart-section-card"><div class="smart-section-title">⚖️ ملاحظات سعود AI</div>';
-   if(aiNotes.length){html+='<div class="smart-mini-list">'+aiNotes.map(function(m){return '<div class="smart-mini-item"><div class="t">'+sanitize(m.role==='assistant'?'سعود':'أنت')+'</div><div class="m">'+sanitize(String(m.content||'').slice(0,220))+'</div></div>';}).join('')+'</div>';}
-   else html+='<div class="unified-empty">لا توجد ملاحظات AI خاصة بهذه القضية بعد. استخدم زر استشر سعود لبدء النقاش.</div>';
+   if(aiNotes.length){html+='<div class="smart-mini-list">'+aiNotes.map(function(m){return '<div class="smart-mini-item"><div class="t">'+sanitize(m.role==='assistant'?'سعود':'أنت')+'</div><div class="m">'+sanitize(String(m.content||'').slice(0,260))+'</div></div>';}).join('')+'</div>';} else html+='<div class="unified-empty">لا توجد ملاحظات AI خاصة بهذه القضية بعد. استخدم زر استشر سعود لبدء النقاش.</div>';
    html+='</div>';
    if(s.notes)html+='<div class="smart-section-card"><div class="smart-section-title">📝 ملاحظات القضية</div><div class="smart-kv"><div class="v">'+sanitize(s.notes)+'</div></div></div>';
    return html;
  }
+
+ 
  function buildSessionSummary(s){
    if(!s)return '';
-   var rel=relatedTasksForSession(s).length, ups=upcomingForSession(s).length, atts=(s.attachments||[]).length, ai=(aiNotesForSession(s)||[]).length;
+   var caseSessions=caseSessionsForSession(s), rel=relatedTasksForSession(s), atts=caseAttachmentsForSession(s), caseFees=caseFeesForSession(s);
+   var totalFees=caseFees.reduce(function(a,f){return a+(parseFloat(f.amount)||0);},0);
    return '<div class="smart-form-summary">'+
-     '<div class="box"><div class="n">'+atts+'</div><div class="l">مرفقات</div></div>'+
-     '<div class="box"><div class="n">'+rel+'</div><div class="l">مهمات مرتبطة</div></div>'+
-     '<div class="box"><div class="n">'+ups+'</div><div class="l">مواعيد قادمة</div></div>'+
-     '<div class="box"><div class="n">'+ai+'</div><div class="l">ملاحظات AI</div></div>'+
+     '<div class="box"><div class="n">'+caseSessions.length+'</div><div class="l">جلسات القضية</div></div>'+
+     '<div class="box"><div class="n">'+atts.length+'</div><div class="l">مرفقات</div></div>'+
+     '<div class="box"><div class="n">'+rel.length+'</div><div class="l">مهمات مرتبطة</div></div>'+
+     '<div class="box"><div class="n">'+fmtCaseMoney(totalFees)+'</div><div class="l">إجمالي الأتعاب</div></div>'+
    '</div>'+
-   '<div class="smart-form-note">تم توحيد <b>الإضافة / التعديل / العرض</b> داخل نفس النموذج الذكي. في وضع التعديل تظهر جميع الحقول في صفحة واحدة، وفي وضع العرض تظهر لوحة قضية شاملة.</div>';
+   '<div class="smart-form-note">تم تطوير وضع العرض إلى <b>ملف قضية شامل</b> يجمّع الجلسات، الأطراف، المرفقات، المهمات، الأتعاب، النشاط، وملاحظات سعود AI داخل لوحة واحدة متوافقة مع Safari.</div>';
  }
+
  function setUnifiedFormFields(s){
    if(!s)return;
    document.getElementById('fNum').value=s.num||'';
@@ -17726,6 +17804,416 @@ window.setSessionFormMode=function(mode){
   }
 
   setTimeout(afterRenderCompat,80);
+})();
+</script>
+
+
+<script>
+(function(){
+  if(window.__jalsat_v36_patch__) return;
+  window.__jalsat_v36_patch__ = true;
+
+  function guessMimeByName(name){
+    var n=String(name||'').toLowerCase();
+    if(n.endsWith('.pdf')) return 'application/pdf';
+    if(n.endsWith('.png')) return 'image/png';
+    if(n.endsWith('.jpg')||n.endsWith('.jpeg')) return 'image/jpeg';
+    if(n.endsWith('.webp')) return 'image/webp';
+    if(n.endsWith('.gif')) return 'image/gif';
+    if(n.endsWith('.txt')) return 'text/plain';
+    if(n.endsWith('.doc')) return 'application/msword';
+    if(n.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if(n.endsWith('.xls')) return 'application/vnd.ms-excel';
+    if(n.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    return 'application/octet-stream';
+  }
+  function attMime(a){
+    if(!a) return 'application/octet-stream';
+    if(a.mime) return a.mime;
+    if(typeof a.type==='string' && a.type.indexOf('/')>-1) return a.type;
+    if(a.dataUrl && /^data:([^;]+);/i.test(a.dataUrl)) return a.dataUrl.match(/^data:([^;]+);/i)[1];
+    if(a.data && /^data:([^;]+);/i.test(a.data)) return a.data.match(/^data:([^;]+);/i)[1];
+    if(a.type==='image') return 'image/jpeg';
+    return guessMimeByName(a.name);
+  }
+  function attDataUrl(a){
+    if(!a) return '';
+    if(a.dataUrl && /^data:/i.test(a.dataUrl)) return a.dataUrl;
+    if(typeof a.data==='string' && /^data:/i.test(a.data)) return a.data;
+    var raw='';
+    if(typeof a.data==='string' && a.data) raw=a.data;
+    else if(typeof a.base64==='string' && a.base64) raw=a.base64;
+    if(!raw) return '';
+    return 'data:'+attMime(a)+';base64,'+raw.replace(/^data:[^,]+,/,'');
+  }
+  function attKind(a){
+    var mime=attMime(a);
+    if(/^image\//i.test(mime)) return 'image';
+    if(/pdf/i.test(mime) || /\.pdf$/i.test(String(a&&a.name||''))) return 'pdf';
+    return 'doc';
+  }
+  function attSizeLabel(a){
+    var size=Number(a&&a.size||0);
+    if(!size){
+      var d=attDataUrl(a);
+      if(d && /^data:/i.test(d)){ size=Math.round((d.split(',')[1]||'').length*0.75); }
+    }
+    if(!size) return '';
+    if(size>=1024*1024) return (size/1024/1024).toFixed(1)+' MB';
+    return Math.max(1,Math.round(size/1024))+' KB';
+  }
+  function normalizeAttachment(a){
+    if(!a) return null;
+    var out={
+      name:a.name||'مرفق',
+      mime:attMime(a),
+      kind:attKind(a),
+      size:Number(a.size||0)||0,
+      createdAt:a.createdAt||new Date().toISOString(),
+      sourceSessionId:a.sourceSessionId||null,
+      dataUrl:attDataUrl(a)
+    };
+    if(!out.dataUrl) return null;
+    return out;
+  }
+  window.normalizeSessionAttachments=function(s){
+    if(!s) return s;
+    var changed=false;
+    var arr=Array.isArray(s.attachments)?s.attachments:[];
+    var normalized=[];
+    arr.forEach(function(a){
+      var n=normalizeAttachment(a);
+      if(n){ normalized.push(n); }
+      if(!a || !a.dataUrl || !n || a.type!==n.kind || a.mime!==n.mime) changed=true;
+    });
+    if(!Array.isArray(s.attachments) || s.attachments.length!==normalized.length) changed=true;
+    s.attachments=normalized;
+    s._attachmentsReady=true;
+    return changed;
+  };
+  function normalizeAllSessions(save){
+    var dirty=[];
+    (window.data||[]).forEach(function(s){ if(window.normalizeSessionAttachments(s)) dirty.push(s); });
+    if(save && dirty.length && typeof dbPut==='function'){
+      Promise.all(dirty.map(function(s){ return dbPut(s); })).then(function(){
+        if(typeof toast==='function') toast('📎 تم ترميم المرفقات القديمة وتهيئتها للحفظ والاستعادة');
+      });
+    }
+  }
+  function refreshActiveSessionView(sid){
+    try{
+      var form=document.getElementById('formSheet');
+      if(form && !form.classList.contains('hid') && (window.detId===sid || window.editId===sid)){
+        var s=(window.data||[]).find(function(x){return x.id===sid;});
+        if(s && typeof window.updateUnifiedSessionUI==='function'){
+          window.updateUnifiedSessionUI(form.dataset.mode||((window.detId===sid&&window.editId===sid)?'view':'edit'), s);
+          return;
+        }
+      }
+      if(window.curTab==='list' && typeof render==='function') render(true);
+    }catch(e){}
+  }
+  function readFileAsDataUrl(file){
+    return new Promise(function(resolve,reject){
+      var r=new FileReader();
+      r.onload=function(e){ resolve(e.target.result); };
+      r.onerror=function(){ reject(new Error('تعذر قراءة الملف')); };
+      r.readAsDataURL(file);
+    });
+  }
+  function compressImageFile(file,maxBytes){
+    return new Promise(function(resolve,reject){
+      var reader=new FileReader();
+      reader.onload=function(e){
+        var img=new Image();
+        img.onload=function(){
+          var canvas=document.createElement('canvas');
+          var ratio=Math.min(1, Math.sqrt(maxBytes / Math.max(file.size,1)));
+          canvas.width=Math.max(320, Math.floor(img.width*ratio));
+          canvas.height=Math.max(320, Math.floor(img.height*ratio));
+          var ctx=canvas.getContext('2d');
+          ctx.drawImage(img,0,0,canvas.width,canvas.height);
+          resolve(canvas.toDataURL(file.type||'image/jpeg',0.82));
+        };
+        img.onerror=function(){ reject(new Error('تعذر ضغط الصورة')); };
+        img.src=e.target.result;
+      };
+      reader.onerror=function(){ reject(new Error('تعذر قراءة الصورة')); };
+      reader.readAsDataURL(file);
+    });
+  }
+  function buildStoredAttachment(file,dataUrl,sid){
+    return {
+      name:file.name||'مرفق',
+      mime:file.type||guessMimeByName(file.name),
+      kind:/^image\//i.test(file.type||'')?'image':(/pdf/i.test(file.type||'')||/\.pdf$/i.test(file.name||'')?'pdf':'doc'),
+      size:Number(file.size||0)||0,
+      createdAt:new Date().toISOString(),
+      sourceSessionId:sid,
+      dataUrl:dataUrl
+    };
+  }
+
+  window.downloadAtt=function(sid,idx){
+    var s=(window.data||[]).find(function(x){return x.id===sid;});
+    if(!s||!s.attachments||!s.attachments[idx]) return;
+    window.normalizeSessionAttachments(s);
+    var a=s.attachments[idx], url=attDataUrl(a);
+    if(!url){ if(typeof toast==='function') toast('⚠️ بيانات المرفق غير متوفرة'); return; }
+    var link=document.createElement('a');
+    link.href=url; link.download=a.name||('مرفق_'+(idx+1));
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    if(typeof toast==='function') toast('📥 تم تجهيز التحميل: '+(a.name||'المرفق'));
+  };
+  window.previewAtt=function(sid,idx){
+    var s=(window.data||[]).find(function(x){return x.id===sid;});
+    if(!s||!s.attachments||!s.attachments[idx]) return;
+    window.normalizeSessionAttachments(s);
+    var a=s.attachments[idx], url=attDataUrl(a);
+    if(!url){ if(typeof toast==='function') toast('⚠️ تعذرت معاينة الصورة'); return; }
+    var modal=document.createElement('div');
+    modal.style.cssText='position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,6,12,.92);backdrop-filter:blur(10px)';
+    modal.onclick=function(){modal.remove();};
+    modal.innerHTML='<div style="max-width:min(96vw,900px);max-height:92vh;position:relative" onclick="event.stopPropagation()"><img src="'+url+'" style="max-width:100%;max-height:86vh;border-radius:18px;display:block;box-shadow:0 20px 70px rgba(0,0,0,.45)"><div style="margin-top:10px;text-align:center;font-size:12px;color:#fff;font-family:Tajawal,sans-serif">'+(typeof sanitize==='function'?sanitize(a.name||'مرفق'):a.name||'مرفق')+'</div><div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><button type="button" onclick="downloadAtt('+sid+','+idx+')" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px 16px;cursor:pointer;font-family:Tajawal,sans-serif">📥 تحميل</button><button type="button" onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:rgba(232,80,80,.16);color:#fff;border:1px solid rgba(232,80,80,.28);border-radius:12px;padding:10px 16px;cursor:pointer;font-family:Tajawal,sans-serif">إغلاق</button></div></div>';
+    document.body.appendChild(modal);
+  };
+  window.previewPDFAttFull=function(sid,idx){
+    var s=(window.data||[]).find(function(x){return x.id===sid;});
+    if(!s||!s.attachments||!s.attachments[idx]) return;
+    window.normalizeSessionAttachments(s);
+    var a=s.attachments[idx], url=attDataUrl(a);
+    if(!url){ if(typeof toast==='function') toast('⚠️ تعذر فتح ملف PDF'); return; }
+    var modal=document.createElement('div');
+    modal.id='pdfPreviewModal';
+    modal.style.cssText='position:fixed;inset:0;z-index:1200;background:rgba(2,6,12,.96);display:flex;flex-direction:column;font-family:Tajawal,sans-serif;direction:rtl';
+    modal.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:20px">📄</span><div style="flex:1;font-size:13px;font-weight:700;color:#fff">'+(typeof sanitize==='function'?sanitize(a.name||'PDF'):a.name||'PDF')+'</div><button type="button" onclick="downloadAtt('+sid+','+idx+')" style="background:rgba(96,165,250,.16);color:#dbeafe;border:1px solid rgba(96,165,250,.24);border-radius:10px;padding:8px 12px;cursor:pointer;font-family:Tajawal,sans-serif">📥 تحميل</button><button type="button" onclick="document.getElementById(\'pdfPreviewModal\').remove()" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:8px 12px;cursor:pointer;font-family:Tajawal,sans-serif">إغلاق</button></div><div style="flex:1;padding:12px"><iframe src="'+url+'" style="width:100%;height:100%;border:none;border-radius:14px;background:#111"></iframe></div>';
+    document.body.appendChild(modal);
+  };
+  window.attHTML=function(s){
+    window.normalizeSessionAttachments(s);
+    var atts=s.attachments||[];
+    var h='<div class="v36-att-box">';
+    h+='<div class="v36-att-head"><div><div class="v36-att-title">📎 مرفقات الجلسة</div><div class="v36-att-sub">إضافة، معاينة، تنزيل، حذف، والاحتفاظ بالمرفقات داخل ملف القضية.</div></div><div class="v36-att-count">'+atts.length+'</div></div>';
+    if(atts.length){
+      h+='<div class="v36-att-list">';
+      atts.forEach(function(a,i){
+        var kind=attKind(a), icon=kind==='image'?'🖼️':(kind==='pdf'?'📄':'🗂️');
+        h+='<div class="v36-att-item">';
+        h+='<div class="v36-att-icon">'+icon+'</div>';
+        h+='<div class="v36-att-meta"><div class="v36-att-name">'+(typeof sanitize==='function'?sanitize(a.name||('مرفق '+(i+1))):a.name||('مرفق '+(i+1)))+'</div><div class="v36-att-info">'+(kind==='image'?'صورة':kind==='pdf'?'PDF':'مستند')+(attSizeLabel(a)?' · '+attSizeLabel(a):'')+'</div></div>';
+        h+='<div class="v36-att-actions">';
+        h+='<button type="button" onclick="downloadAtt('+s.id+','+i+')">📥</button>';
+        if(kind==='image') h+='<button type="button" onclick="previewAtt('+s.id+','+i+')">🔍</button>';
+        else if(kind==='pdf') h+='<button type="button" onclick="previewPDFAttFull('+s.id+','+i+')">👁️</button>';
+        h+='<button type="button" onclick="delAtt('+s.id+','+i+')">🗑️</button>';
+        h+='</div></div>';
+      });
+      h+='</div>';
+    } else {
+      h+='<div class="v36-att-empty">لا توجد مرفقات بعد. أضف صورًا أو ملفات PDF أو مستندات وسيتم حفظها داخل القضية واستعادتها من النسخ الاحتياطية.</div>';
+    }
+    h+='<label class="v36-att-add">➕ إضافة مرفقات<input type="file" multiple style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls" onchange="addAtt('+s.id+',this)"></label>';
+    h+='</div>';
+    return h;
+  };
+  window.addAtt=function(sid,input){
+    var files=Array.from((input&&input.files)||[]);
+    if(!files.length) return;
+    var s=(window.data||[]).find(function(x){return x.id===sid;});
+    if(!s){ if(typeof toast==='function') toast('⚠️ تعذر إيجاد الجلسة'); return; }
+    window.normalizeSessionAttachments(s);
+    if(window.dbFallback){
+      var totalSize=files.reduce(function(a,f){return a+(f.size||0);},0);
+      if(totalSize>2.5*1024*1024 && !confirm('أنت تعمل بوضع تخزين احتياطي محدود. رفع ملفات كبيرة قد لا يستمر على بعض نسخ Safari. هل تريد المتابعة؟')){ if(input) input.value=''; return; }
+    }
+    if(typeof toast==='function') toast('⏳ جارٍ تجهيز '+files.length+' ملف...');
+    Promise.all(files.map(function(file){
+      var isLargeImage=/^image\//i.test(file.type||'') && file.size>1200*1024;
+      return (isLargeImage?compressImageFile(file, 900*1024):readFileAsDataUrl(file)).then(function(dataUrl){
+        return buildStoredAttachment(file,dataUrl,sid);
+      });
+    })).then(function(newAtts){
+      s.attachments=(s.attachments||[]).concat(newAtts);
+      window.normalizeSessionAttachments(s);
+      return dbPut(s);
+    }).then(function(){
+      if(input) input.value='';
+      if(typeof toast==='function') toast('📎 تم حفظ '+files.length+' مرفق'+(files.length>1?'ات':''));
+      refreshActiveSessionView(sid);
+    }).catch(function(err){
+      if(typeof toast==='function') toast('⚠️ '+(err&&err.message?err.message:'تعذر إضافة المرفق'));
+    });
+  };
+  window.addMultipleAtt=window.addAtt;
+  window.delAtt=function(sid,idx){
+    var s=(window.data||[]).find(function(x){return x.id===sid;});
+    if(!s||!Array.isArray(s.attachments)||!s.attachments[idx]) return;
+    if(!confirm('حذف هذا المرفق؟')) return;
+    window.normalizeSessionAttachments(s);
+    s.attachments.splice(idx,1);
+    dbPut(s).then(function(){
+      if(typeof toast==='function') toast('✅ تم حذف المرفق');
+      refreshActiveSessionView(sid);
+    });
+  };
+
+  var _origCaseAttachmentsForSession=window.caseAttachmentsForSession;
+  window.caseAttachmentsForSession=function(s){
+    var out=[];
+    if(!s) return out;
+    if(typeof window.caseSessionsForSession==='function'){
+      window.caseSessionsForSession(s).forEach(function(cs){
+        window.normalizeSessionAttachments(cs);
+        (cs.attachments||[]).forEach(function(a,idx){
+          out.push({sid:cs.id,idx:idx,num:cs.num,date:cs.date,name:a.name||('مرفق '+(idx+1)),mime:attMime(a),kind:attKind(a),size:a.size||0,source:(cs.id===s.id?'الجلسة الحالية':'جلسة مرتبطة')});
+        });
+      });
+    }
+    return out;
+  };
+
+  function renderUnifiedAttachmentManager(s){
+    if(!s) return '';
+    var allAtts=window.caseAttachmentsForSession(s);
+    var h='<div class="smart-section-card v36-unified-attachments">';
+    h+='<div class="smart-section-title">📎 إدارة المرفقات</div>';
+    h+='<div class="v36-attach-toolbar"><label class="v36-att-add small">➕ إضافة إلى هذه الجلسة<input type="file" multiple style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls" onchange="addAtt('+s.id+',this)"></label><button type="button" class="v36-mini-action" onclick="openEdit(data.find(function(x){return x.id==='+s.id+';}))">✏️ تعديل البيانات</button></div>';
+    if(allAtts.length){
+      h+='<div class="v36-att-list case">';
+      allAtts.forEach(function(a){
+        h+='<div class="v36-att-item">';
+        h+='<div class="v36-att-icon">'+(a.kind==='image'?'🖼️':(a.kind==='pdf'?'📄':'🗂️'))+'</div>';
+        h+='<div class="v36-att-meta"><div class="v36-att-name">'+(typeof sanitize==='function'?sanitize(a.name):a.name)+'</div><div class="v36-att-info">'+(typeof sanitize==='function'?sanitize(a.date||'—'):a.date||'—')+' · '+(typeof sanitize==='function'?sanitize(a.source):a.source)+(a.size?' · '+attSizeLabel(a):'')+'</div></div>';
+        h+='<div class="v36-att-actions">';
+        h+='<button type="button" onclick="downloadAtt('+a.sid+','+a.idx+')">📥</button>';
+        if(a.kind==='image') h+='<button type="button" onclick="previewAtt('+a.sid+','+a.idx+')">🔍</button>';
+        else if(a.kind==='pdf') h+='<button type="button" onclick="previewPDFAttFull('+a.sid+','+a.idx+')">👁️</button>';
+        h+='<button type="button" onclick="delAtt('+a.sid+','+a.idx+')">🗑️</button>';
+        h+='</div></div>';
+      });
+      h+='</div>';
+    } else {
+      h+='<div class="v36-att-empty">هذا ملف قضية شامل، لكن لا توجد مرفقات محفوظة بعد. أضف من هنا وسيتم الاحتفاظ بها مع الجلسة واستعادتها من النسخ الاحتياطية.</div>';
+    }
+    h+='</div>';
+    return h;
+  }
+  window.updateUnifiedAttachmentPanel=function(sid){
+    var s=(window.data||[]).find(function(x){return x.id===sid;});
+    if(!s) return;
+    var holder=document.getElementById('sessionUnifiedAttachmentPanel');
+    if(!holder){
+      var rv=document.getElementById('sessionUnifiedReadView');
+      if(!rv) return;
+      holder=document.createElement('div');
+      holder.id='sessionUnifiedAttachmentPanel';
+      rv.insertAdjacentElement('beforeend', holder);
+    }
+    holder.innerHTML=renderUnifiedAttachmentManager(s);
+  };
+  if(typeof window.updateUnifiedSessionUI==='function'){
+    var _origUpdateUnifiedSessionUI=window.updateUnifiedSessionUI;
+    window.updateUnifiedSessionUI=function(mode,s){
+      _origUpdateUnifiedSessionUI(mode,s);
+      var rv=document.getElementById('sessionUnifiedReadView');
+      if(rv){
+        var old=document.getElementById('sessionUnifiedAttachmentPanel');
+        if(old) old.remove();
+      }
+      if((mode==='view' || mode==='edit') && s){
+        var target=(mode==='view')?document.getElementById('sessionUnifiedReadView'):document.getElementById('sessionUnifiedSummary');
+        if(target){
+          var panel=document.createElement('div');
+          panel.id='sessionUnifiedAttachmentPanel';
+          panel.innerHTML=renderUnifiedAttachmentManager(s);
+          target.appendChild(panel);
+        }
+      }
+    };
+  }
+
+  function buildCleanMoreHub(){
+    var filter=window._moreHubFilter||'all';
+    var search=String(window._moreHubSearch||'').trim().toLowerCase();
+    var groups=[
+      {id:'workspace',cat:'work',icon:'👥',title:'مركز الموكلين والملفات',desc:'الأطراف، الملفات، الأتعاب، والارتباطات في مكان واحد.',tabs:[{k:'workspace',icon:'👥',lbl:'فتح المركز'}]},
+      {id:'docsHub',cat:'docs',icon:'📚',title:'مركز المستندات والمعرفة',desc:'الوثائق، المكتبة القانونية، ونقاط المشاركة بدون تكرار.',tabs:[{k:'docsHub',icon:'📚',lbl:'فتح المركز'}]},
+      {id:'stats',cat:'analytics',icon:'📈',title:'الإحصاءات ولوحة القيادة',desc:'التقارير، التحليلات، ولوحة المتابعة التنفيذية.',tabs:[{k:'stats',icon:'📈',lbl:'الإحصاءات'},{k:'dashboard',icon:'📊',lbl:'لوحة القيادة'},{k:'kanban',icon:'🗂️',lbl:'المتابعة'}]},
+      {id:'tools',cat:'ops',icon:'🛠️',title:'الأدوات والتخصيص',desc:'الأدوات، الأمان، النسخ الاحتياطية، الفحص، والهوية.',tabs:[{k:'tools',icon:'🛠️',lbl:'فتح الأدوات'}]},
+      {id:'team',cat:'team',icon:'👥',title:'الفريق',desc:'الفريق والصلاحيات وإدارة الوصول.',tabs:[{k:'team',icon:'👥',lbl:'الفريق'}]}
+    ];
+    var filters=[{k:'all',lbl:'الكل'},{k:'work',lbl:'العمل'},{k:'docs',lbl:'المستندات'},{k:'analytics',lbl:'التحليل'},{k:'ops',lbl:'الأدوات'},{k:'team',lbl:'الفريق'}];
+    var vis=groups.filter(function(g){
+      var ok=(filter==='all'||g.cat===filter);
+      if(search){ ok = ok && (g.title+' '+g.desc+' '+g.tabs.map(function(t){return t.lbl;}).join(' ')).toLowerCase().indexOf(search)>-1; }
+      return ok;
+    });
+    var h='';
+    h+='<div class="v36-more-hero"><div><div class="ttl">☰ المزيد</div><div class="sub">لوحة أنظف: أقسام موحّدة، حذف للتكرار، وصول أسرع، وبطاقات أوضح.</div></div><button type="button" class="v36-mini-action" onclick="go(\'home\')">🏠 الرئيسية</button></div>';
+    h+='<div class="v36-more-search"><input type="search" dir="rtl" value="'+(typeof sanitize==='function'?sanitize(window._moreHubSearch||''):(window._moreHubSearch||''))+'" oninput="window._moreHubSearch=this.value;window._moreHubSearchTimer&&clearTimeout(window._moreHubSearchTimer);window._moreHubSearchTimer=setTimeout(function(){render(true);},120)" placeholder="ابحث داخل المزيد..."></div>';
+    h+='<div class="v36-filter-row">';
+    filters.forEach(function(f){ h+='<button type="button" class="'+(filter===f.k?'on':'')+'" onclick="window._moreHubFilter=\''+f.k+'\';render(true)">'+f.lbl+'</button>'; });
+    h+='</div>';
+    h+='<div class="v36-more-grid">';
+    vis.forEach(function(g){
+      h+='<div class="v36-more-card"><div class="ico">'+g.icon+'</div><div class="title">'+g.title+'</div><div class="desc">'+g.desc+'</div><div class="tabs">';
+      g.tabs.forEach(function(t){ h+='<button type="button" onclick="go(\''+t.k+'\')">'+t.icon+' '+t.lbl+'</button>'; });
+      h+='</div></div>';
+    });
+    if(!vis.length) h+='<div class="v36-att-empty" style="grid-column:1/-1">لا توجد أقسام مطابقة للفلاتر الحالية.</div>';
+    h+='</div>';
+    return h;
+  }
+  window.buildMoreHub=buildCleanMoreHub;
+  window.rSettings=function(){ return buildCleanMoreHub(); };
+
+  function injectPolishStyles(){
+    if(document.getElementById('v36PatchStyles')) return;
+    var style=document.createElement('style');
+    style.id='v36PatchStyles';
+    style.textContent=`
+      .v36-att-box,.v36-unified-attachments .smart-section-card{background:var(--surface2);border:1px solid var(--border2);border-radius:18px;padding:14px;margin-top:10px}
+      .v36-att-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+      .v36-att-title{font-size:13px;font-weight:800;color:var(--text)}
+      .v36-att-sub{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.8}
+      .v36-att-count{min-width:40px;height:40px;border-radius:14px;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:var(--gold2)}
+      .v36-att-list{display:grid;gap:8px}
+      .v36-att-item{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;background:var(--surface3);border:1px solid var(--border);border-radius:14px;padding:10px}
+      .v36-att-icon{width:40px;height:40px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px}
+      .v36-att-name{font-size:12px;font-weight:700;color:var(--text);line-height:1.6}
+      .v36-att-info{font-size:10px;color:var(--text3);margin-top:3px}
+      .v36-att-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+      .v36-att-actions button,.v36-mini-action{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif}
+      .v36-att-actions button:hover,.v36-mini-action:hover{border-color:var(--gold-a20);color:var(--text)}
+      .v36-att-empty{background:rgba(255,255,255,.03);border:1px dashed var(--border2);border-radius:14px;padding:14px;font-size:11px;line-height:1.9;color:var(--text3)}
+      .v36-att-add{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--gold-a10);color:var(--gold2);border:1px dashed var(--gold-a30);border-radius:14px;padding:11px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif;margin-top:10px}
+      .v36-att-add.small{margin-top:0}
+      .v36-attach-toolbar{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+      .v36-more-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:linear-gradient(135deg,rgba(200,168,75,.16),rgba(255,255,255,.02));border:1px solid rgba(200,168,75,.24);border-radius:22px;padding:18px 16px;margin-bottom:14px}
+      .v36-more-hero .ttl{font-family:Scheherazade New,serif;font-size:28px;line-height:1;color:var(--gold2)}
+      .v36-more-hero .sub{font-size:12px;color:var(--text2);margin-top:8px;line-height:1.9;max-width:560px}
+      .v36-more-search input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:13px 14px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif;margin-bottom:10px}
+      .v36-filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+      .v36-filter-row button{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:999px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif}
+      .v36-filter-row button.on{background:var(--gold-a10);border-color:var(--gold-a20);color:var(--gold2)}
+      .v36-more-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+      .v36-more-card{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+      .v36-more-card .ico{font-size:28px}
+      .v36-more-card .title{font-size:14px;font-weight:900;color:var(--text)}
+      .v36-more-card .desc{font-size:11px;color:var(--text3);line-height:1.8;min-height:42px}
+      .v36-more-card .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+      .v36-more-card .tabs button{background:var(--surface3);border:1px solid var(--border);color:var(--text2);border-radius:12px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif}
+      .v36-more-card .tabs button:hover{border-color:var(--gold-a20);color:var(--text)}
+      #sessionUnifiedFooter{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(10,14,23,0),var(--bg) 24%);padding-top:12px;z-index:3}
+      @media (max-width: 640px){.v36-att-item{grid-template-columns:36px 1fr}.v36-att-actions{grid-column:1/-1;justify-content:flex-start}.v36-more-hero{padding:16px 14px}.v36-more-grid{grid-template-columns:1fr}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  setTimeout(function(){
+    injectPolishStyles();
+    normalizeAllSessions(true);
+  },120);
 })();
 </script>
 
