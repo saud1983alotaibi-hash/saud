@@ -20017,5 +20017,359 @@ html,body,#app,button,input,select,textarea{font-family:var(--app-font)!importan
 })();
 </script>
 
+
+<script>
+(function(){
+  function hs(v){
+    if(v===null||v===undefined) return '—';
+    return (typeof sanitize==='function') ? sanitize(String(v)) : String(v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function homeBox(title, body, subtitle){
+    return '<section class="home-collapsible-box" data-acc-title="'+hs(title)+'"'+(subtitle?' data-acc-sub="'+hs(subtitle)+'"':'')+'>'+
+      '<div class="home-collapsible-inner">'+body+'</div></section>';
+  }
+  function statCard(icon,label,value,note,action,color){
+    return '<button class="home-stat-card" onclick="'+action+'">'+
+      '<span class="home-stat-icon" style="color:'+(color||'var(--gold2)')+'">'+icon+'</span>'+
+      '<span class="home-stat-value">'+hs(value)+'</span>'+
+      '<span class="home-stat-label">'+hs(label)+'</span>'+
+      '<span class="home-stat-note">'+hs(note||'')+'</span>'+
+    '</button>';
+  }
+  function actionCard(icon,title,desc,action){
+    return '<button class="home-action-card" onclick="'+action+'">'+
+      '<span class="home-action-icon">'+icon+'</span>'+
+      '<span class="home-action-title">'+hs(title)+'</span>'+
+      '<span class="home-action-desc">'+hs(desc||'')+'</span>'+
+    '</button>';
+  }
+  function smallTaskCard(t){
+    var due=t&&t.due?(' · '+hs(typeof fmtS==='function'?fmtS(t.due):t.due)) : '';
+    var pr=(t&&t.priority==='high')?'عالية':'عادية';
+    return '<div class="home-mini-card" onclick="go(\'tasks\')">'+
+      '<div class="home-mini-title">'+hs(t&&t.title||'مهمة')+'</div>'+
+      '<div class="home-mini-sub">'+hs(pr)+due+'</div>'+
+    '</div>';
+  }
+  function deadlineMiniCard(item){
+    var s=item.s||{}; var info=item.info||{}; var rem=info.remaining;
+    var remTxt=(rem<0?('منتهية منذ '+Math.abs(rem)+' يوم'):(rem===0?'تنتهي اليوم':('متبقي '+rem+' يوم')));
+    return '<div class="home-mini-card" onclick="'+(s&&s.id?'openDet('+s.id+')':'go(\'stats\')')+'">'+
+      '<div class="home-mini-title">'+hs((s.num||'قضية')+' · '+(info.typeName||'موعد'))+'</div>'+
+      '<div class="home-mini-sub">'+hs(remTxt)+'</div>'+
+    '</div>';
+  }
+  function qfButton(key,label,icon){
+    var active=(window._homeQF||'all')===key;
+    return '<button class="home-filter-chip'+(active?' on':'')+'" onclick="window._homeQF=\''+key+'\';render(true)">'+icon+' '+hs(label)+'</button>';
+  }
+  function safeToday(){
+    try{return typeof today==='function'?today():new Date().toISOString().split('T')[0];}catch(e){return new Date().toISOString().split('T')[0];}
+  }
+  function safeFmt(date){
+    try{return typeof fmtS==='function'?fmtS(date):date;}catch(e){return date||'—';}
+  }
+  function safeCard(s){
+    try{return typeof card==='function'?card(s):'<div class="home-fallback-card">'+hs(s&&s.num||'جلسة')+'</div>';}
+    catch(e){return '<div class="home-fallback-card">'+hs(s&&s.num||'جلسة')+'</div>';}
+  }
+  function buildHomeFixed(){
+    var sessions=Array.isArray(window.data)?window.data:[];
+    var taskList=Array.isArray(window.tasks)?window.tasks:[];
+    var feeList=Array.isArray(window.fees)?window.fees:[];
+    var td=safeToday();
+    var scheduled=sessions.filter(function(s){return s && (s.status==='scheduled' || s.status==='inProgress');});
+    var todayS=sessions.filter(function(s){return s&&s.date===td;}).sort(function(a,b){return String(a.time||'').localeCompare(String(b.time||''));});
+    var next7=[]; for(var i=0;i<7;i++){ var d=new Date(); d.setDate(d.getDate()+i); next7.push(d.toISOString().split('T')[0]); }
+    var weekS=sessions.filter(function(s){return s&&next7.indexOf(s.date)>-1;}).sort(function(a,b){return (String(a.date||'')+String(a.time||'')).localeCompare(String(b.date||'')+String(b.time||''));});
+    var upcoming=sessions.filter(function(s){return s&&s.date>td&&(s.status==='scheduled'||s.status==='inProgress');}).sort(function(a,b){return (String(a.date||'')+String(a.time||'')).localeCompare(String(b.date||'')+String(b.time||''));}).slice(0,6);
+    var high=sessions.filter(function(s){return s&&s.priority==='high'&&(s.status==='scheduled'||s.status==='inProgress');}).sort(function(a,b){return (String(a.date||'')+String(a.time||'')).localeCompare(String(b.date||'')+String(b.time||''));});
+    var postponed=sessions.filter(function(s){return s&&s.status==='postponed';}).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+    var openTasks=taskList.filter(function(t){return t && !t.done;});
+    var urgentTasks=openTasks.filter(function(t){return t.priority==='high';});
+    var overdueTasks=openTasks.filter(function(t){return t.due && t.due<td;});
+    var totalFees=feeList.reduce(function(a,f){return a+(parseFloat(f.amount)||0);},0);
+    var paidFees=feeList.filter(function(f){return f && (f.paid || f.status==='paid');}).reduce(function(a,f){return a+(parseFloat(f.amount)||0);},0);
+    var deadlineItems=[];
+    try{
+      var map=window.sessionDeadlines||{};
+      deadlineItems=Object.keys(map).map(function(id){
+        var sid=parseInt(id,10);
+        var s=sessions.find(function(x){return x.id===sid;}) || ((window.archivedSessions||[]).find? (window.archivedSessions||[]).find(function(x){return x.id===sid;}) : null);
+        var info=typeof getDeadlineInfo==='function'?getDeadlineInfo(sid):null;
+        if(!info) return null;
+        return {s:s,info:info};
+      }).filter(function(x){return x && x.info && x.info.remaining>=-3;}).sort(function(a,b){return a.info.remaining-b.info.remaining;}).slice(0,4);
+    }catch(e){ deadlineItems=[]; }
+
+    var qf=window._homeQF||'all';
+    var hero = '<div class="home-hero">'+
+      '<div class="home-hero-title">🏠 الرئيسية</div>'+
+      '<div class="home-hero-sub">لوحة يومية أخف وأثبت، مع أقسام قابلة للطي واختصارات سريعة للعمل اليومي.</div>'+
+      '<div class="home-filter-row" data-dedupe-row="home-qf">'+
+        qfButton('all','الكل','⚖️')+
+        qfButton('today','اليوم','📅')+
+        qfButton('week','هذا الأسبوع','🗓️')+
+        qfButton('high','عالية','🔴')+
+        qfButton('postponed','مؤجلة','⏸️')+
+      '</div>'+
+    '</div>';
+
+    var overview = '<div class="home-grid home-grid-2">'+
+      statCard('⚖️','القضايا النشطة', scheduled.length, 'إجمالي الجلسات النشطة', "go('list')", 'var(--gold2)')+
+      statCard('📅','جلسات اليوم', todayS.length, safeFmt(td), "window._homeQF='today';render(true)", 'var(--blue)')+
+      statCard('📋','المهمات المفتوحة', openTasks.length, urgentTasks.length?('العاجلة '+urgentTasks.length):'بدون عجلة', "go('tasks')", 'var(--green)')+
+      statCard('💰','الأتعاب', totalFees.toLocaleString('ar-SA'), 'المحصّل '+paidFees.toLocaleString('ar-SA'), "go('workspace')", 'var(--amber)')+
+    '</div>'+
+    '<div class="home-grid home-grid-2 home-actions">'+
+      actionCard('＋','جلسة جديدة','إضافة جلسة أو قضية جديدة','openAdd()')+
+      actionCard('📋','مهمة جديدة','فتح تبويب المهمات','go(\'tasks\')')+
+      actionCard('📊','الإحصاءات','ملخص الأداء والتقارير','go(\'stats\')')+
+      actionCard('➕','المزيد','الأدوات والمراكز','go(\'more\')')+
+    '</div>';
+
+    var sessionSource = qf==='today' ? todayS : qf==='week' ? weekS : qf==='high' ? high : qf==='postponed' ? postponed : upcoming;
+    var sessionTitle = qf==='today' ? 'جلسات اليوم' : qf==='week' ? 'جلسات الأسبوع' : qf==='high' ? 'الجلسات العالية' : qf==='postponed' ? 'الجلسات المؤجلة' : 'القادمة قريبًا';
+    var sessionsHtml = sessionSource.length ? '<div class="stagger">'+sessionSource.slice(0,8).map(safeCard).join('')+'</div>' : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">لا توجد عناصر ضمن هذا الفلتر</div></div>';
+
+    var taskHtml = '';
+    if(openTasks.length || deadlineItems.length){
+      if(openTasks.length){
+        taskHtml += '<div class="home-subhead">📋 أهم المهمات</div><div class="home-mini-grid">'+openTasks.slice(0,4).map(smallTaskCard).join('')+'</div>';
+      }
+      if(deadlineItems.length){
+        taskHtml += '<div class="home-subhead" style="margin-top:10px">⏰ المواعيد العاجلة</div><div class="home-mini-grid">'+deadlineItems.map(deadlineMiniCard).join('')+'</div>';
+      }
+    } else {
+      taskHtml = '<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">لا توجد مهمات أو مواعيد عاجلة حاليًا</div></div>';
+    }
+
+    var remote = sessions.filter(function(s){return s&&s.date===td&&s.meetUrl&&(s.status==='scheduled'||s.status==='inProgress');});
+    var remoteHtml = remote.length ? '<div class="home-mini-grid">'+remote.slice(0,4).map(function(s){
+      return '<div class="home-mini-card">'+
+        '<div class="home-mini-title">'+hs(s.num||'جلسة')+'</div>'+
+        '<div class="home-mini-sub">'+hs((s.time||'—')+' · '+(s.court||'—'))+'</div>'+
+        '<div style="margin-top:8px">'+(typeof meetJoinBtn==='function'?meetJoinBtn(s,'small'):'')+'</div>'+
+      '</div>';
+    }).join('')+'</div>' : '<div class="empty"><div class="empty-icon">🎥</div><div class="empty-title">لا توجد جلسات عن بُعد اليوم</div></div>';
+
+    var html='';
+    html += homeBox('ملخص اليوم', hero + overview, 'اختصارات سريعة ومؤشرات العمل');
+    html += homeBox(sessionTitle, sessionsHtml, 'جلسات وقضايا مرتبة حسب الفلتر المحدد');
+    html += homeBox('المهمات والمواعيد', taskHtml, 'أقرب الإجراءات التي تحتاج متابعة');
+    html += homeBox('الاجتماعات عن بُعد', remoteHtml, 'روابط اليوم السريعة إن وجدت');
+    return html;
+  }
+
+  window.rHome = buildHomeFixed;
+
+  var style = document.createElement('style');
+  style.textContent = '\
+  .home-collapsible-box{display:block} \
+  .home-collapsible-inner{display:block} \
+  .home-hero{background:linear-gradient(160deg,rgba(200,168,75,.12),rgba(14,21,39,.96) 45%,rgba(8,12,24,.98));border:1px solid var(--gold-a20);border-radius:22px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.24)} \
+  .home-hero-title{font-size:22px;font-weight:800;color:var(--gold2);margin-bottom:6px} \
+  .home-hero-sub{font-size:12px;line-height:1.8;color:var(--text2);margin-bottom:12px} \
+  .home-filter-row{display:flex;gap:8px;overflow:auto;padding-bottom:2px;scrollbar-width:none} \
+  .home-filter-chip{flex:0 0 auto;border:1px solid var(--border);background:var(--surface2);color:var(--text2);border-radius:999px;padding:8px 12px;font:700 12px Tajawal,sans-serif;cursor:pointer} \
+  .home-filter-chip.on{background:var(--gold-a10);color:var(--gold2);border-color:var(--gold-a30)} \
+  .home-grid{display:grid;gap:10px} \
+  .home-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))} \
+  .home-actions{margin-top:10px} \
+  .home-stat-card,.home-action-card{appearance:none;-webkit-appearance:none;border:1px solid var(--border);background:var(--surface2);border-radius:18px;padding:12px;display:flex;flex-direction:column;align-items:flex-start;text-align:right;gap:5px;cursor:pointer;font-family:Tajawal,sans-serif;min-height:96px} \
+  .home-stat-icon,.home-action-icon{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:18px} \
+  .home-stat-value{font-size:20px;font-weight:900;color:var(--text)} \
+  .home-stat-label,.home-action-title{font-size:12px;font-weight:800;color:var(--text)} \
+  .home-stat-note,.home-action-desc{font-size:10px;color:var(--text3);line-height:1.7} \
+  .home-subhead{font-size:12px;font-weight:800;color:var(--gold2);margin-bottom:8px} \
+  .home-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px} \
+  .home-mini-card{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:12px} \
+  .home-mini-title{font-size:12px;font-weight:800;color:var(--text);line-height:1.8} \
+  .home-mini-sub{font-size:10px;color:var(--text3);line-height:1.7;margin-top:4px} \
+  .home-fallback-card{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:12px;color:var(--text)} \
+  @media (max-width:420px){.home-grid-2,.home-mini-grid{grid-template-columns:1fr 1fr}.home-stat-card,.home-action-card{min-height:92px}}\
+  ';
+  document.head.appendChild(style);
+
+  var oldPost = window.__v46PostProcess;
+  window.__v46PostProcess = function(){
+    try{ if(typeof oldPost==='function') oldPost(); }catch(e){}
+    try{
+      if(window.curTab==='home'){
+        var cnt=document.getElementById('cnt');
+        if(cnt){
+          cnt.querySelectorAll('.tab-accordion').forEach(function(d,i){
+            if(i===0 && !d.open) d.open=true;
+          });
+        }
+      }
+    }catch(e){}
+  };
+
+  if(window.curTab==='home') setTimeout(function(){ try{ render(true); }catch(e){} }, 0);
+})();
+</script>
+
+
+<script id="v48-dedupe-centers-patch">
+(function(){
+  if(window.__v48DedupCentersInstalled) return;
+  window.__v48DedupCentersInstalled = true;
+
+  function esc(v){
+    v = v == null ? '' : String(v);
+    return (typeof sanitize === 'function')
+      ? sanitize(v)
+      : v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function stat(icon,val,label,tone){
+    return '<div style="background:'+(tone||'var(--surface2)')+';border:1px solid var(--border);border-radius:14px;padding:12px 10px">'+
+      '<div style="font-size:18px;margin-bottom:6px">'+icon+'</div>'+
+      '<div style="font-size:16px;font-weight:800;color:var(--text)">'+esc(val)+'</div>'+
+      '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+esc(label)+'</div></div>';
+  }
+  function pillRow(items,active,fnName){
+    var h='<div style="display:flex;gap:8px;overflow:auto hidden;padding-bottom:4px;margin:0 0 14px;scrollbar-width:none">';
+    items.forEach(function(it){
+      var on=active===it.id;
+      h+='<button onclick="'+fnName+'(\''+it.id+'\')" style="white-space:nowrap;background:'+(on?'var(--gold-a10)':'var(--surface2)')+';color:'+(on?'var(--gold2)':'var(--text2)')+';border:1px solid '+(on?'var(--gold-a30)':'var(--border)')+';border-radius:999px;padding:10px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif">'+it.icon+' '+it.lbl+'</button>';
+    });
+    h+='</div>';
+    return h;
+  }
+  function infoCard(icon,title,desc){
+    return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:14px;text-align:right;font-family:Tajawal,sans-serif;display:flex;align-items:center;gap:12px;width:100%">'+
+      '<span style="width:42px;height:42px;border-radius:14px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+icon+'</span>'+
+      '<span style="flex:1"><span style="display:block;font-size:13px;font-weight:800;color:var(--text)">'+esc(title)+'</span><span style="display:block;font-size:10px;color:var(--text3);margin-top:4px;line-height:1.7">'+esc(desc)+'</span></span>'+
+    '</div>';
+  }
+
+  window.rWorkspaceHub = function(){
+    var view = window._workspaceView || 'overview';
+    if(['contacts','files','fees'].indexOf(view) === -1) view = 'overview';
+    var totalFees = (Array.isArray(fees)?fees:[]).reduce(function(sum,f){ return sum + (parseFloat(f&&f.amount)||0); }, 0);
+    var h='';
+    h+='<div style="background:linear-gradient(135deg,rgba(40,184,112,.14),rgba(40,184,112,.04));border:1px solid rgba(40,184,112,.18);border-radius:var(--r-xl);padding:18px 16px;margin-bottom:14px;position:relative;overflow:hidden">';
+    h+='<div style="position:absolute;top:-24px;left:-20px;width:100px;height:100px;border-radius:50%;background:rgba(40,184,112,.10);filter:blur(18px)"></div>';
+    h+='<div style="position:relative"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">';
+    h+='<div><div style="font-family:Scheherazade New,serif;font-size:22px;color:var(--gold2);line-height:1.1">🧩 مركز الموكلين والملفات</div>';
+    h+='<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.8">مركز موحّد للأطراف والملفات والأتعاب بدون تبويبات مكررة أو انتقالات تعيد نفس المحتوى.</div></div>';
+    h+='<div style="background:rgba(255,255,255,.05);border:1px solid rgba(40,184,112,.18);border-radius:14px;padding:10px 12px;text-align:center;min-width:92px"><div style="font-size:10px;color:var(--text3)">المركز الحالي</div><div style="font-size:13px;font-weight:800;color:var(--gold2);margin-top:3px">'+(view==='overview'?'الكل':view==='contacts'?'الأطراف':view==='files'?'الملفات':'الأتعاب')+'</div></div></div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">';
+    h+=stat('👥', Array.isArray(contacts)?contacts.length:0, 'الأطراف', 'rgba(40,184,112,.08)');
+    h+=stat('📁', Array.isArray(wordFiles)?wordFiles.length:0, 'الملفات', 'rgba(74,142,245,.08)');
+    h+=stat('💰', Array.isArray(fees)?fees.length:0, 'سجلات الأتعاب', 'rgba(212,168,67,.08)');
+    h+=stat('🧾', totalFees.toLocaleString('ar-SA'), 'إجمالي الأتعاب', 'rgba(120,80,216,.08)');
+    h+='</div></div></div>';
+    h+=pillRow([
+      {id:'overview',icon:'✨',lbl:'الكل'},
+      {id:'contacts',icon:'👥',lbl:'الأطراف'},
+      {id:'files',icon:'📁',lbl:'الملفات'},
+      {id:'fees',icon:'💰',lbl:'الأتعاب'}
+    ], view, 'setWorkspaceView');
+
+    if(view==='overview'){
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:14px 14px 12px;margin-bottom:10px">';
+      h+='<div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:6px">تنظيم موحّد بدون تكرار</div>';
+      h+='<div style="font-size:11px;color:var(--text3);line-height:1.9">اختر من الشرائح أعلاه للوصول إلى الأطراف أو الملفات أو الأتعاب. لم يعد هذا المركز يعرض أي بطاقات انتقال مكررة أو محتوى من مراكز أخرى.</div>';
+      h+='</div>';
+      h+='<div style="display:grid;grid-template-columns:1fr;gap:8px">';
+      h+=infoCard('👥','الأطراف والموكلون','إدارة بيانات الموكلين والأطراف والارتباطات الأساسية في مكان واحد.');
+      h+=infoCard('📁','الملفات والمرفقات','متابعة الملفات، المجلدات، والوثائق المرتبطة بكل موكل أو قضية.');
+      h+=infoCard('💰','الأتعاب والدفعات','سجلات الأتعاب، المدفوعات، والرصيد المرتبط بالعمل القانوني.');
+      h+='</div>';
+      return h;
+    }
+    if(view==='contacts') return h + (typeof rContacts==='function' ? rContacts() : '');
+    if(view==='files') return h + (typeof rFiles==='function' ? rFiles() : '');
+    if(view==='fees') return h + (typeof rFees==='function' ? rFees() : '');
+    return h;
+  };
+
+  window.rDocsHub = function(){
+    var view = window._docsHubView || 'overview';
+    if(['letterhead','legal','share'].indexOf(view) === -1) view = 'overview';
+    var h='';
+    h+='<div style="background:linear-gradient(135deg,rgba(212,168,67,.16),rgba(212,168,67,.04));border:1px solid var(--gold-a20);border-radius:var(--r-xl);padding:18px 16px;margin-bottom:14px;position:relative;overflow:hidden">';
+    h+='<div style="position:absolute;top:-24px;left:-20px;width:100px;height:100px;border-radius:50%;background:var(--gold-a10);filter:blur(18px)"></div>';
+    h+='<div style="position:relative"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">';
+    h+='<div><div style="font-family:Scheherazade New,serif;font-size:22px;color:var(--gold2);line-height:1.1">📝 مركز المستندات والمعرفة</div>';
+    h+='<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.8">مركز موحّد للمستندات والمرجعيات والمشاركة بدون بطاقات انتقال متكررة أو تبويبات موازية.</div></div>';
+    h+='<div style="background:rgba(255,255,255,.05);border:1px solid var(--gold-a20);border-radius:14px;padding:10px 12px;text-align:center;min-width:92px"><div style="font-size:10px;color:var(--text3)">المركز الحالي</div><div style="font-size:13px;font-weight:800;color:var(--gold2);margin-top:3px">'+(view==='overview'?'الكل':view==='letterhead'?'المستندات':view==='legal'?'المعرفة':'المشاركة')+'</div></div></div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+    h+=stat('📝','صيغ','المستندات','rgba(212,168,67,.08)');
+    h+=stat('📚','مراجع','المعرفة','rgba(74,142,245,.08)');
+    h+=stat('🔗','مشاركات','المشاركة','rgba(120,80,216,.08)');
+    h+='</div></div></div>';
+    h+=pillRow([
+      {id:'overview',icon:'✨',lbl:'الكل'},
+      {id:'letterhead',icon:'📝',lbl:'المستندات'},
+      {id:'legal',icon:'📚',lbl:'المعرفة'},
+      {id:'share',icon:'🔗',lbl:'المشاركة'}
+    ], view, 'setDocsHubView');
+
+    if(view==='overview'){
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:14px 14px 12px;margin-bottom:10px">';
+      h+='<div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:6px">مركز موحّد بدون تكرار</div>';
+      h+='<div style="font-size:11px;color:var(--text3);line-height:1.9">استعمل الشرائح أعلاه للتنقل بين المستندات والمعرفة والمشاركة. أُزيلت البطاقات التي كانت تعيد نفس التنقل داخل الصفحة.</div>';
+      h+='</div>';
+      h+='<div style="display:grid;grid-template-columns:1fr;gap:8px">';
+      h+=infoCard('📝','المستندات والصيغ','نماذج العمل القانونية، المكاتبات، وصيغ التحرير في مكان واحد.');
+      h+=infoCard('📚','المعرفة القانونية','المكتبة القانونية والمراجع والقوالب الإرشادية.');
+      h+=infoCard('🔗','المشاركة والتصدير','إرسال ومشاركة الملفات والنتائج عند الحاجة.');
+      h+='</div>';
+      return h;
+    }
+    if(view==='letterhead') return h + (typeof rLetterhead==='function' ? rLetterhead() : '');
+    if(view==='legal') return h + (typeof rLegal==='function' ? rLegal() : '');
+    if(view==='share') return h + (typeof rShare==='function' ? rShare() : '');
+    return h;
+  };
+
+  function dedupeExactTextButtons(scope){
+    if(!scope) return;
+    scope.querySelectorAll('div').forEach(function(row){
+      var kids = Array.prototype.slice.call(row.children || []);
+      if(kids.length < 2) return;
+      var seen = Object.create(null);
+      kids.forEach(function(node){
+        if(!node || !node.tagName) return;
+        if(['BUTTON','A'].indexOf(node.tagName) === -1) return;
+        var txt = (node.textContent || '').replace(/\s+/g,' ').trim();
+        if(!txt || txt.length < 2) return;
+        if(seen[txt]) node.remove();
+        else seen[txt] = true;
+      });
+    });
+  }
+
+  function cleanRepeatedViews(){
+    var cnt = document.getElementById('cnt');
+    if(!cnt) return;
+    if(window.curTab==='workspace' || window.curTab==='docsHub' || window.curTab==='settings'){
+      dedupeExactTextButtons(cnt);
+    }
+  }
+
+  var oldRender = window.render;
+  if(typeof oldRender === 'function'){
+    window.render = function(force){
+      var out = oldRender.apply(this, arguments);
+      try{ cleanRepeatedViews(); }catch(e){}
+      return out;
+    };
+  }
+
+  setTimeout(function(){
+    try{
+      if(window.curTab==='workspace' || window.curTab==='docsHub' || window.curTab==='settings'){
+        if(typeof render==='function') render(true);
+      }
+    }catch(e){}
+  },0);
+})();
+</script>
+
 </body>
 </html>
