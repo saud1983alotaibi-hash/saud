@@ -753,6 +753,20 @@ select:focus, textarea:focus {
 .ux-note{font-size:10px;color:var(--text3);line-height:1.8}
 .ux-empty{background:var(--surface2);border:1px dashed var(--border2);border-radius:18px;padding:18px;text-align:center}
 
+
+/* v45 audit polish */
+html,body{
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.55;
+}
+#cnt, .sheet-body, .dlg, .s-card, .field input, .field select, .field textarea, button{
+  letter-spacing:.01em;
+}
+.hdr-title,.sheet-title,.s-card-num{text-wrap:balance;}
+.tab,.chip,.bnav-lbl,.sec-hdr,.det-key,.det-val,.att-name{font-variant-numeric:tabular-nums;}
+
 </style>
 </head>
 <body>
@@ -773,7 +787,7 @@ select:focus, textarea:focus {
 </div>
 <div class="tabs-scroll">
 <button class="tab on" id="tb-home" onclick="go('home')">الرئيسية</button>
-<button class="tab" id="tb-list" onclick="go('list')">الجلسات</button>
+<button class="tab" id="tb-list" onclick="go('list')">القضايا والجلسات</button>
 <button class="tab" id="tb-settings" onclick="go('settings')">☰ المزيد</button>
 </div>
 <div style="height:1px;background:var(--border)"></div>
@@ -782,7 +796,7 @@ select:focus, textarea:focus {
 <!-- Bottom Navigation (mobile) -->
 <div id="bottomNav">
 <button class="bnav-btn" id="bn-home" onclick="go('home')"><span class="bnav-ico" style="position:relative">🏠<span id="todayBadge" style="display:none;position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;border-radius:8px;background:#e04555;color:#fff;font-size:9px;font-weight:900;align-items:center;justify-content:center;line-height:1;padding:0 3px"></span></span><span class="bnav-lbl">الرئيسية</span></button>
-<button class="bnav-btn" id="bn-list" onclick="go('list')"><span class="bnav-ico">⚖️</span><span class="bnav-lbl">الجلسات</span></button>
+<button class="bnav-btn" id="bn-list" onclick="go('list')"><span class="bnav-ico">⚖️</span><span class="bnav-lbl">القضايا</span></button>
 <button class="bnav-fab" onclick="openAdd()" title="جلسة جديدة">＋</button>
 <button class="bnav-btn" id="bn-ai" onclick="go('ai')"><span class="bnav-ico">🤖</span><span class="bnav-lbl">سعود</span></button>
 <button class="bnav-btn" id="bn-settings" onclick="go('settings')"><span class="bnav-ico">⚙️</span><span class="bnav-lbl">المزيد</span></button>
@@ -1193,7 +1207,7 @@ var SAMPLE=[
 
 var data=[],curTab="home",filterS="all",q="",advOpen=false;
 var tabHistory=[],_navBackLock=false;
-var TAB_LABELS={home:'الرئيسية',list:'الجلسات',tasks:'المهمات',contacts:'مركز الموكلين والملفات',files:'مركز الموكلين والملفات',workspace:'مركز الموكلين والملفات',ai:'سعود AI',cal:'التقويم',stats:'الإحصاءات',fees:'مركز الموكلين والملفات',tools:'الأدوات والتخصيص',colors:'الأدوات والتخصيص',archive:'الجلسات / المحذوفات',letterhead:'مركز المستندات والمعرفة',legal:'مركز المستندات والمعرفة',share:'مركز المستندات والمعرفة',docsHub:'مركز المستندات والمعرفة',settings:'المزيد',team:'الفريق',dashboard:'لوحة القيادة',kanban:'لوحة المتابعة',today:'اليوم'};
+var TAB_LABELS={home:'الرئيسية',list:'القضايا والجلسات',tasks:'المهمات',contacts:'مركز الموكلين والملفات',files:'مركز الموكلين والملفات',workspace:'مركز الموكلين والملفات',ai:'سعود AI',cal:'التقويم',stats:'الإحصاءات',fees:'مركز الموكلين والملفات',tools:'الأدوات والتخصيص',colors:'الأدوات والتخصيص',archive:'الجلسات / المحذوفات',letterhead:'مركز المستندات والمعرفة',legal:'مركز المستندات والمعرفة',share:'مركز المستندات والمعرفة',docsHub:'مركز المستندات والمعرفة',settings:'المزيد',team:'الفريق',dashboard:'لوحة القيادة',kanban:'لوحة المتابعة',today:'اليوم'};
 function getTabLabel(t){return TAB_LABELS[t]||'التبويب';}
 function buildTabBackFilter(){if(curTab==='home')return '';var prev=tabHistory.length?getTabLabel(tabHistory[tabHistory.length-1]):'الرئيسية';return '<div class="nav-back-filter">'+
   '<button class="nav-back-btn primary" onclick="goBackTab()">↩️ عودة</button>'+
@@ -2751,7 +2765,7 @@ function rList(){
   var _todayCount=data.filter(function(s){return s.date===_today&&(s.status==='scheduled'||s.status==='inProgress');}).length;
   var _deletedCount=archivedSessions.length;
   var h='';
-  h+='<div class="ux-hero"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px"><div><div style="font-family:Scheherazade New,serif;font-size:24px;line-height:1;color:var(--gold2)">⚖️ الجلسات</div><div class="ux-note" style="margin-top:6px">لوحة موحّدة للجلسات مع بحث وفلاتر وحذف واستعادة من نفس المسار.</div></div><button onclick="openAdd()" style="background:var(--gold);color:#0a0905;border:none;border-radius:14px;padding:10px 14px;font-weight:800;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif;white-space:nowrap">＋ جلسة</button></div>';
+  h+='<div class="ux-hero"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px"><div><div style="font-family:Scheherazade New,serif;font-size:24px;line-height:1;color:var(--gold2)">⚖️ القضايا والجلسات</div><div class="ux-note" style="margin-top:6px">لوحة موحّدة للقضايا والجلسات مع بحث وفلاتر وحذف واستعادة بدون عناصر مكررة.</div></div><button onclick="openAdd()" style="background:var(--gold);color:#0a0905;border:none;border-radius:14px;padding:10px 14px;font-weight:800;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif;white-space:nowrap">＋ جلسة</button></div>';
   h+='<div class="ux-hero-grid">';
   h+='<div class="ux-kpi"><div class="l">النشطة</div><div class="v">'+_activeCount+'</div></div>';
   h+='<div class="ux-kpi"><div class="l">اليوم</div><div class="v">'+_todayCount+'</div></div>';
@@ -2759,12 +2773,10 @@ function rList(){
   h+='</div></div>';
   h+='<div class="ux-sticky"><div class="ux-actionbar">';
   h+='<div class="ux-row" style="margin-bottom:8px"><div class="search-wrap" style="flex:1;margin-bottom:0"><span class="search-ico">🔍</span><input type="search" placeholder="بحث في الجلسات..." dir="rtl" value="'+q+'" id="listSearchInp" oninput="setQ(this.value)"><button class="search-adv" onclick="tgAdv()">'+(advOpen?'▲':'▼')+'</button></div><button onclick="openAdd()" style="flex-shrink:0;background:var(--gold);color:#0a0905;border:none;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif">جلسة +</button></div>';
-  h+='<div class="ux-chiprow">';[['all','الكل'],['scheduled','مجدولة'],['inProgress','جارية'],['completed','منتهية'],['postponed','مؤجلة']].forEach(function(item){var a=filterS===item[0];h+='<button class="ux-chip'+(a?' on':'')+'" onclick="setF("'+item[0]+'")">'+item[1]+'</button>';});h+='</div>';
-  h+='<div class="ux-chiprow" style="margin-top:8px">';[['active','⚖️ النشطة'],['deleted','🗑️ المحذوفة']].forEach(function(item){var a=listScope===item[0];h+='<button class="ux-chip'+(a?' on':'')+'" onclick="setListScope("'+item[0]+'")">'+item[1]+'</button>';});h+='</div>';
+  h+='<div class="ux-chiprow">';[['all','الكل'],['scheduled','مجدولة'],['inProgress','جارية'],['completed','منتهية'],['postponed','مؤجلة']].forEach(function(item){var a=filterS===item[0];h+='<button class="ux-chip'+(a?' on':'')+'" onclick="setF(\''+item[0]+'\')">'+item[1]+'</button>';});h+='</div>';
+  h+='<div class="ux-chiprow" style="margin-top:8px">';[['active','⚖️ النشطة'],['deleted','🗑️ المحذوفة']].forEach(function(item){var a=listScope===item[0];h+='<button class="ux-chip'+(a?' on':'')+'" onclick="setListScope(\''+item[0]+'\')">'+item[1]+'</button>';});h+='</div>';
   h+='</div></div>';
   if(advOpen){h+='<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px;margin-bottom:10px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">&#x646;&#x648;&#x639; &#x627;&#x644;&#x642;&#x636;&#x64A;&#x629;</label><select onchange="advType=this.value;updateListResults()" dir="rtl" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text)"><option value="">&#x627;&#x644;&#x643;&#x644;</option><option>&#x62C;&#x646;&#x627;&#x626;&#x64A;&#x629;</option><option>&#x645;&#x62F;&#x646;&#x64A;&#x629;</option><option>&#x62A;&#x62C;&#x627;&#x631;&#x64A;&#x629;</option><option>&#x623;&#x62D;&#x648;&#x627;&#x644; &#x634;&#x62E;&#x635;&#x64A;&#x629;</option><option>&#x639;&#x645;&#x627;&#x644;&#x64A;&#x629;</option><option>&#x625;&#x62F;&#x627;&#x631;&#x64A;&#x629;</option></select></div><div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">&#x627;&#x644;&#x623;&#x647;&#x645;&#x64A;&#x629;</label><select onchange="advPrio=this.value;updateListResults()" dir="rtl" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text)"><option value="">&#x627;&#x644;&#x643;&#x644;</option><option value="high">&#x639;&#x627;&#x644;&#x64A;&#x629;</option><option value="med">&#x645;&#x62A;&#x648;&#x633;&#x637;&#x629;</option><option value="low">&#x645;&#x646;&#x62E;&#x641;&#x636;&#x629;</option><option value="none">&#x639;&#x627;&#x62F;&#x64A;&#x629;</option></select></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px"><div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">&#x645;&#x646; &#x62A;&#x627;&#x631;&#x64A;&#x62E;</label><input type="date" value="'+advFrom+'" onchange="advFrom=this.value;updateListResults()" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text);color-scheme:dark"></div><div><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">&#x625;&#x644;&#x649; &#x62A;&#x627;&#x631;&#x64A;&#x62E;</label><input type="date" value="'+advTo+'" onchange="advTo=this.value;updateListResults()" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text);color-scheme:dark"></div></div><div style="margin-top:7px"><label style="font-size:9px;color:var(--text3);font-weight:700;display:block;margin-bottom:3px">&#x627;&#x644;&#x645;&#x62D;&#x643;&#x645;&#x629;</label><input type="text" value="'+advCourt+'" placeholder="&#x627;&#x633;&#x645; &#x627;&#x644;&#x645;&#x62D;&#x643;&#x645;&#x629;..." oninput="advCourt=this.value;updateListResults()" dir="rtl" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--text)"></div><button onclick="clrAdv()" style="width:100%;background:none;color:var(--text3);font-size:11px;padding:7px;cursor:pointer;margin-top:6px">&#x2715; &#x645;&#x633;&#x62D; &#x627;&#x644;&#x641;&#x644;&#x627;&#x62A;&#x631;</button></div>';}
-  h+='<div class="chips">';[['all','الكل'],['scheduled','مجدولة'],['inProgress','جارية'],['completed','منتهية'],['postponed','مؤجلة']].forEach(function(item){var a=filterS===item[0];h+='<button class="chip" onclick="setF(&quot;'+item[0]+'&quot;)" style="color:'+(a?'var(--gold2)':'var(--text3)')+';background:'+(a?'var(--gold-a10)':'var(--surface3)')+';border-color:'+(a?'var(--gold-a30)':'var(--border)')+'">' +item[1]+'</button>';});h+='</div>';
-  h+='<div class="chips" style="margin-top:8px">';[['active','⚖️ النشطة'],['deleted','🗑️ المحذوفة']].forEach(function(item){var a=listScope===item[0];h+='<button class="chip" onclick="setListScope(&quot;'+item[0]+'&quot;)" style="color:'+(a?'#f5d487':'var(--text3)')+';background:'+(a?'rgba(232,80,80,.10)':'var(--surface3)')+';border-color:'+(a?'rgba(232,80,80,.28)':'var(--border)')+'">'+item[1]+'</button>';});h+='</div>';
   if(isDeletedScope()){
     h+='<div style="background:rgba(232,80,80,.08);border:1px solid rgba(232,80,80,.22);border-radius:10px;padding:10px 12px;margin:8px 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:15px">🗑️</span><span style="font-size:11px;font-weight:700;color:#f87171">عرض المحذوفات</span><span style="font-size:10px;color:var(--text3)">يمكنك استعادة الجلسة أو حذفها نهائياً</span></div>';
   }else{
@@ -4650,7 +4662,7 @@ function rTools(){
   h+='<div style="position:relative">';
   h+='<div style="display:flex;align-items:flex-start;gap:12px;justify-content:space-between">';
   h+='<div><div style="font-family:Scheherazade New,serif;font-size:22px;color:var(--gold2);line-height:1.1">🛠️ الأدوات والتخصيص</div>';
-  h+='<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.8">المسار الوحيد لكل الأدوات المهنية والسريعة والتخصيص والمظهر والاستيراد والتنبيهات والهوية بعد حذف أي تكرار.</div></div>';
+  h+='<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.8">المسار الوحيد لكل الأدوات المهنية والتخصيص والأمان والهوية بعد حذف التكرار الداخلي والاختصارات المزدوجة.</div></div>';
   h+='<div style="background:rgba(255,255,255,.05);border:1px solid var(--gold-a20);border-radius:14px;padding:10px 12px;text-align:center;min-width:92px">';
   h+='<div style="font-size:10px;color:var(--text3)">الثيم الحالي</div><div style="font-size:13px;font-weight:800;color:var(--gold2);margin-top:3px">'+currentTheme.name+'</div></div></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px">';
@@ -4765,7 +4777,6 @@ function rTools(){
     h+='<div style="display:grid;grid-template-columns:1fr;gap:8px">';
     h+=actionBtn('🔔',notifStatus?'إيقاف التنبيهات':'تفعيل التنبيهات','تفعيل أو إيقاف إشعارات الجلسات من نفس الصفحة','toggleNotif()','rgba(212,168,67,.24)');
     h+=actionBtn('🔄','تحديث جدول التنبيهات','إعادة جدولة التنبيهات الحالية فورًا','schedNotifs();toast(\'🔔 تم تحديث جدول التنبيهات\')','rgba(74,144,217,.24)');
-    h+=actionBtn('🔔','إدارة التنبيهات الكاملة','فتح الأدوات والتخصيص للوصول إلى كل أنواع التذكير','go(\'tools\')','rgba(120,80,216,.24)');
     h+='</div>';
     h+=secBoxEnd();
   }
@@ -4778,7 +4789,6 @@ function rTools(){
     h+=featureCard('ℹ️','معلومات التطبيق','عرض إصدار التطبيق، البيئة، ودعم المتصفح والخصائص.','حول التطبيق','showAppInfoModal()','rgba(232,160,48,.24)');
     h+=featureCard('⌨️','اختصارات لوحة المفاتيح','عرض الاختصارات السريعة للتنقل والعمل داخل التطبيق.','اختصارات سريعة','showKeyboardShortcutsModal()','rgba(120,80,216,.24)');
     h+=featureCard('🧠','ذاكرة سعود التراكمية','إدارة ذاكرة الذكاء والبيانات المتراكمة المرتبطة بسعود AI.','ذاكرة ذكية','showAIMemoryManager()','rgba(74,144,217,.24)');
-    h+=featureCard('📊','الإحصاءات الكاملة','الانتقال إلى التقارير العامة ومؤشرات الأداء التفصيلية.','تقارير كاملة','go(\'stats\')','rgba(212,168,67,.24)');
     h+=secBoxEnd();
 
     h+=secBoxStart('🪪','الهوية البصرية والملف المهني','إدارة شعار المكتب، أوراقه، والمفاتيح والخدمات المرتبطة به.');
@@ -4788,7 +4798,6 @@ function rTools(){
     h+='</div>';
     h+='<div style="display:grid;grid-template-columns:1fr;gap:8px">';
     h+=actionBtn('🖼️','شعار المكتب','رفع الشعار أو تحديثه أو حذفه','showLogoSettings()','rgba(212,168,67,.24)');
-    h+=actionBtn('📝','الهوية والمستندات','الانتقال إلى صفحة الهوية والمستندات','go(\'letterhead\')','rgba(120,80,216,.24)');
     h+=actionBtn('🔑','مفتاح AI','إدارة المفتاح وتفعيله للتطبيق','showApiKeyModal()','rgba(48,184,128,.24)');
     h+=secBoxEnd();
   }
@@ -4811,7 +4820,6 @@ function rTools(){
   h+='<div id="voiceStatus" style="font-size:11px;color:var(--text3);margin-top:10px">اضغط للبحث الصوتي</div></div>';
   h+='<div style="display:grid;grid-template-columns:1fr;gap:8px">';
   h+='<button onclick="go(&quot;team&quot;)" style="background:var(--surface3);border:1px solid var(--border2);border-radius:14px;padding:12px 10px;font-weight:800;font-size:12px;color:var(--text);cursor:pointer;font-family:Tajawal,sans-serif">👥 الفريق والصلاحيات</button>';
-  h+='<button onclick="go(&quot;settings&quot;)" style="background:var(--surface3);border:1px solid var(--border2);border-radius:14px;padding:12px 10px;font-weight:800;font-size:12px;color:var(--text);cursor:pointer;font-family:Tajawal,sans-serif">☰ المزيد</button>';
   h+='</div></div>';
   h+=secBoxEnd();
 
@@ -5365,58 +5373,20 @@ function rWorkspaceHub(){
   ],view,'setWorkspaceView');
 
   if(view==='overview'){
-    h+='<div style="display:grid;grid-template-columns:1fr;gap:10px">';
-    [
-      {id:'contacts',icon:'👥',title:'الأطراف',desc:'سجل المدعين والمدعى عليهم والشهود والخبراء مع الإضافة والحذف السريع.',meta:contacts.length+' طرف'},
-      {id:'files',icon:'📁',title:'الملفات',desc:'مجلدات العمل والرفع والبحث داخل الملفات من نفس المركز.',meta:wordFiles.length+' ملف'},
-      {id:'fees',icon:'💰',title:'الأتعاب',desc:'السجل المالي والتحصيل والرسوم مع الحاسبة في مكان واحد.',meta:fees.length+' سجل'}
-    ].forEach(function(card){
-      h+='<button onclick="setWorkspaceView(\''+card.id+'\')" style="background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:14px;cursor:pointer;text-align:right;font-family:Tajawal,sans-serif;display:flex;align-items:center;gap:12px;width:100%">';
-      h+='<span style="width:42px;height:42px;border-radius:14px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+card.icon+'</span>';
-      h+='<span style="flex:1"><span style="display:block;font-size:13px;font-weight:800;color:var(--text)">'+card.title+'</span><span style="display:block;font-size:10px;color:var(--text3);margin-top:4px;line-height:1.7">'+card.desc+'</span></span>';
-      h+='<span style="font-size:10px;color:var(--gold2);font-weight:800;flex-shrink:0">'+card.meta+'</span></button>';
-    });
+    h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:14px 14px 12px;margin-bottom:10px">';
+    h+='<div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:6px">تنظيم موحّد بدون تكرار</div>';
+    h+='<div style="font-size:11px;color:var(--text3);line-height:1.9">استعمل شرائح الأعلى للتنقل بين الأطراف والملفات والأتعاب. أزلت الاختصارات المكررة من داخل المركز حتى تبقى الواجهة أخف وأوضح وأقرب للعمل اليومي.</div>';
     h+='</div>';
-    return h;
-  }
-  if(view==='contacts')return h+rContacts();
-  if(view==='files')return h+rFiles();
-  return h+rFees();
-}
-
-function rDocsHub(){
-  var view=window._docsHubView||'overview';
-  var h='';
-  h+='<div style="background:linear-gradient(135deg,rgba(216,144,48,.15),rgba(216,144,48,.04));border:1px solid rgba(216,144,48,.20);border-radius:var(--r-xl);padding:18px 16px;margin-bottom:14px;position:relative;overflow:hidden">';
-  h+='<div style="position:absolute;top:-24px;left:-20px;width:100px;height:100px;border-radius:50%;background:rgba(216,144,48,.10);filter:blur(18px)"></div>';
-  h+='<div style="position:relative"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">';
-  h+='<div><div style="font-family:Scheherazade New,serif;font-size:22px;color:var(--gold2);line-height:1.1">📝 مركز المستندات والمعرفة</div>';
-  h+='<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.8">واجهة موحّدة جمعت محرر المستندات، المعرفة القانونية، والمشاركة داخل تبويب واحد مع فلاتر واضحة.</div></div>';
-  h+='<div style="background:rgba(255,255,255,.05);border:1px solid rgba(216,144,48,.18);border-radius:14px;padding:10px 12px;text-align:center;min-width:92px"><div style="font-size:10px;color:var(--text3)">القسم الحالي</div><div style="font-size:13px;font-weight:800;color:var(--gold2);margin-top:3px">'+(view==='overview'?'الكل':view==='letterhead'?'المستندات':view==='legal'?'المعرفة':'المشاركة')+'</div></div></div>';
-  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
-  h+=buildHubStat('📝',wdDocTitle&&wdDocTitle.trim()?sanitize(wdDocTitle).slice(0,12):'جاهز','المستندات','rgba(216,144,48,.08)');
-  h+=buildHubStat('📚','مكتبة','المعرفة','rgba(74,142,245,.08)');
-  h+=buildHubStat('🤝','مشاركة','النماذج','rgba(120,80,216,.08)');
-  h+='</div></div></div>';
-
-  h+=buildHubChipRow([
-    {id:'overview',icon:'✨',lbl:'الكل'},
-    {id:'letterhead',icon:'📝',lbl:'المستندات'},
-    {id:'legal',icon:'📚',lbl:'المعرفة'},
-    {id:'share',icon:'🤝',lbl:'المشاركة'}
-  ],view,'setDocsHubView');
-
-  if(view==='overview'){
-    h+='<div style="display:grid;grid-template-columns:1fr;gap:10px">';
+    h+='<div style="display:grid;grid-template-columns:1fr;gap:8px">';
     [
-      {id:'letterhead',icon:'📝',title:'المستندات والهوية',desc:'تحرير المستندات وتصدير PDF وWord والاستيراد داخل نفس المركز.'},
-      {id:'legal',icon:'📚',title:'المعرفة القانونية',desc:'المكتبة والنماذج والمواد القانونية في واجهة موحّدة.'},
-      {id:'share',icon:'🤝',title:'المشاركة',desc:'مشاركة الصيغ والمحتوى القانوني بدون تبويب منفصل مكرر.'}
+      {icon:'👥',title:'الأطراف والموكلون',desc:'إدارة بيانات الموكلين والأطراف والارتباطات الأساسية في مكان واحد.'},
+      {icon:'📁',title:'الملفات والمرفقات',desc:'متابعة الملفات، المجلدات، والوثائق المرتبطة بكل موكل أو قضية.'},
+      {icon:'💰',title:'الأتعاب والدفعات',desc:'سجلات الأتعاب، المدفوعات، والرصيد المرتبط بالعمل القانوني.'}
     ].forEach(function(card){
-      h+='<button onclick="setDocsHubView(\''+card.id+'\')" style="background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:14px;cursor:pointer;text-align:right;font-family:Tajawal,sans-serif;display:flex;align-items:center;gap:12px;width:100%">';
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:14px;text-align:right;font-family:Tajawal,sans-serif;display:flex;align-items:center;gap:12px;width:100%">';
       h+='<span style="width:42px;height:42px;border-radius:14px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+card.icon+'</span>';
       h+='<span style="flex:1"><span style="display:block;font-size:13px;font-weight:800;color:var(--text)">'+card.title+'</span><span style="display:block;font-size:10px;color:var(--text3);margin-top:4px;line-height:1.7">'+card.desc+'</span></span>';
-      h+='<span style="font-size:16px;color:var(--text3);flex-shrink:0">←</span></button>';
+      h+='</div>';
     });
     h+='</div>';
     return h;
@@ -5501,11 +5471,10 @@ function buildMoreHub(){
   var filter=window._moreHubFilter||'all';
   var search=(window._moreHubSearch||'').trim().toLowerCase();
   var allGroups=[
-    {id:'core',cat:'core',icon:'⚡',tone:'var(--gold)',glow:'rgba(200,168,75,.16)',title:'الوصول السريع',desc:'اختصارات التبويبات الأساسية والثانوية داخل لوحة واحدة سريعة.',stats:['مختصر وبدون تكرار','اختصارات عملية فقط'],tabs:[{k:'tasks',icon:'📋',lbl:'المهمات'},{k:'ai',icon:'🤖',lbl:'سعود AI'}]},
-    {id:'workflow',cat:'workflow',icon:'🗂️',tone:'var(--blue)',glow:'rgba(74,142,245,.16)',title:'التنظيم والمتابعة',desc:'اليوم، التقويم، التقارير، والمحذوفات داخل الجلسات بدل تبويب مستقل.',stats:[data.length+' جلسة نشطة',archivedSessions.length+' في المحذوفات'],tabs:[{k:'today',icon:'🌅',lbl:'لوحة اليوم'},{k:'cal',icon:'📅',lbl:'التقويم'},{k:'stats',icon:'📊',lbl:'التقارير'},{k:'list',icon:'🗑️',lbl:'الجلسات / المحذوفات'},{k:'kanban',icon:'🧱',lbl:'Kanban'}]},
-    {id:'clients',cat:'clients',icon:'🧩',tone:'var(--green)',glow:'rgba(40,184,112,.16)',title:'مركز الموكلين والملفات',desc:'دمج الأطراف، الملفات، والأتعاب داخل مركز واحد مع فلاتر داخلية بدل ثلاث تبويبات متكررة.',stats:[contacts.length+' طرف',wordFiles.length+' ملف',fees.length+' قيد مالي'],tabs:[{k:'workspace',icon:'🧩',lbl:'مركز الموكلين والملفات'}]},
-    {id:'docs',cat:'docs',icon:'📝',tone:'var(--amber)',glow:'rgba(216,144,48,.16)',title:'مركز المستندات والمعرفة',desc:'المستندات، المعرفة القانونية، والمشاركة في تبويب موحّد مع فلاتر داخلية.',stats:['نماذج وصيغ','مراجع قانونية'],tabs:[{k:'docsHub',icon:'📝',lbl:'مركز المستندات والمعرفة'}]},
-    {id:'tools',cat:'tools',icon:'🛠️',tone:'var(--purple)',glow:'rgba(120,80,216,.16)',title:'الأدوات والتخصيص',desc:'الأدوات المساندة، الأدوات السريعة، والتخصيص ضمن مسار واحد فقط بعد إزالة أي تبويب مكرر.',stats:['اختصارات مهنية','تخصيص مرئي'],tabs:[{k:'tools',icon:'🛠️',lbl:'الأدوات والتخصيص'}]}
+    {id:'workflow',cat:'workflow',icon:'🗂️',tone:'var(--blue)',glow:'rgba(74,142,245,.16)',title:'التنظيم والمتابعة',desc:'اليوم، التقويم، التقارير، ولوحة المتابعة في مجموعة واحدة بدون اختصارات مكررة.',stats:[data.length+' جلسة',tasks.length+' مهمة'],tabs:[{k:'today',icon:'🌅',lbl:'لوحة اليوم'},{k:'cal',icon:'📅',lbl:'التقويم'},{k:'stats',icon:'📊',lbl:'التقارير'},{k:'kanban',icon:'🧱',lbl:'لوحة المتابعة'}]},
+    {id:'clients',cat:'clients',icon:'🧩',tone:'var(--green)',glow:'rgba(40,184,112,.16)',title:'مركز الموكلين والملفات',desc:'الأطراف، الملفات، والأتعاب داخل مركز واحد مع فلاتر داخلية بدل التكرار في أكثر من تبويب.',stats:[contacts.length+' طرف',wordFiles.length+' ملف',fees.length+' قيد مالي'],tabs:[{k:'workspace',icon:'🧩',lbl:'مركز الموكلين والملفات'}]},
+    {id:'docs',cat:'docs',icon:'📝',tone:'var(--amber)',glow:'rgba(216,144,48,.16)',title:'مركز المستندات والمعرفة',desc:'المستندات، المعرفة القانونية، والمشاركة داخل مركز موحّد بدل التبويبات المتشابهة.',stats:['نماذج وصيغ','مراجع قانونية'],tabs:[{k:'docsHub',icon:'📝',lbl:'مركز المستندات والمعرفة'}]},
+    {id:'tools',cat:'tools',icon:'🛠️',tone:'var(--purple)',glow:'rgba(120,80,216,.16)',title:'الأدوات والتخصيص',desc:'الأدوات المساندة والتخصيص في مسار واحد فقط بدون أدوات سريعة مكررة أو إعدادات منفصلة.',stats:['اختصارات مهنية','تخصيص مرئي'],tabs:[{k:'tools',icon:'🛠️',lbl:'الأدوات والتخصيص'}]}
   ];
   var groups=allGroups.slice();
   if(filter!=='all')groups=groups.filter(function(g){return g.cat===filter;});
@@ -5517,36 +5486,27 @@ function buildMoreHub(){
   }
   var chips=[
     {id:'all',lbl:'الكل'},
-    {id:'core',lbl:'الوصول السريع'},
     {id:'workflow',lbl:'التنظيم'},
-    {id:'clients',lbl:'الأطراف والملفات'},
-    {id:'docs',lbl:'المستندات'},
+    {id:'clients',lbl:'الموكلون والملفات'},
+    {id:'docs',lbl:'المستندات والمعرفة'},
     {id:'tools',lbl:'الأدوات'}
   ];
-  var featured=[];
-  groups.forEach(function(g){
-    g.tabs.forEach(function(t){
-      if(['home','list','settings'].indexOf(t.k)===-1)featured.push({k:t.k,icon:t.icon,lbl:t.lbl,tone:g.tone,glow:g.glow,group:g.title});
-    });
-  });
-  featured=featured.slice(0,8);
-  var shortcutCount=allGroups.reduce(function(n,g){return n+g.tabs.length;},0);
   var h='';
   h+='<div style="background:linear-gradient(160deg,rgba(200,168,75,.12),rgba(17,26,48,.95) 42%,rgba(7,11,24,.98));border:1px solid var(--gold-a20);border-radius:24px;padding:16px;margin-bottom:16px;box-shadow:0 14px 36px rgba(0,0,0,.28);overflow:hidden;position:relative">';
   h+='<div style="position:absolute;top:-28px;left:-28px;width:120px;height:120px;border-radius:50%;background:rgba(200,168,75,.12);filter:blur(22px)"></div>';
   h+='<div style="position:absolute;bottom:-34px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(74,142,245,.09);filter:blur(26px)"></div>';
   h+='<div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">';
-  h+='<div><div style="font-family:Scheherazade New,serif;font-size:24px;line-height:1;color:var(--gold2)">☰ المزيد</div><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.8">لوحة وصول سريع أنظف وأفخم: بطاقات كبيرة، دمج للمتشابه، وحذف للتكرار مع فلاتر واضحة.</div></div>';
-  h+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:10px;color:var(--gold2);font-weight:700">وصول سريع</span><span style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:10px;color:var(--text3)">هيدر مختصر</span></div>';
+  h+='<div><div style="font-family:Scheherazade New,serif;font-size:24px;line-height:1;color:var(--gold2)">☰ المزيد</div><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.8">واجهة أنظف بدون تكرار: كل مجموعة تؤدي إلى مركز واحد فقط، ولا توجد اختصارات مكررة لنفس الوجهة.</div></div>';
+  h+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:10px;color:var(--gold2);font-weight:700">مختصر ونظيف</span><span style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:10px;color:var(--text3)">بدون تكرار</span></div>';
   h+='</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px">';
-  h+='<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:10px 11px"><div style="font-size:10px;color:var(--text3)">الجلسات</div><div style="font-size:20px;font-weight:900;color:var(--text);margin-top:4px">'+data.length+'</div></div>';
+  h+='<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:10px 11px"><div style="font-size:10px;color:var(--text3)">القضايا والجلسات</div><div style="font-size:20px;font-weight:900;color:var(--text);margin-top:4px">'+data.length+'</div></div>';
   h+='<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:10px 11px"><div style="font-size:10px;color:var(--text3)">المهمات</div><div style="font-size:20px;font-weight:900;color:var(--text);margin-top:4px">'+tasks.length+'</div></div>';
-  h+='<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:10px 11px"><div style="font-size:10px;color:var(--text3)">الاختصارات</div><div style="font-size:20px;font-weight:900;color:var(--text);margin-top:4px">'+shortcutCount+'</div></div>';
+  h+='<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:10px 11px"><div style="font-size:10px;color:var(--text3)">المجموعات</div><div style="font-size:20px;font-weight:900;color:var(--text);margin-top:4px">'+allGroups.length+'</div></div>';
   h+='</div>';
   h+='<div style="position:relative;margin-bottom:10px">';
   h+='<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3)">🔎</span>';
-  h+='<input type="text" value="'+sanitize(window._moreHubSearch||'')+'" oninput="window._moreHubSearch=this.value;window._moreHubSearchTimer&&clearTimeout(window._moreHubSearchTimer);window._moreHubSearchTimer=setTimeout(function(){render(true);},120)" placeholder="ابحث داخل المزيد: مهمات، ملفات، تقارير، مكتبة..." dir="rtl" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:14px;padding:12px 38px 12px 12px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif">';
+  h+='<input type="text" value="'+sanitize(window._moreHubSearch||'')+'" oninput="window._moreHubSearch=this.value;window._moreHubSearchTimer&&clearTimeout(window._moreHubSearchTimer);window._moreHubSearchTimer=setTimeout(function(){render(true);},120)" placeholder="ابحث داخل المزيد: تقارير، ملفات، أدوات، مستندات..." dir="rtl" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:14px;padding:12px 38px 12px 12px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif">';
   h+='</div>';
   h+='<div style="display:flex;gap:7px;overflow:auto;padding-bottom:2px">';
   chips.forEach(function(c){
@@ -5554,21 +5514,6 @@ function buildMoreHub(){
     h+='<button onclick="setMoreHubFilter(\''+c.id+'\')" style="flex:0 0 auto;background:'+(on?'var(--gold-a10)':'rgba(255,255,255,.04)')+';color:'+(on?'var(--gold2)':'var(--text2)')+';border:1px solid '+(on?'var(--gold-a30)':'var(--border)')+';border-radius:999px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Tajawal,sans-serif">'+c.lbl+'</button>';
   });
   h+='</div></div>';
-  if(featured.length){
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px"><div style="font-size:12px;font-weight:800;color:var(--text)">⚡ الوصول السريع</div><div style="font-size:10px;color:var(--text3)">أكثر الأقسام استخدامًا</div></div>';
-    h+='<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px">';
-    featured.forEach(function(t){
-      h+='<button onclick="goForce(\''+t.k+'\')" style="min-height:96px;background:linear-gradient(180deg,'+t.glow+',rgba(12,18,34,.96));border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:12px;cursor:pointer;text-align:right;font-family:Tajawal,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.18)">';
-      h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
-      h+='<span style="width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+t.icon+'</span>';
-      h+='<span style="font-size:12px;color:'+t.tone+'">↖</span>';
-      h+='</div>';
-      h+='<div style="font-size:13px;font-weight:800;color:var(--text);margin-top:14px">'+t.lbl+'</div>';
-      h+='<div style="font-size:10px;color:var(--text3);margin-top:5px">'+t.group+'</div>';
-      h+='</button>';
-    });
-    h+='</div>';
-  }
   if(!groups.length){
     h+='<div class="empty" style="margin-bottom:14px"><div class="empty-icon">🔎</div><div class="empty-title">لا توجد نتيجة</div><div class="empty-sub">جرّب فلترًا آخر أو امسح كلمة البحث</div></div>';
     return h;
@@ -5578,7 +5523,7 @@ function buildMoreHub(){
     h+='<div style="background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(7,11,24,.92));border:1px solid var(--border);border-radius:22px;padding:14px;margin-bottom:12px;box-shadow:0 10px 26px rgba(0,0,0,.18)">';
     h+='<div style="display:flex;align-items:flex-start;gap:11px;margin-bottom:11px">';
     h+='<div style="width:46px;height:46px;border-radius:16px;background:'+g.glow+';border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+g.icon+'</div>';
-    h+='<div style="flex:1"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:15px;font-weight:800;color:var(--text)">'+g.title+'</div><span style="font-size:10px;color:'+g.tone+';background:rgba(255,255,255,.04);border:1px solid var(--border);padding:4px 8px;border-radius:999px">'+g.tabs.length+' تبويب</span></div><div style="font-size:11px;color:var(--text3);margin-top:5px;line-height:1.8">'+g.desc+'</div></div>';
+    h+='<div style="flex:1"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:15px;font-weight:800;color:var(--text)">'+g.title+'</div><span style="font-size:10px;color:'+g.tone+';background:rgba(255,255,255,.04);border:1px solid var(--border);padding:4px 8px;border-radius:999px">'+g.tabs.length+' وجهة</span></div><div style="font-size:11px;color:var(--text3);margin-top:5px;line-height:1.8">'+g.desc+'</div></div>';
     h+='</div>';
     h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';
     g.stats.forEach(function(s){h+='<span style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:999px;padding:4px 9px;font-size:10px;color:var(--text2)">'+s+'</span>';});
@@ -17145,11 +17090,7 @@ window.setSessionFormMode=function(mode){
    if(curTab==='workspace' && fW.status && fW.status!=='all' && window._workspaceView!==fW.status && fW.status!=='overview'){window._workspaceView=fW.status;}
    if(curTab==='docsHub' && fD.status && fD.status!=='all' && window._docsHubView!==fD.status && fD.status!=='overview'){window._docsHubView=fD.status;}
    _origRender(force);
-   setTimeout(function(){
-     var cnt=document.getElementById('cnt'); if(!cnt)return;
-     if(curTab==='workspace')enhanceWorkspace();
-     if(curTab==='docsHub')enhanceDocs();
-   },0);
+   /* v45: منع حقن الفلاتر المكررة داخل مركزي الموكلين/المستندات */
  };
 })();
 </script>
@@ -19721,6 +19662,139 @@ window.setSessionFormMode=function(mode){
   }
   injectV41CaseStyles();
   setTimeout(function(){ bindCaseInputsV41(); window.renderInteractiveCasePanelV41(); }, 200);
+})();
+</script>
+
+
+<style id="v42-ui-polish">
+:root{--v42-font:'Tajawal','Noto Sans Arabic','Geeza Pro',system-ui,sans-serif;--v42-display:'Tajawal','Noto Kufi Arabic','Geeza Pro',system-ui,sans-serif;}
+html,body,button,input,select,textarea{font-family:var(--v42-font)!important;}
+.hdr-title,.nav-back-title,.sec-hdr,.premium-hero-title,.v42-more-title,.v42-group-title,.ux-hero [style*="font-family:Scheherazade New"]{font-family:var(--v42-display)!important;letter-spacing:-.015em;}
+#cnt{scroll-behavior:smooth;}
+.ux-hero,.premium-hero,.nav-back-filter,.s-card,.sess-card,.v42-more-card,.v42-acc{box-shadow:0 14px 34px rgba(0,0,0,.16);} 
+.ux-hero,.premium-hero,.nav-back-filter,.s-card,.sess-card,.v42-acc{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);} 
+.ux-chip,.premium-chip{border-radius:999px;font-weight:700;}
+.ux-chiprow,.premium-chiprow{gap:8px;flex-wrap:wrap;}
+.search-wrap input,.search-wrap textarea,.search-wrap select,input,select,textarea{font-size:14px;}
+.v42-more-shell{display:grid;gap:14px}
+.v42-more-hero{position:relative;overflow:hidden;background:linear-gradient(160deg,rgba(200,168,75,.16),rgba(17,26,48,.95) 38%,rgba(7,11,24,.98));border:1px solid var(--gold-a20);border-radius:26px;padding:18px;box-shadow:0 18px 44px rgba(0,0,0,.24)}
+.v42-more-hero::before{content:'';position:absolute;inset:auto auto -30px -30px;width:130px;height:130px;border-radius:50%;background:rgba(200,168,75,.12);filter:blur(22px)}
+.v42-more-head{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.v42-more-title{font-size:25px;line-height:1;color:var(--gold2);font-weight:900}
+.v42-more-sub{font-size:12px;color:var(--text2);line-height:1.9;margin-top:7px;max-width:300px}
+.v42-more-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);font-size:11px;color:var(--gold2);font-weight:800}
+.v42-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.v42-kpi{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:16px;padding:11px 12px}
+.v42-kpi .l{font-size:10px;color:var(--text3)}
+.v42-kpi .v{font-size:20px;font-weight:900;color:var(--text);margin-top:4px}
+.v42-search{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:18px;padding:10px 12px}
+.v42-search input{flex:1;min-width:0;background:transparent;color:var(--text);font-size:13px}
+.v42-quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.v42-more-card{display:flex;align-items:flex-start;gap:10px;text-align:right;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border:1px solid var(--border);border-radius:18px;padding:14px;cursor:pointer;transition:.18s transform,.18s border-color,.18s background}
+.v42-more-card:active{transform:scale(.985)}
+.v42-more-card:hover{border-color:var(--gold-a30);background:rgba(255,255,255,.07)}
+.v42-more-card .ico{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(200,168,75,.12);font-size:21px;flex-shrink:0}
+.v42-more-card .ttl{font-size:14px;font-weight:800;color:var(--text)}
+.v42-more-card .meta{font-size:11px;color:var(--text2);line-height:1.7;margin-top:4px}
+.v42-acc{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.v42-acc summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.v42-acc summary::-webkit-details-marker{display:none}
+.v42-acc[open] summary{border-bottom:1px solid var(--border)}
+.v42-group-title{font-size:16px;font-weight:900;color:var(--text)}
+.v42-group-sub{font-size:11px;color:var(--text2);margin-top:4px;line-height:1.7}
+.v42-badge{min-width:32px;height:32px;border-radius:12px;background:rgba(200,168,75,.12);display:flex;align-items:center;justify-content:center;font-size:16px}
+.v42-group-grid{display:grid;grid-template-columns:1fr;gap:10px;padding:14px}
+@media (max-width:390px){.v42-kpis{grid-template-columns:1fr}.v42-quick{grid-template-columns:1fr}}
+</style>
+<script id="v42-app-polish">
+(function(){
+  var aliasMap={contacts:'workspace',files:'workspace',fees:'workspace',letterhead:'docsHub',legal:'docsHub',share:'docsHub',colors:'tools'};
+  if(typeof TAB_LABELS==='object'){
+    TAB_LABELS.list='القضايا والجلسات';
+    TAB_LABELS.workspace='مركز الموكلين والملفات';
+    TAB_LABELS.docsHub='مركز المستندات والمعرفة';
+    TAB_LABELS.tools='الأدوات والتخصيص';
+  }
+  var _goBase=window.go;
+  if(typeof _goBase==='function'){
+    window.go=function(t){
+      if(aliasMap[t]) t=aliasMap[t];
+      return _goBase(t);
+    };
+  }
+  window.buildMoreHub=function(){
+    var search=((window._moreHubSearch||'')+'').trim().toLowerCase();
+    var groups=[
+      {id:'judicial',icon:'⚖️',title:'العمل القضائي',desc:'التبويب الموحد للقضايا والجلسات مع التقويم والإحصاءات ولوحة اليوم.',items:[
+        {k:'list',icon:'⚖️',lbl:'القضايا والجلسات',desc:'الملف الموحد للقضية وجلساتها ومرفقاتها.'},
+        {k:'today',icon:'🌤️',lbl:'لوحة اليوم',desc:'جلسات ومهمات اليوم في شاشة واحدة.'},
+        {k:'cal',icon:'📅',lbl:'التقويم',desc:'عرض شهري وجدولي للمواعيد والجلسات.'},
+        {k:'stats',icon:'📊',lbl:'الإحصاءات',desc:'تقارير العمل والأداء والمؤشرات.'}
+      ]},
+      {id:'centers',icon:'🧩',title:'المراكز المهنية',desc:'تم دمج الأقسام المتشابهة في ثلاثة مراكز رئيسية فقط.',items:[
+        {k:'workspace',icon:'🧩',lbl:'مركز الموكلين والملفات',desc:'الأطراف، الملفات، والأتعاب في مركز واحد.'},
+        {k:'docsHub',icon:'📝',lbl:'مركز المستندات والمعرفة',desc:'المستندات، الصيغ، والمراجع القانونية.'},
+        {k:'tools',icon:'🛠️',lbl:'الأدوات والتخصيص',desc:'الأدوات السريعة، النسخ الاحتياطي، والتخصيص.'}
+      ]},
+      {id:'smart',icon:'🤖',title:'التشغيل الذكي',desc:'المهمات والذكاء والمتابعة التنفيذية دون تبويبات مكررة.',items:[
+        {k:'tasks',icon:'📋',lbl:'المهمات',desc:'بحث، فرز، وإضافة مباشرة.'},
+        {k:'ai',icon:'🤖',lbl:'سعود AI',desc:'المساعد الذكي والتحليل السريع.'},
+        {k:'kanban',icon:'🧱',lbl:'لوحة المتابعة',desc:'متابعة مرئية لسير القضايا والمهمات.'},
+        {k:'dashboard',icon:'📌',lbl:'لوحة القيادة',desc:'نظرة تنفيذية مجمعة.'}
+      ]},
+      {id:'admin',icon:'👥',title:'الفريق والإدارة',desc:'فريق العمل والصلاحيات عند الحاجة فقط.',items:[
+        {k:'team',icon:'👥',lbl:'الفريق',desc:'الصلاحيات، الأعضاء، وتوزيع العمل.'}
+      ]}
+    ];
+    var filtered=groups.map(function(g){
+      var items=g.items.filter(function(it){
+        if(!search) return true;
+        var hay=(g.title+' '+g.desc+' '+it.lbl+' '+it.desc).toLowerCase();
+        return hay.indexOf(search)>-1;
+      });
+      return Object.assign({},g,{items:items});
+    }).filter(function(g){return g.items.length;});
+    var quick=[
+      {k:'list',icon:'⚖️',lbl:'القضايا والجلسات',desc:'الدخول إلى ملف القضية الموحد'},
+      {k:'tasks',icon:'📋',lbl:'المهمات',desc:'المفتوحة والعاجلة والمتأخرة'},
+      {k:'workspace',icon:'🧩',lbl:'مركز الموكلين والملفات',desc:'الأطراف والملفات والأتعاب'},
+      {k:'docsHub',icon:'📝',lbl:'مركز المستندات والمعرفة',desc:'الصيغ والمراجع القانونية'}
+    ].filter(function(it){
+      if(!search) return true;
+      var hay=(it.lbl+' '+it.desc).toLowerCase();
+      return hay.indexOf(search)>-1;
+    });
+    function esc(v){return (typeof sanitize==='function'?sanitize(v||''):(v||''));}
+    function card(it){
+      return '<button type="button" class="v42-more-card" onclick="go(\''+it.k+'\')">'
+        +'<div class="ico">'+it.icon+'</div>'
+        +'<div style="flex:1;min-width:0"><div class="ttl">'+esc(it.lbl)+'</div><div class="meta">'+esc(it.desc)+'</div></div>'
+        +'</button>';
+    }
+    var h='';
+    h+='<div class="v42-more-shell">';
+    h+='<div class="v42-more-hero">';
+    h+='<div class="v42-more-head"><div><div class="v42-more-title">☰ المزيد</div><div class="v42-more-sub">لوحة أنظف وأخف: دمج المتشابه، حذف التكرار، وإبقاء المراكز الرئيسية فقط مع بحث سريع.</div></div><div class="v42-more-pill">مراكز أقل · وصول أسرع</div></div>';
+    h+='<div class="v42-kpis"><div class="v42-kpi"><div class="l">القضايا والجلسات</div><div class="v">'+(Array.isArray(data)?data.length:0)+'</div></div><div class="v42-kpi"><div class="l">المهمات</div><div class="v">'+(Array.isArray(tasks)?tasks.length:0)+'</div></div><div class="v42-kpi"><div class="l">الأتعاب</div><div class="v">'+(Array.isArray(fees)?fees.length:0)+'</div></div></div>';
+    h+='</div>';
+    h+='<div class="v42-search"><span>🔎</span><input type="search" dir="rtl" placeholder="ابحث عن قسم أو أداة..." value="'+esc(window._moreHubSearch||'')+'" oninput="setMoreHubSearch(this.value)"><button type="button" class="v42-more-pill" onclick="setMoreHubSearch(\'\')">مسح</button></div>';
+    if(quick.length){h+='<div class="v42-quick">'+quick.map(card).join('')+'</div>';}
+    filtered.forEach(function(g,idx){
+      h+='<details class="v42-acc"'+(idx===0&&!search?' open':'')+'><summary><div style="display:flex;align-items:flex-start;gap:12px"><div class="v42-badge">'+g.icon+'</div><div><div class="v42-group-title">'+esc(g.title)+'</div><div class="v42-group-sub">'+esc(g.desc)+'</div></div></div><div class="v42-more-pill">'+g.items.length+' عناصر</div></summary><div class="v42-group-grid">'+g.items.map(card).join('')+'</div></details>';
+    });
+    if(!filtered.length){h+='<div class="v42-acc" style="padding:18px;text-align:center;color:var(--text2)">لا توجد نتائج مطابقة للبحث الحالي.</div>';}
+    h+='</div>';
+    return h;
+  };
+  window.rSettings=function(){ return buildMoreHub(); };
+  setTimeout(function(){
+    try{
+      var tb=document.getElementById('tb-list'); if(tb) tb.textContent='القضايا والجلسات';
+      var bl=document.querySelector('#bn-list .bnav-lbl'); if(bl) bl.textContent='القضايا';
+      if(aliasMap[curTab]) curTab=aliasMap[curTab];
+      if(typeof render==='function') render(true);
+    }catch(e){}
+  },0);
 })();
 </script>
 
