@@ -947,7 +947,7 @@ select:focus, textarea:focus {
 <button onclick="showTemplates()" style="width:100%;background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a20);border-radius:var(--r-md);padding:11px;font-weight:700;font-size:13px;cursor:pointer" type="button">📜 استخدم قالباً جاهزاً</button>
 </div>
 <div class="field"><label>ملاحظات</label><textarea dir="rtl" id="fNotes" placeholder="ملاحظات..." rows="3"></textarea></div>
-<button class="btn-primary" disabled="" id="btnSave" onclick="saveS()">حفظ الجلسة</button>
+<button class="btn-primary" disabled="" id="btnSave" onclick="saveS()" type="button">حفظ الجلسة</button>
 <button class="btn-ghost" onclick="goFormStep1()" type="button">← العودة للبيانات الأساسية</button>
 </div>
 </div>
@@ -3857,6 +3857,7 @@ var step1=document.getElementById('formStep1');var step2=document.getElementById
 var stpInd=document.getElementById('formStepIndicator');if(stpInd)stpInd.style.display='none';setTimeout(function(){updateDateInfo(s.date);gregToHijriInput(s.date);populateSuggestions();},50);}
 function closeForm(){if(typeof stopSessionVoiceFill==='function')stopSessionVoiceFill();var autoModal=document.getElementById('sessionVoiceAutoSaveModal');if(autoModal)autoModal.remove();document.getElementById('formSheet').classList.add('hid');editId=null;var stpInd=document.getElementById('formStepIndicator');if(stpInd)stpInd.style.display='flex';}
 function goFormStep2(){
+  chkV();
   var step1=document.getElementById('formStep1');
   var step2=document.getElementById('formStep2');
   var ind1=document.getElementById('fstep1ind');
@@ -3866,7 +3867,6 @@ function goFormStep2(){
   if(step2){step2.style.display='block';step2.style.animation='slideUp .2s ease';}
   if(ind2)ind2.style.background='var(--gold)';
   if(lbl)lbl.textContent='خطوة 2 / 2';
-  // scroll sheet to top
   var sheet=document.querySelector('#formSheet .sheet');
   if(sheet)sheet.scrollTop=0;
 }
@@ -3917,7 +3917,7 @@ function setQuickTime(t){
   toast('⏰ الوقت: '+t);
 }
 
-function chkV(){var ok=document.getElementById('fNum')&&document.getElementById('fNum').value.trim()&&document.getElementById('fCourt')&&document.getElementById('fCourt').value.trim()&&document.getElementById('fDate')&&document.getElementById('fDate').value&&document.getElementById('fTime')&&document.getElementById('fTime').value;var btnSave=document.getElementById('btnSave');if(btnSave)btnSave.disabled=!ok;var btnNext=document.getElementById('btnStep1Next');if(btnNext)btnNext.disabled=!ok;}
+function chkV(){var fNum=document.getElementById('fNum'),fCourt=document.getElementById('fCourt'),fDate=document.getElementById('fDate'),fTime=document.getElementById('fTime');var ok=!!(fNum&&fNum.value.trim()&&fCourt&&fCourt.value.trim()&&fDate&&fDate.value&&fTime&&fTime.value);var btnSave=document.getElementById('btnSave');if(btnSave){btnSave.disabled=!ok;btnSave.style.opacity=ok?'1':'.65';btnSave.style.pointerEvents=ok?'':'none';}var btnNext=document.getElementById('btnStep1Next');if(btnNext){btnNext.disabled=!ok;btnNext.style.opacity=ok?'1':'.65';}}
 
 function getMeetInfo(url){
   if(!url)return null;
@@ -16825,11 +16825,11 @@ window.setSessionFormMode=function(mode){
    modeBar.innerHTML=chips+'<div class="smart-mode-spacer"></div>';
    if(mode==='create'){
      title.textContent='جلسة جديدة'; summary.innerHTML=''; readView.innerHTML=''; readView.style.display='none'; if(voice)voice.style.display='block'; setSessionFormEditable(true);
-     footer.innerHTML='<button class="smart-mode-btn primary" onclick="saveS()">💾 حفظ الجلسة</button><button class="smart-mode-btn" onclick="closeForm()">إلغاء</button>';
+     footer.innerHTML='<button class="smart-mode-btn primary" type="button" onclick="saveS()">💾 حفظ الجلسة</button><button class="smart-mode-btn" type="button" onclick="closeForm()">إلغاء</button>';
      modeBar.innerHTML+= '<button class="smart-mode-btn good" onclick="startSessionVoiceCreateAndSave()">🎙️ أمر كامل</button><button class="smart-mode-btn" onclick="closeForm()">✕ إغلاق</button>';
    } else if(mode==='edit'){
      title.textContent='تعديل الجلسة'; summary.innerHTML=buildSessionSummary(s); readView.innerHTML=''; readView.style.display='none'; if(voice)voice.style.display='block'; setSessionFormEditable(true);
-     footer.innerHTML='<button class="smart-mode-btn primary" onclick="saveS()">💾 حفظ التعديلات</button><button class="smart-mode-btn" onclick="openDet('+s.id+')">📂 عرض لوحة القضية</button><button class="smart-mode-btn" onclick="closeForm()">إغلاق</button>';
+     footer.innerHTML='<button class="smart-mode-btn primary" type="button" onclick="saveS()">💾 حفظ التعديلات</button><button class="smart-mode-btn" type="button" onclick="openDet('+s.id+')">📂 عرض لوحة القضية</button><button class="smart-mode-btn" type="button" onclick="closeForm()">إغلاق</button>';
      modeBar.innerHTML+= '<button class="smart-mode-btn good" onclick="showSessionAIChat('+s.id+')">⚖️ استشر سعود</button><button class="smart-mode-btn" onclick="linkTaskToCurrentSession()">✅ إضافة مهمة</button><button class="smart-mode-btn" onclick="closeForm()">✕ إغلاق</button>';
    } else {
      title.textContent='لوحة القضية'; summary.innerHTML=''; readView.innerHTML=buildSessionReadView(s); readView.style.display='block'; if(voice)voice.style.display='none'; setSessionFormEditable(false);
@@ -16849,6 +16849,8 @@ window.setSessionFormMode=function(mode){
    if(typeof clearSessionVoiceTranscript==='function')clearSessionVoiceTranscript(true);
    document.getElementById('formSheet').classList.remove('hid');
    updateUnifiedSessionUI('create',null);
+   chkV();
+   setTimeout(function(){var el=document.getElementById('fNum'); if(el)el.focus();},40);
  };
  var _origOpenEdit=window.openEdit;
  window.openEdit=function(s){if(!s)return; editId=s.id; detId=s.id; setUnifiedFormFields(s); document.getElementById('formSheet').classList.remove('hid'); updateUnifiedSessionUI('edit',s);};
@@ -16869,6 +16871,15 @@ window.setSessionFormMode=function(mode){
 
  var _origSaveS=window.saveS;
  window.saveS=function(){
+   var req=[{id:'fNum',label:'رقم القضية'},{id:'fCourt',label:'المحكمة'},{id:'fDate',label:'التاريخ'},{id:'fTime',label:'الوقت'}];
+   var miss=req.find(function(it){var el=document.getElementById(it.id); return !el || !String(el.value||'').trim();});
+   chkV();
+   if(miss){
+     toast('⚠️ أكمل الحقول الأساسية أولاً: '+miss.label);
+     try{goFormStep1();}catch(e){}
+     setTimeout(function(){var el=document.getElementById(miss.id); if(el){el.focus(); if(el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'center'});}},60);
+     return;
+   }
    var mode=(document.getElementById('formSheet')||{}).dataset?document.getElementById('formSheet').dataset.mode:'';
    _origSaveS();
    if(mode==='edit' && editId){
