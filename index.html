@@ -969,11 +969,47 @@ select:focus, textarea:focus {
 
 </div><script>
 var DB_NAME='JalsatDB', DB_VER=9, STORE='sessions';
-var db=null;
-function openDB(){return new Promise(function(res,rej){var r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=function(e){var d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'});};r.onsuccess=function(e){db=e.target.result;res();};r.onerror=rej;});}
-function dbAll(){return new Promise(function(res){if(!db){res([]);return;}var tx=db.transaction(STORE,'readonly');var r=tx.objectStore(STORE).getAll();r.onsuccess=function(){res(r.result||[]);};r.onerror=function(){res([]);};});}
-function dbPut(s){return new Promise(function(res){if(!db){res();return;}var tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(s);tx.oncomplete=res;tx.onerror=res;});}
-function dbDel(id){return new Promise(function(res){if(!db){res();return;}var tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=res;tx.onerror=res;});}
+var db=null, dbFallback=false, DB_FALLBACK_KEY='j_sessions_fallback';
+function dbFallbackRead(){try{return JSON.parse(localStorage.getItem(DB_FALLBACK_KEY)||'[]');}catch(e){return [];}}
+function dbFallbackWrite(rows){try{localStorage.setItem(DB_FALLBACK_KEY,JSON.stringify(rows||[]));}catch(e){}}
+function dbFallbackUpsert(s){var rows=dbFallbackRead(),found=false;rows=rows.map(function(x){if(x&&x.id===s.id){found=true;return s;}return x;});if(!found)rows.push(s);dbFallbackWrite(rows);}
+function dbFallbackRemove(id){var rows=dbFallbackRead().filter(function(x){return x&&x.id!==id;});dbFallbackWrite(rows);}
+function openDB(){return new Promise(function(res){
+  try{
+    if(!window.indexedDB){dbFallback=true;res();return;}
+    var r=indexedDB.open(DB_NAME,DB_VER);
+    r.onupgradeneeded=function(e){var d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'});};
+    r.onsuccess=function(e){db=e.target.result;res();};
+    r.onerror=function(){dbFallback=true;res();};
+  }catch(err){dbFallback=true;res();}
+});}
+function dbAll(){return new Promise(function(res){
+  if(dbFallback){res(dbFallbackRead());return;}
+  if(!db){res([]);return;}
+  try{
+    var tx=db.transaction(STORE,'readonly');var r=tx.objectStore(STORE).getAll();
+    r.onsuccess=function(){res(r.result||[]);};
+    r.onerror=function(){dbFallback=true;res(dbFallbackRead());};
+  }catch(err){dbFallback=true;res(dbFallbackRead());}
+});}
+function dbPut(s){return new Promise(function(res){
+  if(dbFallback){dbFallbackUpsert(s);res();return;}
+  if(!db){dbFallback=true;dbFallbackUpsert(s);res();return;}
+  try{
+    var tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(s);
+    tx.oncomplete=res;
+    tx.onerror=function(){dbFallback=true;dbFallbackUpsert(s);res();};
+  }catch(err){dbFallback=true;dbFallbackUpsert(s);res();}
+});}
+function dbDel(id){return new Promise(function(res){
+  if(dbFallback){dbFallbackRemove(id);res();return;}
+  if(!db){dbFallback=true;dbFallbackRemove(id);res();return;}
+  try{
+    var tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);
+    tx.oncomplete=res;
+    tx.onerror=function(){dbFallback=true;dbFallbackRemove(id);res();};
+  }catch(err){dbFallback=true;dbFallbackRemove(id);res();}
+});}
 
 var MO=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 var DY=["أحد","اثن","ثلا","أرب","خمس","جمع","سبت"];
@@ -17297,6 +17333,399 @@ window.setSessionFormMode=function(mode){
   ensureVoiceReviewMount();
   var btn=document.getElementById('sessionVoiceCreateBtn');
   if(btn)btn.textContent='🎙️ أمر كامل مرحلتين';
+})();
+</script>
+
+
+<script>
+(function(){
+  var SESSION_DRAFT_KEY='j_session_form_draft_v34';
+  var TASK_DRAFT_KEY='j_task_form_draft_v34';
+  var sessionDraftTimer=null, taskDraftTimer=null, sessionDraftDirty=false, taskDraftDirty=false;
+  var safariCompatNoticeShown=false;
+
+  function injectSafariCompatStyle(){
+    if(document.getElementById('jSafariCompatStyle'))return;
+    var st=document.createElement('style');
+    st.id='jSafariCompatStyle';
+    st.textContent=''
+      + 'html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%;}'
+      + '.overlay-bg,.dlg-bg,.sheet,.dlg,.topbar,.subnav,.hub-smart-filter,.smart-mode-bar,.smart-footer-actions,.nav-back-filter{-webkit-backdrop-filter:blur(14px);}'
+      + '.sheet-body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;}'
+      + '@supports (-webkit-touch-callout:none){'
+      + 'input,select,textarea,button{font-size:16px!important;}'
+      + '#formSheet .sheet,#detSheet .sheet{padding-bottom:max(12px,env(safe-area-inset-bottom));}'
+      + '.smart-footer-actions,.hub-smart-filter,.nav-back-filter{padding-bottom:calc(8px + env(safe-area-inset-bottom));}'
+      + '}';
+    document.head.appendChild(st);
+  }
+  injectSafariCompatStyle();
+
+  function isSafariLike(){
+    try{
+      var ua=navigator.userAgent||'';
+      var vendor=navigator.vendor||'';
+      return /Safari/i.test(ua) && /Apple/i.test(vendor) && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome/i.test(ua);
+    }catch(e){return false;}
+  }
+
+  function showSafariCompatNoticeOnce(){
+    if(safariCompatNoticeShown)return;
+    if(!isSafariLike())return;
+    safariCompatNoticeShown=true;
+    setTimeout(function(){
+      if(typeof toast==='function'){
+        if(window.dbFallback)toast('🧩 وضع Safari المتوافق يعمل الآن — التخزين المحلي نشط');
+        else toast('✅ التطبيق مضبوط للعمل بسلاسة على Safari');
+      }
+    },1200);
+  }
+
+  function safeLSGet(key){
+    try{return localStorage.getItem(key);}catch(e){return null;}
+  }
+  function safeLSSet(key,val){
+    try{localStorage.setItem(key,val);}catch(e){}
+  }
+  function safeLSDel(key){
+    try{localStorage.removeItem(key);}catch(e){}
+  }
+  function parseJSON(str,fb){
+    try{return JSON.parse(str);}catch(e){return fb;}
+  }
+  function isVisible(el){
+    return !!(el && el.offsetParent!==null && !el.classList.contains('hid'));
+  }
+
+  function meaningfulText(v){return String(v||'').replace(/\s+/g,' ').trim();}
+  function sessionFormOpen(){var sh=document.getElementById('formSheet');return !!(sh && !sh.classList.contains('hid'));}
+  function taskFormOpen(){var tf=document.getElementById('tform');return !!(tf && tf.style.display!=='none');}
+
+  function getSessionDraftData(){
+    var ids=['fNum','fRef','fClient','fCourt','fRoom','fPlnt','fDfnd','fDate','fDateHijri','fTime','fStatus','fType','fNotes','fMeetUrl'];
+    var out={mode:(window.editId?'edit':'new'),editId:window.editId||null,priority:window.curPrio||'none',tags:(window.curTags||[]).slice(),ts:Date.now()};
+    ids.forEach(function(id){var el=document.getElementById(id);out[id]=el?el.value:'';});
+    return out;
+  }
+  function hasSessionDraftValue(d){
+    if(!d)return false;
+    var fields=['fNum','fRef','fClient','fCourt','fRoom','fPlnt','fDfnd','fDate','fTime','fNotes','fMeetUrl'];
+    for(var i=0;i<fields.length;i++){if(meaningfulText(d[fields[i]]))return true;}
+    return false;
+  }
+  function saveSessionDraftNow(){
+    if(!sessionFormOpen())return;
+    var snap=getSessionDraftData();
+    if(!hasSessionDraftValue(snap)){safeLSDel(SESSION_DRAFT_KEY);updateSessionDraftBanner();return;}
+    safeLSSet(SESSION_DRAFT_KEY,JSON.stringify(snap));
+    sessionDraftDirty=false;
+    updateSessionDraftBanner('saved');
+  }
+  function scheduleSessionDraftSave(){
+    sessionDraftDirty=true;
+    updateSessionDraftBanner('dirty');
+    if(sessionDraftTimer)clearTimeout(sessionDraftTimer);
+    sessionDraftTimer=setTimeout(saveSessionDraftNow,450);
+  }
+  function loadSessionDraft(){return parseJSON(safeLSGet(SESSION_DRAFT_KEY),null);}
+  function clearSessionDraft(){safeLSDel(SESSION_DRAFT_KEY);updateSessionDraftBanner();}
+  function sessionDraftMatchesCurrent(d){
+    if(!d)return false;
+    if((window.editId||null)!==(d.editId||null))return false;
+    if((window.editId?'edit':'new')!==(d.mode||'new'))return false;
+    return true;
+  }
+  function applySessionDraft(d){
+    if(!d)return;
+    ['fNum','fRef','fClient','fCourt','fRoom','fPlnt','fDfnd','fDate','fDateHijri','fTime','fStatus','fType','fNotes','fMeetUrl'].forEach(function(id){
+      var el=document.getElementById(id); if(el && typeof d[id]!=='undefined')el.value=d[id]||'';
+    });
+    if(typeof window.setPrio==='function' && d.priority)window.setPrio(d.priority);
+    if(window.curTags && d.tags && d.tags.slice)window.curTags=d.tags.slice();
+    var tp=document.getElementById('tagsPicker');
+    if(tp && typeof window.renderTagsPicker==='function')tp.innerHTML=window.renderTagsPicker(window.curTags||[]);
+    if(typeof window.updMeetIcon==='function')window.updMeetIcon((d.fMeetUrl||''));
+    if(typeof window.updateDateInfo==='function')window.updateDateInfo(d.fDate||'');
+    if(typeof window.chkV==='function')window.chkV();
+    updateSessionDraftBanner('restored');
+  }
+  function buildDraftAge(ts){
+    if(!ts)return 'الآن';
+    var diff=Math.max(0,Math.round((Date.now()-ts)/60000));
+    if(diff<1)return 'الآن';
+    if(diff<60)return 'منذ '+diff+' د';
+    var h=Math.round(diff/60);
+    return 'منذ '+h+' س';
+  }
+  function ensureSessionDraftBanner(){
+    var body=document.querySelector('#formSheet .sheet-body');
+    if(!body)return null;
+    var bar=document.getElementById('sessionDraftBanner');
+    if(!bar){
+      bar=document.createElement('div');
+      bar.id='sessionDraftBanner';
+      bar.style.cssText='display:none;background:linear-gradient(180deg,rgba(59,130,246,.08),rgba(59,130,246,.03));border:1px solid rgba(96,165,250,.24);border-radius:14px;padding:10px 12px;margin-bottom:12px';
+      body.insertBefore(bar, body.firstChild);
+    }
+    return bar;
+  }
+  function updateSessionDraftBanner(state){
+    var bar=ensureSessionDraftBanner();
+    if(!bar)return;
+    if(!sessionFormOpen()){bar.style.display='none';return;}
+    var d=loadSessionDraft();
+    var canRestore=d && sessionDraftMatchesCurrent(d) && hasSessionDraftValue(d);
+    if(!canRestore && !state){bar.style.display='none';return;}
+    var title='📝 الحفظ التلقائي جاهز';
+    var sub='يتم حفظ مسودة الجلسة تلقائيًا أثناء الكتابة.';
+    var actions='';
+    if(canRestore){
+      title='📝 توجد مسودة محفوظة';
+      sub='آخر تحديث '+buildDraftAge(d.ts)+' — يمكنك استعادتها أو حذفها.';
+      actions='<button type="button" onclick="restoreSessionDraftFromBanner()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0905;border:none;border-radius:10px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">استعادة المسودة</button>'
+             +'<button type="button" onclick="discardSessionDraftFromBanner()" style="background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">حذف المسودة</button>';
+    }else if(state==='dirty'){
+      title='💾 يتم حفظ المسودة تلقائيًا';
+      sub='اكتب بحرية — سيُحتفظ بآخر البيانات إذا خرجت من الصفحة.';
+      actions='<button type="button" onclick="saveSessionDraftNowFromBanner()" style="background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(134,239,172,.26);border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">حفظ الآن</button>';
+    }else if(state==='saved'){
+      title='✅ تم حفظ المسودة';
+      sub='آخر تحديث '+buildDraftAge(Date.now())+' — ستعود البيانات إذا خرجت قبل الحفظ النهائي.';
+      actions='<button type="button" onclick="discardSessionDraftFromBanner()" style="background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">مسح المسودة</button>';
+    }else if(state==='restored'){
+      title='↩️ تمت استعادة المسودة';
+      sub='راجع الحقول ثم احفظ الجلسة عند الانتهاء.';
+      actions='<button type="button" onclick="discardSessionDraftFromBanner()" style="background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">إخفاء</button>';
+    }
+    bar.innerHTML='<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+      +'<div style="flex:1;min-width:180px"><div style="font-size:12px;font-weight:800;color:#93c5fd">'+title+'</div><div style="font-size:11px;color:var(--text2);line-height:1.8;margin-top:2px">'+sub+'</div></div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'+actions+'</div></div>';
+    bar.style.display='block';
+  }
+
+  window.restoreSessionDraftFromBanner=function(){
+    var d=loadSessionDraft();
+    if(!d || !sessionDraftMatchesCurrent(d)){if(typeof toast==='function')toast('⚠️ لا توجد مسودة مناسبة لهذا النموذج');return;}
+    applySessionDraft(d);
+    if(typeof toast==='function')toast('↩️ تمت استعادة مسودة الجلسة');
+  };
+  window.discardSessionDraftFromBanner=function(){
+    clearSessionDraft();
+    if(typeof toast==='function')toast('🧹 تم حذف مسودة الجلسة');
+  };
+  window.saveSessionDraftNowFromBanner=function(){
+    saveSessionDraftNow();
+    if(typeof toast==='function')toast('💾 تم حفظ المسودة');
+  };
+
+  function getTaskDraftData(){
+    return {title:(document.getElementById('tt')||{}).value||'',caseNum:(document.getElementById('tc')||{}).value||'',due:(document.getElementById('td2')||{}).value||'',priority:(document.getElementById('tp')||{}).value||'med',ts:Date.now()};
+  }
+  function hasTaskDraftValue(d){return !!(d && (meaningfulText(d.title)||meaningfulText(d.caseNum)||meaningfulText(d.due)));}
+  function saveTaskDraftNow(){
+    if(!taskFormOpen())return;
+    var snap=getTaskDraftData();
+    if(!hasTaskDraftValue(snap)){safeLSDel(TASK_DRAFT_KEY);updateTaskDraftBanner();return;}
+    safeLSSet(TASK_DRAFT_KEY,JSON.stringify(snap));
+    taskDraftDirty=false;
+    updateTaskDraftBanner('saved');
+  }
+  function scheduleTaskDraftSave(){
+    taskDraftDirty=true;
+    updateTaskDraftBanner('dirty');
+    if(taskDraftTimer)clearTimeout(taskDraftTimer);
+    taskDraftTimer=setTimeout(saveTaskDraftNow,350);
+  }
+  function loadTaskDraft(){return parseJSON(safeLSGet(TASK_DRAFT_KEY),null);}
+  function clearTaskDraft(){safeLSDel(TASK_DRAFT_KEY);updateTaskDraftBanner();}
+  function applyTaskDraft(d){
+    if(!d)return;
+    var tt=document.getElementById('tt'),tc=document.getElementById('tc'),td2=document.getElementById('td2'),tp=document.getElementById('tp');
+    if(tt)tt.value=d.title||'';
+    if(tc)tc.value=d.caseNum||'';
+    if(td2)td2.value=d.due||'';
+    if(tp)tp.value=d.priority||'med';
+    updateTaskDraftBanner('restored');
+  }
+  function ensureTaskDraftBanner(){
+    var tf=document.getElementById('tform');
+    if(!tf)return null;
+    var bar=document.getElementById('taskDraftBanner');
+    if(!bar){
+      bar=document.createElement('div');
+      bar.id='taskDraftBanner';
+      bar.style.cssText='display:none;background:linear-gradient(180deg,rgba(16,185,129,.09),rgba(16,185,129,.03));border:1px solid rgba(52,211,153,.25);border-radius:14px;padding:10px 12px;margin:0 0 10px';
+      tf.insertBefore(bar, tf.firstChild);
+    }
+    return bar;
+  }
+  function updateTaskDraftBanner(state){
+    var bar=ensureTaskDraftBanner();
+    if(!bar)return;
+    var d=loadTaskDraft();
+    if(!taskFormOpen() && !d){bar.style.display='none';return;}
+    if(!d && !state){bar.style.display='none';return;}
+    var title='✅ تم حفظ مسودة المهمة';
+    var sub='سيتم الاحتفاظ بالمهمة إذا خرجت قبل الحفظ النهائي.';
+    var actions='<button type="button" onclick="discardTaskDraftFromBanner()" style="background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">مسح المسودة</button>';
+    if(d && hasTaskDraftValue(d) && state!=='saved' && state!=='dirty'){
+      title='📝 توجد مسودة مهمة';
+      sub='آخر تحديث '+buildDraftAge(d.ts)+' — يمكنك استعادتها أو حذفها.';
+      actions='<button type="button" onclick="restoreTaskDraftFromBanner()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0905;border:none;border-radius:10px;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">استعادة المسودة</button>'
+        +'<button type="button" onclick="discardTaskDraftFromBanner()" style="background:var(--surface3);color:var(--text2);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">حذف</button>';
+    }else if(state==='dirty'){
+      title='💾 يتم حفظ المهمة تلقائيًا';
+      sub='اكتب العنوان والموعد، وسيتم حفظ المسودة تلقائيًا.';
+      actions='<button type="button" onclick="saveTaskDraftNowFromBanner()" style="background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(134,239,172,.26);border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:Tajawal,sans-serif">حفظ الآن</button>';
+    }else if(state==='restored'){
+      title='↩️ تمت استعادة مسودة المهمة';
+      sub='أكمل التعديل ثم احفظ المهمة عندما تنتهي.';
+    }
+    bar.innerHTML='<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+      +'<div style="flex:1;min-width:180px"><div style="font-size:12px;font-weight:800;color:#86efac">'+title+'</div><div style="font-size:11px;color:var(--text2);line-height:1.8;margin-top:2px">'+sub+'</div></div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'+actions+'</div></div>';
+    bar.style.display='block';
+  }
+  window.restoreTaskDraftFromBanner=function(){var d=loadTaskDraft(); if(!d){if(typeof toast==='function')toast('⚠️ لا توجد مسودة مهمة');return;} applyTaskDraft(d); if(typeof toast==='function')toast('↩️ تمت استعادة مسودة المهمة');};
+  window.discardTaskDraftFromBanner=function(){clearTaskDraft(); if(typeof toast==='function')toast('🧹 تم حذف مسودة المهمة');};
+  window.saveTaskDraftNowFromBanner=function(){saveTaskDraftNow(); if(typeof toast==='function')toast('💾 تم حفظ مسودة المهمة');};
+
+  function bindDraftListeners(){
+    if(document.body.dataset.draftBindDone==='1')return;
+    document.body.dataset.draftBindDone='1';
+    document.addEventListener('input', function(e){
+      var id=e.target && e.target.id ? e.target.id : '';
+      if(['fNum','fRef','fClient','fCourt','fRoom','fPlnt','fDfnd','fDate','fDateHijri','fTime','fStatus','fType','fNotes','fMeetUrl'].indexOf(id)>-1){scheduleSessionDraftSave();}
+      if(['tt','tc','td2','tp'].indexOf(id)>-1){scheduleTaskDraftSave();}
+    }, true);
+    document.addEventListener('change', function(e){
+      var id=e.target && e.target.id ? e.target.id : '';
+      if(['fNum','fRef','fClient','fCourt','fRoom','fPlnt','fDfnd','fDate','fDateHijri','fTime','fStatus','fType','fNotes','fMeetUrl'].indexOf(id)>-1){scheduleSessionDraftSave();}
+      if(['tt','tc','td2','tp'].indexOf(id)>-1){scheduleTaskDraftSave();}
+    }, true);
+    window.addEventListener('beforeunload', function(ev){
+      var warn=false;
+      if(sessionFormOpen() && hasSessionDraftValue(getSessionDraftData())){saveSessionDraftNow();warn=true;}
+      if(taskFormOpen() && hasTaskDraftValue(getTaskDraftData())){saveTaskDraftNow();warn=true;}
+      if(warn){
+        var msg='لديك بيانات غير محفوظة، تم حفظ مسودة تلقائيًا.';
+        ev.preventDefault();
+        ev.returnValue=msg;
+        return msg;
+      }
+    });
+  }
+  bindDraftListeners();
+
+  function afterRenderCompat(){
+    showSafariCompatNoticeOnce();
+    updateSessionDraftBanner();
+    if(taskFormOpen()){
+      var d=loadTaskDraft();
+      if(d && hasTaskDraftValue(d)){
+        var tt=document.getElementById('tt'),tc=document.getElementById('tc'),td2=document.getElementById('td2'),tp=document.getElementById('tp');
+        if(tt && !tt.value && !tc.value && !td2.value){applyTaskDraft(d);}
+      }
+    }
+    updateTaskDraftBanner();
+  }
+
+  var _origRender=window.render;
+  if(typeof _origRender==='function'){
+    window.render=function(){
+      var r=_origRender.apply(this,arguments);
+      setTimeout(afterRenderCompat,0);
+      return r;
+    };
+  }
+
+  var _origOpenAdd=window.openAdd;
+  if(typeof _origOpenAdd==='function'){
+    window.openAdd=function(){
+      var r=_origOpenAdd.apply(this,arguments);
+      setTimeout(function(){
+        updateSessionDraftBanner();
+        var d=loadSessionDraft();
+        if(d && d.mode==='new' && !d.editId && hasSessionDraftValue(d)){
+          updateSessionDraftBanner();
+        }
+      },40);
+      return r;
+    };
+  }
+
+  var _origOpenEdit=window.openEdit;
+  if(typeof _origOpenEdit==='function'){
+    window.openEdit=function(s){
+      var r=_origOpenEdit.apply(this,arguments);
+      setTimeout(function(){
+        updateSessionDraftBanner();
+        var d=loadSessionDraft();
+        if(d && s && d.mode==='edit' && String(d.editId||'')===String(s.id||'') && hasSessionDraftValue(d)){
+          updateSessionDraftBanner();
+        }
+      },40);
+      return r;
+    };
+  }
+
+  var _origCloseForm=window.closeForm;
+  if(typeof _origCloseForm==='function'){
+    window.closeForm=function(){
+      if(sessionFormOpen() && hasSessionDraftValue(getSessionDraftData()))saveSessionDraftNow();
+      return _origCloseForm.apply(this,arguments);
+    };
+  }
+
+  var _origSaveS=window.saveS;
+  if(typeof _origSaveS==='function'){
+    window.saveS=function(){
+      var beforeCount=(window.data&&window.data.length)||0;
+      var wasEdit=!!window.editId;
+      var r=_origSaveS.apply(this,arguments);
+      setTimeout(function(){
+        var afterCount=(window.data&&window.data.length)||0;
+        if((!wasEdit && afterCount>beforeCount) || !sessionFormOpen()){
+          clearSessionDraft();
+        }else{
+          updateSessionDraftBanner();
+        }
+      },120);
+      return r;
+    };
+  }
+
+  var _origOpnTaskForm=window.opnTaskForm;
+  if(typeof _origOpnTaskForm==='function'){
+    window.opnTaskForm=function(){
+      var r=_origOpnTaskForm.apply(this,arguments);
+      setTimeout(function(){updateTaskDraftBanner();},40);
+      return r;
+    };
+  }
+
+  var _origClsTaskForm=window.clsTaskForm;
+  if(typeof _origClsTaskForm==='function'){
+    window.clsTaskForm=function(){
+      if(taskFormOpen() && hasTaskDraftValue(getTaskDraftData()))saveTaskDraftNow();
+      return _origClsTaskForm.apply(this,arguments);
+    };
+  }
+
+  var _origSaveTask=window.saveTask;
+  if(typeof _origSaveTask==='function'){
+    window.saveTask=function(){
+      var before=(window.tasks&&window.tasks.length)||0;
+      var r=_origSaveTask.apply(this,arguments);
+      setTimeout(function(){
+        var after=(window.tasks&&window.tasks.length)||0;
+        if(after>before)clearTaskDraft(); else updateTaskDraftBanner();
+      },120);
+      return r;
+    };
+  }
+
+  setTimeout(afterRenderCompat,80);
 })();
 </script>
 
