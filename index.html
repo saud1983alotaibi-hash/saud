@@ -19034,5 +19034,138 @@ window.setSessionFormMode=function(mode){
   setTimeout(enhanceUiNow, 150);
 })();
 </script>
+
+<script>
+(function(){
+  function esc(v){
+    v = v == null ? '' : String(v);
+    return v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function getMoreGroups(){
+    return [
+      {id:'work', icon:'💼', title:'العمل اليومي', desc:'الوصول إلى القضايا والجلسات، المهمات، والمتابعة اليومية.', items:[
+        {tab:'list', icon:'⚖️', label:'القضايا والجلسات'},
+        {tab:'tasks', icon:'✅', label:'المهمات'},
+        {tab:'today', icon:'📅', label:'اليوم'},
+        {tab:'cal', icon:'🗓️', label:'التقويم'}
+      ]},
+      {id:'clients', icon:'👥', title:'الموكلون والملفات', desc:'ملفات الموكلين، الأتعاب، والارتباطات في مكان واحد.', items:[
+        {tab:'workspace', icon:'👥', label:'مركز الموكلين والملفات'},
+        {tab:'fees', icon:'💰', label:'الأتعاب'},
+        {tab:'team', icon:'🧑‍💼', label:'الفريق'}
+      ]},
+      {id:'docs', icon:'📚', title:'المستندات والمعرفة', desc:'المستندات، المعرفة القانونية، والمشاركة دون تكرار.', items:[
+        {tab:'docsHub', icon:'📚', label:'مركز المستندات والمعرفة'},
+        {tab:'letterhead', icon:'📝', label:'الخطابات والنماذج'},
+        {tab:'share', icon:'🔗', label:'المشاركة'}
+      ]},
+      {id:'insights', icon:'📈', title:'التقارير والتحليل', desc:'الإحصاءات، اللوحة التنفيذية، ولوحة المتابعة.', items:[
+        {tab:'stats', icon:'📈', label:'الإحصاءات'},
+        {tab:'dashboard', icon:'📊', label:'لوحة القيادة'},
+        {tab:'kanban', icon:'🗂️', label:'لوحة المتابعة'}
+      ]},
+      {id:'tools', icon:'🛠️', title:'الأدوات والتخصيص', desc:'أدوات المكتب، النسخ الاحتياطي، الأمان، والهوية.', items:[
+        {tab:'tools', icon:'🛠️', label:'الأدوات والتخصيص'},
+        {tab:'ai', icon:'🤖', label:'سعود AI'},
+        {tab:'home', icon:'🏠', label:'الرئيسية'}
+      ]}
+    ];
+  }
+  function normalizeMoreFilter(v){
+    var allowed={all:1,work:1,clients:1,docs:1,insights:1,tools:1};
+    return allowed[v] ? v : 'all';
+  }
+  window._moreHubFilter = normalizeMoreFilter(window._moreHubFilter || 'all');
+  if(typeof window.setMoreHubFilter !== 'function'){
+    window.setMoreHubFilter=function(v){ window._moreHubFilter=normalizeMoreFilter(v); if(typeof render==='function') render(true); };
+  } else {
+    var _origSetMoreHubFilter=window.setMoreHubFilter;
+    window.setMoreHubFilter=function(v){ window._moreHubFilter=normalizeMoreFilter(v); return _origSetMoreHubFilter(window._moreHubFilter); };
+  }
+  window.buildMoreHub = function(){
+    var filter = normalizeMoreFilter(window._moreHubFilter || 'all');
+    var search = String(window._moreHubSearch || '').trim().toLowerCase();
+    var groups = getMoreGroups().filter(function(g){
+      var ok = (filter==='all' || g.id===filter);
+      if(search){
+        var hay = (g.title+' '+g.desc+' '+g.items.map(function(it){return it.label;}).join(' ')).toLowerCase();
+        ok = ok && hay.indexOf(search)>-1;
+      }
+      return ok;
+    });
+    var chips=[
+      ['all','الكل'],['work','العمل'],['clients','الملفات'],['docs','المستندات'],['insights','التحليل'],['tools','الأدوات']
+    ];
+    var h='';
+    h+='<section class="v39-more-shell">';
+    h+='<div class="v39-more-hero">';
+    h+='<div><div class="v39-more-title">☰ المزيد</div><div class="v39-more-sub">واجهة أنظف وأهدأ: مجموعات قابلة للفتح، بدون تكرار، وبوصول سريع للأقسام المهمة.</div></div>';
+    h+='<div class="v39-more-actions"><button type="button" class="v39-mini-btn" onclick="go(\'home\')">🏠 الرئيسية</button><button type="button" class="v39-mini-btn" onclick="go(\'tools\')">🛠️ الأدوات</button></div>';
+    h+='</div>';
+    h+='<div class="v39-more-toolbar">';
+    h+='<div class="v39-more-search"><input type="search" dir="rtl" value="'+esc(window._moreHubSearch||'')+'" placeholder="ابحث داخل المزيد..." oninput="window._moreHubSearch=this.value;window._moreHubSearchTimer&&clearTimeout(window._moreHubSearchTimer);window._moreHubSearchTimer=setTimeout(function(){render(true);},120)"></div>';
+    h+='<div class="v39-more-chips">';
+    chips.forEach(function(ch){ h+='<button type="button" class="'+(filter===ch[0]?'on':'')+'" onclick="window._moreHubFilter=\''+ch[0]+'\';render(true)">'+ch[1]+'</button>'; });
+    h+='</div></div>';
+    h+='<div class="v39-more-list">';
+    groups.forEach(function(g,idx){
+      var open = idx===0 ? ' open' : '';
+      h+='<details class="v39-more-group"'+open+'>';
+      h+='<summary><span class="head"><span class="ico">'+g.icon+'</span><span><span class="ttl">'+esc(g.title)+'</span><span class="sub">'+esc(g.desc)+'</span></span></span><span class="arrow">⌄</span></summary>';
+      h+='<div class="body"><div class="actions">';
+      g.items.forEach(function(it){
+        h+='<button type="button" onclick="go(\''+it.tab+'\')"><span class="i">'+it.icon+'</span><span>'+esc(it.label)+'</span></button>';
+      });
+      h+='</div></div></details>';
+    });
+    if(!groups.length){
+      h+='<div class="v39-more-empty">لا توجد نتائج مطابقة للبحث أو الفلتر الحالي.</div>';
+    }
+    h+='</div></section>';
+    return h;
+  };
+  window.rSettings = function(){ return window.buildMoreHub(); };
+
+  function inject(){
+    if(document.getElementById('v39MoreFixStyles')) return;
+    var st=document.createElement('style');
+    st.id='v39MoreFixStyles';
+    st.textContent=`
+      .v39-more-shell{display:grid;gap:14px}
+      .v39-more-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:linear-gradient(145deg,rgba(200,168,75,.14),rgba(255,255,255,.02));border:1px solid rgba(200,168,75,.18);border-radius:24px;padding:18px 16px}
+      .v39-more-title{font-family:"SF Arabic","Scheherazade New",serif;font-size:28px;line-height:1;color:var(--gold2)}
+      .v39-more-sub{font-size:12px;color:var(--text2);line-height:1.9;margin-top:8px;max-width:620px}
+      .v39-more-actions{display:flex;gap:8px;flex-wrap:wrap}
+      .v39-mini-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:14px;padding:10px 12px;font-size:11px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif}
+      .v39-mini-btn:hover{border-color:var(--gold-a20);color:var(--gold2)}
+      .v39-more-toolbar{display:grid;gap:10px}
+      .v39-more-search input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:13px 14px;font-size:12px;color:var(--text);font-family:Tajawal,sans-serif}
+      .v39-more-chips{display:flex;gap:8px;flex-wrap:wrap}
+      .v39-more-chips button{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:999px;padding:8px 12px;font-size:11px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif}
+      .v39-more-chips button.on{background:var(--gold-a10);border-color:var(--gold-a20);color:var(--gold2)}
+      .v39-more-list{display:grid;gap:10px}
+      .v39-more-group{background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.015));border:1px solid var(--border2);border-radius:20px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,.10)}
+      .v39-more-group summary{list-style:none;cursor:pointer;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+      .v39-more-group summary::-webkit-details-marker{display:none}
+      .v39-more-group .head{display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1}
+      .v39-more-group .ico{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+      .v39-more-group .ttl{display:block;font-size:14px;font-weight:900;color:var(--text);line-height:1.6}
+      .v39-more-group .sub{display:block;font-size:11px;color:var(--text3);line-height:1.8;margin-top:3px}
+      .v39-more-group .arrow{width:32px;height:32px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:var(--gold2);font-size:18px;transition:transform .18s ease}
+      .v39-more-group[open] .arrow{transform:rotate(180deg)}
+      .v39-more-group .body{padding:0 16px 16px}
+      .v39-more-group .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+      .v39-more-group .actions button{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:13px 12px;color:var(--text);font-size:12px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif;text-align:right}
+      .v39-more-group .actions button .i{font-size:18px}
+      .v39-more-group .actions button:hover{border-color:var(--gold-a20);color:var(--gold2)}
+      .v39-more-empty{background:rgba(255,255,255,.03);border:1px dashed var(--border2);border-radius:16px;padding:16px;font-size:12px;color:var(--text3)}
+      @media (max-width:640px){.v39-more-hero{padding:16px 14px;flex-direction:column}.v39-more-actions{width:100%}.v39-mini-btn{flex:1 1 auto}.v39-more-group .actions{grid-template-columns:1fr}}
+    `;
+    document.head.appendChild(st);
+  }
+  inject();
+})();
+</script>
+
 </body>
 </html>
