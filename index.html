@@ -26519,6 +26519,711 @@ html,body,#app,button,input,select,textarea{font-family:var(--app-font)!importan
 })();
 </script>
 
+
+<style id="v93-ios-professional-ui-style">
+:root{
+  --ios-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Tajawal","Helvetica Neue",Arial,sans-serif;
+  --ios-title:clamp(17px,4.5vw,20px);
+  --ios-subtitle:clamp(13px,3.8vw,15px);
+  --ios-body:13px;
+  --ios-small:11px;
+}
+html,body,#app,button,input,select,textarea{font-family:var(--ios-font)!important;letter-spacing:0!important}
+body{font-size:13px!important;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+#app{max-width:430px!important;width:100%!important;margin:0 auto!important;background:linear-gradient(180deg,#060a14 0%,#08101c 100%)!important}
+#hdr{box-shadow:0 10px 30px rgba(0,0,0,.18)!important}
+.hdr-inner{padding:10px 14px 9px!important}
+.hdr-eyebrow{font-size:9px!important;letter-spacing:.10em!important}
+.hdr-title,.v68-title,[style*="Scheherazade New"],.main-head .ttl,.unified-shell .ttl{font-family:var(--ios-font)!important;font-size:var(--ios-title)!important;line-height:1.35!important;font-weight:800!important}
+.hdr-date,.hdr-sub,.sub, .v68-sub{font-size:11px!important;line-height:1.7!important}
+.tab,.subtab,.bnav-btn,.chip,.ux-chip,.v68-chip-btn,.v68-folder-chip,.smart-mode-chip,.v39-more-chips button,.v40-chiprow button,.v49-tab,.v49-chiprow button{font-size:11.5px!important;min-height:36px!important}
+.btn-icon,.hdr-tools-btn{width:34px!important;height:34px!important;border-radius:11px!important}
+.btn-new{font-size:11.5px!important;padding:8px 12px!important;border-radius:11px!important}
+#cnt,.main-pane{padding-inline:12px!important}
+.search-wrap input,.search-wrap textarea,.search-wrap select,input,select,textarea,.v68-search input,.v68-input,.v68-inline-select,.unified-filter-grid input,.unified-filter-grid select{font-size:13px!important;min-height:42px!important;border-radius:14px!important}
+button,.v68-btn,.unified-filter-grid button,.v68-chip-btn,.ux-chip,.chip,.subtab,.tab{font-size:11.5px!important}
+.stat-value,.kpi-value,.v68-money,.v68-money.strong{font-size:17px!important}
+.stat-label,.kpi-label,.v68-mini-note,.empty-sub,[style*="font-size:10px"],[style*="font-size:11px"]{font-size:11px!important;line-height:1.7!important}
+[style*="font-size:18px"],[style*="font-size:19px"],[style*="font-size:20px"],[style*="font-size:21px"],[style*="font-size:22px"],[style*="font-size:24px"],[style*="font-size:28px"],[style*="font-size:30px"]{font-size:16px!important;line-height:1.55!important}
+.folder-card,.card,.stat-card,.v68-file-card,.v68-fee-card,.v68-fee-client-card,.panel,.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel{border-radius:18px!important;box-shadow:0 10px 26px rgba(0,0,0,.14)!important}
+.ux-actionbar,.main-head,.v68-panel,.unified-shell{backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
+.unified-filter-grid,.v68-filter-grid,.v68-form-grid{gap:8px!important}
+.ux-chiprow,.chips,.premium-chiprow,.v49-chiprow,.v40-chiprow,.v68-folder-strip,.v68-toggle,.v39-more-chips{display:flex!important;gap:8px!important;flex-wrap:wrap!important;overflow:visible!important}
+.search-wrap{margin-bottom:0!important}
+.v93-filter-shell{background:rgba(10,16,28,.84)!important;border:1px solid rgba(255,255,255,.07)!important;border-radius:18px!important;padding:10px!important;box-shadow:0 10px 26px rgba(0,0,0,.14)!important;margin-bottom:12px!important}
+.v93-filter-shell .v93-filter-row{display:flex!important;gap:8px!important;flex-wrap:wrap!important;align-items:center!important}
+.v93-filter-shell .v93-filter-row + .v93-filter-row{margin-top:8px!important}
+.v93-filter-shell .search-wrap,.v93-filter-shell .v68-search{flex:1 1 220px!important;min-width:0!important}
+.v93-filter-shell select,.v93-filter-shell input,.v93-filter-shell textarea{flex:1 1 140px!important;min-width:110px!important}
+.v93-filter-shell button{flex-shrink:0!important}
+.v93-filter-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;color:var(--gold2)!important;font-size:11px!important;font-weight:800!important}
+.v93-filter-meta{color:var(--text3)!important;font-size:10px!important;font-weight:700!important}
+.v93-soft-hide{display:none!important}
+@media (max-width:430px){
+  .hdr-inner{padding-inline:12px!important}
+  .tabs-scroll{padding-inline:8px!important}
+  #cnt,.main-pane{padding-inline:10px!important}
+  .btn-new{padding:8px 10px!important}
+  .v68-kpi-grid,.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .unified-filter-grid,.v68-filter-grid,.v68-form-grid{grid-template-columns:1fr!important}
+  .unified-filter-grid button{grid-column:auto!important;width:100%!important}
+}
+</style>
+<script id="v93-ios-professional-ui-script">
+(function(){
+  if(window.__v93IOSProfessionalApplied) return;
+  window.__v93IOSProfessionalApplied = true;
+
+  function norm(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function safeLower(s){return norm(s).toLowerCase();}
+  function isVisible(el){return !!(el && el.isConnected && el.offsetParent!==null);}
+  function isFilterNode(el){
+    if(!el || !el.querySelectorAll) return false;
+    var cls = String(el.className||'');
+    if(/v93-filter-shell/.test(cls)) return true;
+    var controls = el.querySelectorAll('input,select,textarea,button').length;
+    if(!controls) return false;
+    var txt = norm(el.textContent||'').slice(0,280);
+    return /filter|search|chip|toolbar|actionbar|sticky|topbar|head|v68-panel|unified-shell|v66-filters|v40-filter|ux-actionbar|search-wrap/i.test(cls)
+      || /بحث|الكل|الحالة|النوع|الفرز|ترتيب|الأولوية|الموكل|القضية|المحكمة|الفترة|المجلد|مسح الفلاتر|التاريخ|المصدر|المهام|الجلسات|الملفات|الأتعاب/.test(txt);
+  }
+  function controlSignature(el){
+    if(!el || !el.querySelectorAll) return '';
+    var bits = [];
+    el.querySelectorAll('input,select,textarea,button,.chip,.ux-chip,.v68-chip-btn,.subtab,.smart-mode-chip').forEach(function(node){
+      if(bits.length > 40) return;
+      var tag = (node.tagName||'').toLowerCase();
+      var val = '';
+      if(tag === 'input' || tag === 'textarea') val = node.getAttribute('placeholder') || node.value || '';
+      else if(tag === 'select') val = Array.prototype.slice.call(node.options||[],0,6).map(function(o){ return norm(o.textContent); }).join('|');
+      else val = node.textContent || '';
+      val = norm(val).replace(/\d+/g,'#');
+      if(val) bits.push((tag||'x')+':'+val);
+    });
+    var textBits = norm(el.textContent||'').replace(/\d+/g,'#').slice(0,180);
+    return bits.join('||')+'::'+textBits;
+  }
+  function pruneDuplicateChildren(scope){
+    if(!scope || !scope.querySelectorAll) return;
+    [['button','.chip,.ux-chip,.v68-chip-btn,.smart-mode-chip,.subtab,.v39-more-chips button,.v40-chiprow button,.v49-chiprow button'],['input','input[type="search"],input:not([type]),input[type="text"]'],['select','select']].forEach(function(entry){
+      var seen = new Set();
+      scope.querySelectorAll(entry[1]).forEach(function(el){
+        var key = entry[0] + ':' + norm(el.textContent || el.placeholder || el.value || '').replace(/\d+/g,'#');
+        if(!key || key === entry[0]+':') return;
+        var parent = el.parentElement;
+        if(!parent) return;
+        var pkey = key + '|p:' + (parent.className || parent.tagName);
+        if(seen.has(pkey)){
+          el.remove();
+        }else{
+          seen.add(pkey);
+        }
+      });
+    });
+  }
+  function annotateFilterShell(shell){
+    if(!shell || shell.__v93Done) return;
+    shell.__v93Done = true;
+    shell.classList.add('v93-filter-shell');
+    var title = document.createElement('div');
+    title.className = 'v93-filter-title';
+    title.innerHTML = '<span>الفلاتر</span><span class="v93-filter-meta">واجهة موحدة</span>';
+    var hasTitleAlready = /الفلاتر|بحث|ترتيب|حالة|نوع/.test(norm(shell.firstElementChild && shell.firstElementChild.textContent));
+    if(!hasTitleAlready) shell.insertBefore(title, shell.firstChild);
+    Array.prototype.forEach.call(shell.children, function(ch){
+      if(ch === title) return;
+      var ccls = String(ch.className||'');
+      if(/search-wrap|ux-chiprow|premium-chiprow|chips|v49-chiprow|v40-chiprow|v68-folder-strip|v68-toggle|v68-filter-grid|v68-form-grid|unified-filter-grid|v39-more-chips|ux-row/i.test(ccls) || ch.querySelector('input,select,textarea,button')) ch.classList.add('v93-filter-row');
+    });
+    pruneDuplicateChildren(shell);
+  }
+  function dedupeSiblingFilterShells(root){
+    if(!root || !root.querySelectorAll) return;
+    root.querySelectorAll('#cnt > *, .main-pane > *, .v67-shell > *, .v68-shell > *, .main-head > *, .unified-shell > *').forEach(function(){});
+    var parents = root.querySelectorAll('#cnt, .main-pane, .v67-shell, .v68-shell, .main-head, .unified-shell, .panel');
+    parents.forEach(function(parent){
+      var seen = new Set();
+      Array.prototype.slice.call(parent.children||[]).forEach(function(child){
+        if(!isFilterNode(child) || !isVisible(child)) return;
+        var sig = controlSignature(child);
+        if(!sig) return;
+        if(seen.has(sig)){
+          child.remove();
+          return;
+        }
+        seen.add(sig);
+        annotateFilterShell(child);
+      });
+    });
+  }
+  function mergeNearbySearches(root){
+    if(!root || !root.querySelectorAll) return;
+    root.querySelectorAll('.search-wrap').forEach(function(wrap){
+      var shell = wrap.closest('.v93-filter-shell,.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel') || wrap.parentElement;
+      if(!shell) return;
+      var searches = shell.querySelectorAll('.search-wrap input[type="search"], .search-wrap input:not([type]), .search-wrap input[type="text"]');
+      if(searches.length <= 1) return;
+      var seen = new Set();
+      searches.forEach(function(inp, idx){
+        var key = norm(inp.getAttribute('placeholder') || '').replace(/\d+/g,'#');
+        if(seen.has(key) && inp.closest('.search-wrap')) inp.closest('.search-wrap').remove();
+        else seen.add(key || ('q'+idx));
+      });
+    });
+  }
+  function compactMainTabs(){
+    document.querySelectorAll('.tab,.subtab,.bnav-btn').forEach(function(el){
+      el.style.whiteSpace = 'nowrap';
+      el.style.textOverflow = 'ellipsis';
+      el.style.overflow = 'hidden';
+    });
+  }
+  function polish(){
+    var root = document.getElementById('cnt') || document;
+    compactMainTabs();
+    dedupeSiblingFilterShells(root);
+    mergeNearbySearches(root);
+    root.querySelectorAll('.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel').forEach(annotateFilterShell);
+  }
+  var raf = 0;
+  function schedulePolish(){
+    if(raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function(){ raf = 0; try{ polish(); }catch(e){} });
+  }
+  var _render = window.render;
+  if(typeof _render === 'function'){
+    window.render = function(){
+      var out = _render.apply(this, arguments);
+      schedulePolish();
+      return out;
+    };
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedulePolish);
+  else schedulePolish();
+  var observer = new MutationObserver(function(){ schedulePolish(); });
+  if(document.documentElement) observer.observe(document.documentElement, {childList:true, subtree:true});
+})();
+</script>
+
+
+<style id="v94-typography-and-merged-hub-style">
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@700;800&display=swap');
+:root{
+  --v94-ui-font:"IBM Plex Sans Arabic","SF Arabic","Geeza Pro",-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --v94-title-font:"Cairo","IBM Plex Sans Arabic","SF Arabic","Geeza Pro",-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  --v94-body:12.5px;
+  --v94-chip:11px;
+  --v94-title:18px;
+  --v94-card-radius:20px;
+  --v94-soft:rgba(255,255,255,.045);
+  --v94-soft-2:rgba(255,255,255,.03);
+}
+html,body,#app,button,input,select,textarea{font-family:var(--v94-ui-font)!important}
+body{font-size:var(--v94-body)!important;line-height:1.72!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.hdr-title,.main-title,.sheet-title,.dlg-title,.s-card-num,.cal-month,.v65-hero-title,.v64-group-title,.v94-hub-title,.v94-group-title,.v94-stat strong{font-family:var(--v94-title-font)!important;letter-spacing:0!important}
+.hdr-title{font-size:18px!important;line-height:1.28!important;font-weight:800!important}
+.main-title{font-size:19px!important;line-height:1.3!important}
+.hdr-date,.hdr-sub,.sub,.v68-sub,.stat-label,.kpi-label,.empty-sub,.v65-mini-note,.v64-group-title,.v65-tool-btn .sub{font-size:10.5px!important;line-height:1.8!important}
+.tab,.subtab,.bnav-btn,.chip,.ux-chip,.v68-chip-btn,.v64-chip,.v65-chip,.v94-chip{font-size:var(--v94-chip)!important;min-height:36px!important}
+.btn-new,.btn-icon,.hdr-tools-btn{font-size:11px!important}
+.btn-new{padding:8px 11px!important}
+.s-card,.stat-card,.folder-card,.file-card,.task-card,.contact-card,.main-head,.main-pane,.v64-group,.v65-tool-card,.v94-hero,.v94-group{border-radius:var(--v94-card-radius)!important}
+.s-card-parties,.note-box,.countdown-bar,.search-wrap input,.search-wrap textarea,.search-wrap select,input,select,textarea,.v68-search input,.v68-input,.v68-inline-select,.unified-filter-grid input,.unified-filter-grid select{border-radius:14px!important}
+button,.subtab,.tab,.chip,.ux-chip,.v64-chip,.v65-chip,.v94-chip{font-weight:700!important}
+.v94-merged-hub{display:flex;flex-direction:column;gap:12px}
+.v94-hero{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(200,168,75,.12),rgba(74,142,245,.05) 38%,rgba(12,18,34,.96));border:1px solid rgba(200,168,75,.16);padding:16px 14px;box-shadow:0 14px 34px rgba(0,0,0,.18)}
+.v94-hero:before{content:"";position:absolute;top:-42px;left:-18px;width:118px;height:118px;border-radius:50%;background:rgba(200,168,75,.09);filter:blur(22px)}
+.v94-hero:after{content:"";position:absolute;bottom:-40px;right:-14px;width:110px;height:110px;border-radius:50%;background:rgba(74,142,245,.08);filter:blur(24px)}
+.v94-hero>*{position:relative;z-index:1}
+.v94-hero-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.v94-hub-title{font-size:20px!important;color:var(--gold2);font-weight:800;line-height:1.25}
+.v94-hub-sub{font-size:11px;color:var(--text2);line-height:1.9;margin-top:5px}
+.v94-hero-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.v94-hero-actions button{background:var(--v94-soft);border:1px solid var(--border2);color:var(--text);border-radius:14px;padding:9px 11px;font:700 11px var(--v94-ui-font);cursor:pointer}
+.v94-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:13px}
+.v94-stat{background:var(--v94-soft);border:1px solid var(--border);border-radius:16px;padding:10px 8px;text-align:center}
+.v94-stat span{display:block;font-size:10px;color:var(--text3)}
+.v94-stat strong{display:block;margin-top:4px;font-size:17px;color:var(--text)}
+.v94-chip-row{display:flex;gap:8px;overflow:auto;padding-bottom:2px}
+.v94-chip{white-space:nowrap;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:999px;padding:9px 13px;cursor:pointer}
+.v94-chip.on{background:var(--gold-a10);border-color:var(--gold-a30);color:var(--gold2)}
+.v94-search input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:12px 13px;font:500 13px var(--v94-ui-font);color:var(--text)}
+.v94-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.v94-group{background:linear-gradient(180deg,var(--surface2),rgba(255,255,255,.018));border:1px solid var(--border);padding:13px}
+.v94-group-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.v94-group-title{font-size:15px;color:var(--text);font-weight:800}
+.v94-group-sub{font-size:10.5px;color:var(--text3);line-height:1.8;margin-top:3px}
+.v94-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:999px;background:var(--v94-soft);border:1px solid var(--border2);font-size:10px;color:var(--gold2);font-weight:800}
+.v94-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.v94-mini{appearance:none;-webkit-appearance:none;display:flex;align-items:flex-start;gap:9px;background:var(--surface3);border:1px solid var(--border2);border-radius:16px;padding:12px 11px;min-height:66px;cursor:pointer;text-align:right;color:var(--text)}
+.v94-mini .ico{width:34px;height:34px;border-radius:11px;background:var(--v94-soft);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.v94-mini .txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.v94-mini .ttl{font-size:12px;font-weight:800;color:var(--text)}
+.v94-mini .meta{font-size:10px;line-height:1.65;color:var(--text3)}
+.v94-empty{background:var(--surface2);border:1px dashed var(--border2);border-radius:18px;padding:18px;text-align:center;color:var(--text2);font:700 12px var(--v94-ui-font)}
+@media(max-width:520px){
+  .v94-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .v94-grid,.v94-mini-grid{grid-template-columns:1fr}
+  .v94-hero-head{flex-direction:column}
+  .v94-hero-actions{justify-content:flex-start}
+}
+</style>
+
+<script id="v94-merged-hub-script">
+(function(){
+  if(window.__v94MergedHubApplied) return;
+  window.__v94MergedHubApplied = true;
+
+  function arr(v){ return Array.isArray(v) ? v : []; }
+  function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function pick(list, value, fallback){ return list.indexOf(value) > -1 ? value : fallback; }
+  function todayVal(){ try{ return typeof today==='function' ? today() : new Date().toISOString().slice(0,10); }catch(e){ return new Date().toISOString().slice(0,10); } }
+  function num(v){ return parseFloat(v||0) || 0; }
+  function fmt(n){ try{return Number(n||0).toLocaleString('ar-SA');}catch(e){return String(n||0);} }
+  function statBox(label, value){ return '<div class="v94-stat"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>'; }
+  function chip(key, label, active){ return '<button type="button" class="v94-chip'+(active?' on':'')+'" onclick="setMoreHubFilter(\''+key+'\')">'+esc(label)+'</button>'; }
+  function mini(kind, icon, label, meta){ return '<button type="button" class="v94-mini" onclick="openMoreFilter(\''+kind+'\')"><span class="ico">'+icon+'</span><span class="txt"><span class="ttl">'+esc(label)+'</span><span class="meta">'+esc(meta||'')+'</span></span></button>'; }
+  function ensureState(){
+    window._moreHubFilter = pick(['all','daily','cases','docs','tools','reports','team'], window._moreHubFilter || 'all', 'all');
+    window._moreHubSearch = String(window._moreHubSearch || '');
+  }
+  var oldSetMoreHubFilter = window.setMoreHubFilter;
+  window.setMoreHubFilter = function(v){
+    window._moreHubFilter = pick(['all','daily','cases','docs','tools','reports','team'], v, 'all');
+    if(typeof render==='function') render(true);
+  };
+  window.setMoreHubSearch = function(v){ window._moreHubSearch = String(v||''); if(typeof render==='function') render(true); };
+
+  var oldOpenMoreFilter = window.openMoreFilter;
+  window.openMoreFilter = function(kind){
+    try{
+      if(kind==='dashboard'){ if(typeof window.setDashboardMainView==='function') window.setDashboardMainView('overview'); return window.go('dashboard'); }
+      if(kind==='today'){ if(typeof window.setHomeMainView==='function') window.setHomeMainView('today'); return window.go('home'); }
+      if(kind==='tasks'){ if(typeof window.setHomeMainView==='function') window.setHomeMainView('tasks'); return window.go('home'); }
+      if(kind==='calendar'){ if(typeof window.setHomeMainView==='function') window.setHomeMainView('calendar'); return window.go('home'); }
+      if(kind==='sessions'){ if(typeof window.setCasesMainView==='function') window.setCasesMainView('sessions'); return window.go('list'); }
+      if(kind==='clients'){ if(typeof window.setCasesMainView==='function') window.setCasesMainView('clients'); return window.go('list'); }
+      if(kind==='fees'){ if(typeof window.setCasesMainView==='function') window.setCasesMainView('fees'); return window.go('list'); }
+    }catch(e){}
+    return typeof oldOpenMoreFilter==='function' ? oldOpenMoreFilter(kind) : undefined;
+  };
+
+  window.buildMoreHub = function(){
+    ensureState();
+    var sessions = arr(window.data);
+    var tasks = arr(window.tasks);
+    var contacts = arr(window.contacts);
+    var fees = arr(window.fees);
+    var td = todayVal();
+    var todaySessions = sessions.filter(function(s){ return s && s.date===td; }).length;
+    var openTasks = tasks.filter(function(t){ return t && !t.done; }).length;
+    var caseCount = sessions.length;
+    var totalFees = fees.reduce(function(sum,f){ return sum + num(f && f.amount); }, 0);
+    var active = window._moreHubFilter || 'all';
+    var q = String(window._moreHubSearch||'').trim().toLowerCase();
+
+    var groups = [
+      {id:'daily', title:'اليومي', sub:'المواعيد اليومية والمهام والتقويم في مسار واحد.', badge:'اليوم', items:[
+        {k:'today', icon:'📅', label:'جلسات اليوم', meta:(todaySessions?('لديك '+todaySessions+' جلسة اليوم'): 'لا توجد جلسات اليوم')},
+        {k:'tasks', icon:'📋', label:'المهام', meta:(openTasks?('المفتوحة '+openTasks):'راجع المهام والواجبات')},
+        {k:'calendar', icon:'🗓️', label:'التقويم', meta:'عرض شهري وتحريك سريع للمواعيد'},
+        {k:'dashboard', icon:'🏠', label:'لوحة التحكم', meta:'ملخص العمل اليومي في مكان واحد'}
+      ]},
+      {id:'cases', title:'القضايا', sub:'دمج مسارات الجلسات والموكلين والأتعاب تحت مركز واحد.', badge:'القضايا', items:[
+        {k:'sessions', icon:'⚖️', label:'الجلسات', meta:(caseCount?('إجمالي الجلسات '+caseCount):'ابدأ بإضافة قضية جديدة')},
+        {k:'clients', icon:'👥', label:'العملاء', meta:(contacts.length?('سجلات العملاء '+contacts.length):'ملفات الموكلين وجهات الاتصال')},
+        {k:'fees', icon:'💰', label:'الأتعاب', meta:(totalFees?('الإجمالي '+fmt(totalFees)+' ر.س'): 'إدارة الرسوم والمستحقات')},
+        {k:'tasks', icon:'🧩', label:'مهام القضايا', meta:'ربط المهام بالقضية والموعد'}
+      ]},
+      {id:'docs', title:'المستندات', sub:'تجميع المستندات والمعرفة والمشاركة دون تكرار.', badge:'المستندات', items:[
+        {k:'docs', icon:'📝', label:'المستندات', meta:'الوصول لخطاباتك وقوالبك بسرعة'},
+        {k:'legal', icon:'📚', label:'المعرفة القانونية', meta:'أنظمة وعقود ومصطلحات وحجج'},
+        {k:'share', icon:'🔗', label:'المشاركة', meta:'تصدير ومشاركة المستندات والملفات'}
+      ]},
+      {id:'tools', title:'الأدوات', sub:'المظهر والأدوات المهنية والنسخ في لوحة واحدة.', badge:'الأدوات', items:[
+        {k:'tools', icon:'🛠️', label:'الأدوات المهنية', meta:'المواعيد والحسابات والبحث الشامل'},
+        {k:'appearance', icon:'🎨', label:'المظهر', meta:'ألوان وخطوط ووضع العرض'},
+        {k:'export', icon:'📤', label:'التصدير والنسخ', meta:'نسخ احتياطي واستيراد وتصدير'},
+        {k:'insights', icon:'🧠', label:'النظام والذكاء', meta:'فحص الحالة وسجل النشاط'}
+      ]},
+      {id:'reports', title:'التقارير', sub:'الأساسية والمفصلة والمتقدمة تحت فلتر واحد.', badge:'التقارير', items:[
+        {k:'reports', icon:'📊', label:'التقارير الأساسية', meta:'ملخص الأداء والمؤشرات الرئيسية'},
+        {k:'fullreports', icon:'🗂️', label:'التقارير المفصلة', meta:'استعراض تفصيلي بحسب الفترات'},
+        {k:'advancedreports', icon:'📈', label:'التقارير المتقدمة', meta:'تحليلات ورسوم ومقارنات أوسع'}
+      ]},
+      {id:'team', title:'الفريق والمستشار', sub:'الوصول للفريق ولوحة المستشار من نفس المسار.', badge:'الفريق', items:[
+        {k:'team', icon:'👥', label:'الفريق', meta:'بيانات الفريق والتواصل والتوزيع'},
+        {k:'advisor', icon:'🤖', label:'المستشار', meta:'محادثة ذكية مرتبطة ببيانات التطبيق'}
+      ]}
+    ];
+
+    if(active!=='all') groups = groups.filter(function(g){ return g.id===active; });
+    if(q){
+      groups = groups.map(function(g){
+        var text = (g.title+' '+g.sub).toLowerCase();
+        var items = g.items.filter(function(it){ return (it.label+' '+it.meta+' '+text).toLowerCase().indexOf(q)>-1; });
+        return {id:g.id,title:g.title,sub:g.sub,badge:g.badge,items:items};
+      }).filter(function(g){ return g.items.length; });
+    }
+
+    var h = '';
+    h += '<div class="v94-merged-hub">';
+    h += '<div class="v94-hero">';
+    h += '<div class="v94-hero-head">';
+    h += '<div><div class="v94-hub-title">مركز الفلاتر الموحد</div><div class="v94-hub-sub">تم جمع الفلاتر المتشابهة من المزيد والتقارير والقضايا واليومي داخل واجهة واحدة أخف وأوضح.</div></div>';
+    h += '<div class="v94-hero-actions"><button type="button" onclick="openAdd()">＋ جلسة جديدة</button><button type="button" onclick="openMoreFilter(\'tools\')">🛠️ الأدوات</button><button type="button" onclick="openMoreFilter(\'reports\')">📊 التقارير</button></div>';
+    h += '</div>';
+    h += '<div class="v94-stats">'+ statBox('جلسات اليوم', todaySessions) + statBox('المهام المفتوحة', openTasks) + statBox('الجلسات', caseCount) + statBox('الأتعاب', fmt(totalFees)) + '</div>';
+    h += '</div>';
+    h += '<div class="v94-chip-row">'
+      + chip('all','الكل', active==='all')
+      + chip('daily','اليومي', active==='daily')
+      + chip('cases','القضايا', active==='cases')
+      + chip('docs','المستندات', active==='docs')
+      + chip('tools','الأدوات', active==='tools')
+      + chip('reports','التقارير', active==='reports')
+      + chip('team','الفريق', active==='team')
+      + '</div>';
+    h += '<div class="v94-search"><input type="search" dir="rtl" value="'+esc(window._moreHubSearch||'')+'" placeholder="ابحث عن فلتر أو أداة أو قسم" oninput="window._moreHubSearch=this.value;window._moreHubSearchTimer&&clearTimeout(window._moreHubSearchTimer);window._moreHubSearchTimer=setTimeout(function(){render(true);},120)"></div>';
+
+    if(!groups.length){
+      h += '<div class="v94-empty">لا توجد نتيجة مطابقة لهذا البحث.</div>';
+    }else{
+      h += '<div class="v94-grid">';
+      groups.forEach(function(g){
+        h += '<section class="v94-group"><div class="v94-group-head"><div><div class="v94-group-title">'+esc(g.title)+'</div><div class="v94-group-sub">'+esc(g.sub||'')+'</div></div><span class="v94-badge">'+esc(g.badge||g.title)+'</span></div><div class="v94-mini-grid">';
+        g.items.forEach(function(it){ h += mini(it.k, it.icon, it.label, it.meta); });
+        h += '</div></section>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+    return h;
+  };
+})();
+</script>
+
+
+<style id="v95-pro-refine-style">
+:root{
+  --v95-font:"Tajawal","Cairo","Noto Kufi Arabic","Segoe UI",system-ui,sans-serif;
+  --v95-blur:14px;
+  --v95-shadow:0 16px 38px rgba(5,10,25,.16);
+  --v95-soft-shadow:0 10px 24px rgba(5,10,25,.10);
+  --v95-card-bg:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
+}
+html,body{font-family:var(--v95-font)!important;-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility}
+body{font-size:14px;line-height:1.62}
+button,input,select,textarea{font-family:var(--v95-font)!important}
+#hdr,#bottomNav,.sheet,.sheet-box,.modal,.modal-box,.drawer,.glass,.glass-card,.filter-shell,.unified-shell,.v67-sticky-panel,.v68-panel,.main-head{
+  -webkit-backdrop-filter:blur(var(--v95-blur)) saturate(1.08)!important;
+  backdrop-filter:blur(var(--v95-blur)) saturate(1.08)!important;
+}
+#hdr{box-shadow:0 10px 26px rgba(8,12,28,.12)!important}
+#bottomNav{box-shadow:0 -10px 30px rgba(8,12,28,.12)!important}
+#app,.panel,.sess-card,.s-card,.card,.main-pane>*:not(style),.v79-surface,.v39-more-card,.v68-panel,.unified-shell,.v67-shell,.v93-filter-shell,.filter-shell{
+  box-shadow:var(--v95-soft-shadow);
+}
+.hdr-eyebrow{font-size:11.5px!important;letter-spacing:.12em!important}
+.hdr-date,.bnav-lbl,.tab,.subtab,.hint,.meta,.helper,.chip,.badge,.kpi-sub,.muted,
+[style*="font-size:8px"],[style*="font-size:9px"],[style*="font-size:10px"]{font-size:11.5px!important}
+[style*="font-size:11px"]{font-size:12px!important}
+[style*="font-size:12px"]{font-size:12.5px!important}
+[style*="font-size:13px"]{font-size:13.5px!important}
+.hdr-title{font-size:23px!important;line-height:1.25!important}
+.bnav-btn,.tab,.subtab,.chip,button,.hdr-tools-btn{min-height:42px}
+input,select,textarea{min-height:42px;border-radius:14px!important}
+button{border-radius:14px}
+.bnav-lbl{font-weight:800!important}
+.tab,.subtab,.chip{padding-top:10px!important;padding-bottom:10px!important}
+.main-head,.v68-panel,.unified-shell,.filter-shell,.v93-filter-shell{border-radius:22px!important}
+.main-pane{gap:14px}
+.main-pane>*{border-radius:22px}
+#cnt{padding-bottom:110px}
+.v95-more-shell{display:grid;gap:16px}
+.v95-hero{position:relative;overflow:hidden;padding:18px;border-radius:26px;background:linear-gradient(145deg,rgba(200,168,75,.14),rgba(255,255,255,.03));border:1px solid rgba(200,168,75,.22);box-shadow:var(--v95-shadow)}
+.v95-hero::before{content:"";position:absolute;inset:auto -40px -60px auto;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(74,142,245,.18),transparent 70%)}
+.v95-hero-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative;z-index:1}
+.v95-hero-title{font-family:"Scheherazade New",serif;font-size:24px;font-weight:700;color:var(--gold2);line-height:1.25}
+.v95-hero-sub{margin-top:6px;color:var(--text2);font-size:13px;line-height:1.8}
+.v95-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.v95-stat{padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:12px;color:var(--text2);font-weight:800}
+.v95-searchbar{display:grid;grid-template-columns:1fr;gap:10px;padding:14px;border-radius:22px;background:var(--v95-card-bg);border:1px solid var(--border)}
+.v95-searchline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.v95-searchline input{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0 14px;font-size:13px}
+.v95-chiprow{display:flex;gap:8px;flex-wrap:wrap}
+.v95-chip{padding:10px 14px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-weight:800;cursor:pointer;transition:.18s}
+.v95-chip.on{background:var(--gold-a10);border-color:rgba(200,168,75,.28);color:var(--gold2);box-shadow:0 8px 18px rgba(200,168,75,.12)}
+.v95-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.v95-card{position:relative;overflow:hidden;padding:16px;border-radius:24px;background:var(--v95-card-bg);border:1px solid var(--border);display:grid;gap:10px}
+.v95-card::after{content:"";position:absolute;inset:0 auto auto 0;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(200,168,75,.4),transparent);opacity:.8}
+.v95-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.v95-icon{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+.v95-title{font-size:15px;font-weight:900;color:var(--text)}
+.v95-desc{font-size:12.5px;line-height:1.85;color:var(--text2)}
+.v95-mini{display:flex;flex-wrap:wrap;gap:8px}
+.v95-pill{padding:7px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11.5px;font-weight:800;color:var(--text3)}
+.v95-actions{display:flex;gap:8px;flex-wrap:wrap}
+.v95-btn{flex:1;min-width:120px;padding:11px 13px;border-radius:14px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12.5px;font-weight:900;cursor:pointer}
+.v95-btn.primary{background:var(--gold-a10);border-color:rgba(200,168,75,.28);color:var(--gold2)}
+.v95-section-label{font-size:12px;color:var(--text3);font-weight:900;letter-spacing:.04em;margin:2px 2px 0}
+.v95-shell-main .main-head{padding:14px 16px!important}
+.v95-shell-main .main-title{font-size:19px!important;font-family:"Scheherazade New",serif!important}
+.v95-shell-main .subtabs{gap:8px;flex-wrap:wrap}
+.v95-shell-main .subtab{padding-inline:14px!important;border-radius:999px!important}
+@media (max-width:760px){
+  .v95-grid{grid-template-columns:1fr}
+  .v95-hero-title{font-size:22px}
+}
+</style>
+<script id="v95-pro-refine-script">
+(function(){
+  try{ document.body && document.body.classList.add('v95-pro-ready'); }catch(e){}
+
+  function esc(v){return String(v==null?'':v).replace(/[&<>\"']/g,function(s){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s];});}
+  function safeNum(v){v=Number(v||0);return isFinite(v)?v:0;}
+  function arrLen(v){return Array.isArray(v)?v.length:0;}
+  function money(v){try{return new Intl.NumberFormat('ar-SA').format(safeNum(v));}catch(e){return String(safeNum(v));}}
+  function noDup(items){var seen={};return (items||[]).filter(function(x){var k=JSON.stringify(x);if(seen[k]) return false; seen[k]=1; return true;});}
+
+  var origGo = typeof window.go==='function' ? window.go : function(){};
+  window.go = function(t){
+    if(t==='ai') t='advisor';
+    if(t==='advisor'){ window._moreMainView='advisor'; return origGo('settings'); }
+    if(t==='docs' || t==='letterhead' || t==='legal' || t==='share'){ window._moreMainView='docs'; return origGo('settings'); }
+    if(t==='tools' || t==='colors'){ window._moreMainView='tools'; return origGo('settings'); }
+    if(t==='team'){ window._moreMainView='team'; return origGo('settings'); }
+    if(t==='more'){ window._moreMainView=window._moreMainView||'overview'; return origGo('settings'); }
+    return origGo(t);
+  };
+
+  window.setMoreMainView = function(v){
+    window._moreMainView = v || 'overview';
+    if(v==='overview' && !window._moreHubFilter) window._moreHubFilter='all';
+    if(typeof window.render==='function') window.render(true);
+  };
+
+  window.v95MoreAction = function(kind){
+    if(kind==='today') return window.go('today');
+    if(kind==='tasks') return window.go('tasks');
+    if(kind==='cal') return window.go('cal');
+    if(kind==='reports') return window.go('stats');
+    if(kind==='cases') return window.go('list');
+    if(kind==='docs') return window.setMoreMainView('docs');
+    if(kind==='tools') return window.setMoreMainView('tools');
+    if(kind==='team') return window.setMoreMainView('team');
+    if(kind==='advisor') return window.setMoreMainView('advisor');
+  };
+
+  window.buildMoreHub = function(){
+    var filter = window._moreHubFilter || 'all';
+    var q = String(window._moreHubSearch || '').trim().toLowerCase();
+    var sessionCount = arrLen(window.data);
+    var taskCount = arrLen(window.tasks);
+    var contactCount = arrLen(window.contacts);
+    var docsCount = arrLen(window.wordFiles);
+    var feeCount = arrLen(window.fees);
+    var feeTotal = Array.isArray(window.fees) ? window.fees.reduce(function(s,f){ return s + safeNum(f && f.amount); }, 0) : 0;
+    var groups = [
+      {id:'ops',cat:'ops',icon:'🗓️',title:'العمليات اليومية',desc:'الوصول السريع إلى اليوم، المهام، التقويم، والتقارير من مركز واحد بدل التكرار بين الأقسام.',stats:[sessionCount+' جلسة',taskCount+' مهمة'],actions:[['today','اليوم'],['tasks','المهام'],['cal','التقويم'],['reports','التقارير']]},
+      {id:'cases',cat:'ops',icon:'⚖️',title:'القضايا والعملاء',desc:'فتح القضايا مباشرة مع ترك الأطراف والملفات داخل مسار واحد أوضح وأقل ازدواجية.',stats:[sessionCount+' قضية/جلسة',contactCount+' طرف'],actions:[['cases','القضايا'],['docs','المستندات'],['team','الفريق']]},
+      {id:'docs',cat:'docs',icon:'📁',title:'المستندات والملفات',desc:'المذكرات، النماذج، الخطابات، والمشاركة داخل مركز مستندات موحّد.',stats:[docsCount+' ملف',arrLen(window.folders)+' مجلد'],actions:[['docs','فتح المستندات'],['tools','الأدوات القانونية']]},
+      {id:'tools',cat:'tools',icon:'🧰',title:'الأدوات المهنية',desc:'حاسبات ومساعدات قانونية ونوافذ إنتاجية في واجهة أخف وأوضح.',stats:[feeCount+' بند أتعاب',money(feeTotal)+' ر.س'],actions:[['tools','فتح الأدوات'],['reports','تقارير الأتعاب']]},
+      {id:'team',cat:'team',icon:'👥',title:'الفريق والإدارة',desc:'إدارة الفريق والبيانات المساندة من مكان واحد دون فلاتر متكررة.',stats:[contactCount+' جهة اتصال',arrLen(window.caseLinks)+' ربط قضية'],actions:[['team','فتح الفريق'],['cases','عرض القضايا']]},
+      {id:'advisor',cat:'advisor',icon:'✨',title:'المستشار الذكي',desc:'الدخول المباشر إلى المستشار بدل تكرار وصوله من أكثر من موضع داخل التطبيق.',stats:[arrLen(window.aiMessages)+' رسالة',String(window.aiProvider||'claude').toUpperCase()],actions:[['advisor','فتح المستشار'],['docs','المستندات']]}
+    ];
+    var cats = [
+      ['all','الكل'],['ops','التشغيل'],['docs','المستندات'],['tools','الأدوات'],['team','الفريق'],['advisor','المستشار']
+    ];
+    var shown = groups.filter(function(g){
+      var hitCat = filter==='all' || g.cat===filter;
+      var hay = [g.title,g.desc,(g.stats||[]).join(' '),(g.actions||[]).map(function(a){return a[1];}).join(' ')].join(' ').toLowerCase();
+      var hitQ = !q || hay.indexOf(q)!==-1;
+      return hitCat && hitQ;
+    });
+    shown = noDup(shown);
+    var h = '<div class="v95-more-shell">';
+    h += '<section class="v95-hero">';
+    h += '<div class="v95-hero-head"><div><div class="v95-hero-title">مركز المزيد الموحد</div><div class="v95-hero-sub">تم دمج المداخل المتشابهة وإبقاء الوصول السريع للأقسام الأساسية دون تكرار أو تشتيت داخل تبويب المزيد.</div><div class="v95-stats"><span class="v95-stat">'+sessionCount+' جلسة</span><span class="v95-stat">'+taskCount+' مهمة</span><span class="v95-stat">'+docsCount+' ملف</span><span class="v95-stat">'+contactCount+' طرف</span></div></div><div class="v95-icon" aria-hidden="true">⚙️</div></div>';
+    h += '</section>';
+    h += '<section class="v95-searchbar"><div class="v95-searchline"><input type="search" placeholder="ابحث داخل مراكز المزيد" value="'+esc(window._moreHubSearch||'')+'" oninput="window._moreHubSearch=this.value; if(window.render) window.render(true)"></div><div class="v95-chiprow">';
+    cats.forEach(function(c){
+      h += '<button class="v95-chip'+(filter===c[0]?' on':'')+'" onclick="window._moreHubFilter=\''+c[0]+'\'; if(window.render) window.render(true)">'+c[1]+'</button>';
+    });
+    h += '</div></section>';
+    if(!shown.length){
+      h += '<div class="v95-card"><div class="v95-title">لا توجد نتائج مطابقة</div><div class="v95-desc">جرّب تصفية مختلفة أو امسح البحث لإظهار جميع المراكز المتاحة.</div></div>';
+    } else {
+      h += '<div class="v95-section-label">المراكز الأساسية</div><section class="v95-grid">';
+      shown.forEach(function(g){
+        h += '<article class="v95-card">';
+        h += '<div class="v95-card-top"><div><div class="v95-title">'+esc(g.title)+'</div><div class="v95-desc">'+esc(g.desc)+'</div></div><div class="v95-icon">'+esc(g.icon)+'</div></div>';
+        h += '<div class="v95-mini">'+(g.stats||[]).map(function(s){ return '<span class="v95-pill">'+esc(s)+'</span>'; }).join('')+'</div>';
+        h += '<div class="v95-actions">'+(g.actions||[]).map(function(a,i){ return '<button class="v95-btn'+(i===0?' primary':'')+'" onclick="window.v95MoreAction(\''+a[0]+'\')">'+esc(a[1])+'</button>'; }).join('')+'</div>';
+        h += '</article>';
+      });
+      h += '</section>';
+    }
+    h += '</div>';
+    return h;
+  };
+
+  window.rMoreMain = function(){
+    var view = window._moreMainView || 'overview';
+    var tabs = typeof window.hubTabs==='function'
+      ? window.hubTabs([{k:'overview',l:'المركز'},{k:'docs',l:'المستندات'},{k:'tools',l:'الأدوات'},{k:'team',l:'الفريق'},{k:'advisor',l:'المستشار'}],view,'setMoreMainView')
+      : '';
+    var body='';
+    if(view==='docs') body = typeof window.rDocsHub==='function' ? window.rDocsHub() : '<div class="v95-card">تعذر تحميل المستندات</div>';
+    else if(view==='tools') body = typeof window.rTools==='function' ? window.rTools() : '<div class="v95-card">تعذر تحميل الأدوات</div>';
+    else if(view==='team') body = typeof window.rTeam==='function' ? window.rTeam() : '<div class="v95-card">تعذر تحميل الفريق</div>';
+    else if(view==='advisor') body = typeof window.rAI==='function' ? window.rAI() : '<div class="v95-card">تعذر تحميل المستشار</div>';
+    else body = window.buildMoreHub();
+    var actions = '<button onclick="setMoreMainView(\'overview\')">المركز</button><button onclick="setMoreMainView(\'docs\')">المستندات</button><button onclick="setMoreMainView(\'tools\')">الأدوات</button>';
+    var wrapped = typeof window.hubWrap==='function' ? window.hubWrap('المزيد', tabs, body, actions) : body;
+    return '<div class="v95-shell-main">'+wrapped+'</div>';
+  };
+
+  function mergeSimilarFilterBars(){
+    var root = document.getElementById('cnt') || document;
+    var parents = root.querySelectorAll('.main-pane, #cnt, .panel, .unified-shell, .v93-filter-shell, .v68-panel');
+    parents.forEach(function(parent){
+      var seen = new Set();
+      Array.prototype.slice.call(parent.children || []).forEach(function(child){
+        if(!child || !child.querySelector) return;
+        if(!child.matches('.v93-filter-shell,.filter-shell,.unified-shell,.ux-actionbar,.v68-panel,.v67-sticky-panel')) return;
+        var tags = Array.prototype.map.call(child.querySelectorAll('input,select,button,textarea'), function(el){
+          return [el.tagName, (el.type||''), (el.placeholder||''), (el.textContent||'').trim(), (el.name||''), (el.id||'')].join('|').replace(/\s+/g,' ').trim();
+        }).join('||');
+        if(!tags) return;
+        if(seen.has(tags)){ child.remove(); return; }
+        seen.add(tags);
+      });
+    });
+  }
+
+  var stateDB = (function(){
+    var DB='JalsatStateV95', STORE='kv', opened=null;
+    function open(){
+      if(opened) return opened;
+      opened = new Promise(function(resolve){
+        try{
+          if(!window.indexedDB){ resolve(null); return; }
+          var req = indexedDB.open(DB,1);
+          req.onupgradeneeded = function(e){
+            var db = e.target.result;
+            if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE,{keyPath:'key'});
+          };
+          req.onsuccess = function(e){ resolve(e.target.result); };
+          req.onerror = function(){ resolve(null); };
+        }catch(err){ resolve(null); }
+      });
+      return opened;
+    }
+    async function read(key){
+      var db = await open(); if(!db) return null;
+      return new Promise(function(resolve){
+        try{
+          var tx = db.transaction(STORE,'readonly');
+          var rq = tx.objectStore(STORE).get(key);
+          rq.onsuccess = function(){ resolve(rq.result ? rq.result.value : null); };
+          rq.onerror = function(){ resolve(null); };
+        }catch(e){ resolve(null); }
+      });
+    }
+    async function write(key, value){
+      var db = await open(); if(!db) return false;
+      return new Promise(function(resolve){
+        try{
+          var tx = db.transaction(STORE,'readwrite');
+          tx.objectStore(STORE).put({key:key, value:value, ts:Date.now()});
+          tx.oncomplete = function(){ resolve(true); };
+          tx.onerror = function(){ resolve(false); };
+        }catch(e){ resolve(false); }
+      });
+    }
+    return {open:open, read:read, write:write};
+  })();
+
+  var stateMap = {
+    j_tasks:function(){return Array.isArray(window.tasks)?window.tasks:[];},
+    j_contacts:function(){return Array.isArray(window.contacts)?window.contacts:[];},
+    j_wordfiles:function(){return Array.isArray(window.wordFiles)?window.wordFiles:[];},
+    j_folders:function(){return Array.isArray(window.folders)?window.folders:[];},
+    j_aimsg:function(){return Array.isArray(window.aiMessages)?window.aiMessages.slice(-60):[];},
+    j_fees:function(){return Array.isArray(window.fees)?window.fees:[];},
+    j_case_links:function(){return Array.isArray(window.caseLinks)?window.caseLinks:[];},
+    j_hidden_tabs:function(){return Array.isArray(window.hiddenTabs)?window.hiddenTabs:[];},
+    j_lawyer_profile:function(){return window.lawyerProfile||{};},
+    j_archive:function(){return Array.isArray(window.archivedSessions)?window.archivedSessions:[];},
+    j_deadlines:function(){return window.sessionDeadlines||{};}
+  };
+
+  async function hydrateStateFromIndexedDB(){
+    try{
+      var firstRun = localStorage.getItem('j_v95_state_migrated') !== '1';
+      for(var key in stateMap){
+        if(firstRun){ await stateDB.write(key, stateMap[key]()); }
+      }
+      localStorage.setItem('j_v95_state_migrated','1');
+      var changed = false;
+      var tasks = await stateDB.read('j_tasks'); if(Array.isArray(tasks)){ window.tasks = tasks; changed = true; try{localStorage.setItem('j_tasks', JSON.stringify(tasks));}catch(e){} }
+      var contacts = await stateDB.read('j_contacts'); if(Array.isArray(contacts)){ window.contacts = contacts; changed = true; try{localStorage.setItem('j_contacts', JSON.stringify(contacts));}catch(e){} }
+      var wordFiles = await stateDB.read('j_wordfiles'); if(Array.isArray(wordFiles)){ window.wordFiles = wordFiles; changed = true; try{localStorage.setItem('j_wordfiles', JSON.stringify(wordFiles));}catch(e){} }
+      var folders = await stateDB.read('j_folders'); if(Array.isArray(folders)){ window.folders = folders; changed = true; try{localStorage.setItem('j_folders', JSON.stringify(folders));}catch(e){} }
+      var ai = await stateDB.read('j_aimsg'); if(Array.isArray(ai)){ window.aiMessages = ai; changed = true; try{localStorage.setItem('j_aimsg', JSON.stringify(ai));}catch(e){} }
+      var fees = await stateDB.read('j_fees'); if(Array.isArray(fees)){ window.fees = fees; changed = true; try{localStorage.setItem('j_fees', JSON.stringify(fees));}catch(e){} }
+      var links = await stateDB.read('j_case_links'); if(Array.isArray(links)){ window.caseLinks = links; changed = true; try{localStorage.setItem('j_case_links', JSON.stringify(links));}catch(e){} }
+      var tabs = await stateDB.read('j_hidden_tabs'); if(Array.isArray(tabs)){ window.hiddenTabs = tabs; changed = true; try{localStorage.setItem('j_hidden_tabs', JSON.stringify(tabs));}catch(e){} }
+      var profile = await stateDB.read('j_lawyer_profile'); if(profile && typeof profile==='object'){ window.lawyerProfile = Object.assign({name:'',title:'محامٍ',license:'',phone:'',email:''}, profile); changed = true; try{localStorage.setItem('j_lawyer_profile', JSON.stringify(window.lawyerProfile));}catch(e){} }
+      var archive = await stateDB.read('j_archive'); if(Array.isArray(archive)){ window.archivedSessions = archive; changed = true; try{localStorage.setItem('j_archive', JSON.stringify(archive));}catch(e){} }
+      var deadlines = await stateDB.read('j_deadlines'); if(deadlines && typeof deadlines==='object'){ window.sessionDeadlines = deadlines; changed = true; try{localStorage.setItem('j_deadlines', JSON.stringify(deadlines));}catch(e){} }
+      if(changed && typeof window.render==='function') setTimeout(function(){ try{ window.render(true); }catch(e){} }, 0);
+    }catch(err){}
+  }
+
+  function patchSaver(name, key, getter){
+    var orig = typeof window[name]==='function' ? window[name] : null;
+    window[name] = function(){
+      var out = orig ? orig.apply(this, arguments) : undefined;
+      try{ stateDB.write(key, getter()); }catch(e){}
+      return out;
+    };
+  }
+  patchSaver('saveTasks','j_tasks',stateMap.j_tasks);
+  patchSaver('saveContacts','j_contacts',stateMap.j_contacts);
+  patchSaver('saveWordFiles','j_wordfiles',stateMap.j_wordfiles);
+  patchSaver('saveFolders','j_folders',stateMap.j_folders);
+  patchSaver('saveAIMsgs','j_aimsg',stateMap.j_aimsg);
+  patchSaver('saveFees','j_fees',stateMap.j_fees);
+  patchSaver('saveDeadlines','j_deadlines',stateMap.j_deadlines);
+
+  function periodicStateMirror(){
+    try{
+      stateDB.write('j_case_links', stateMap.j_case_links());
+      stateDB.write('j_hidden_tabs', stateMap.j_hidden_tabs());
+      stateDB.write('j_lawyer_profile', stateMap.j_lawyer_profile());
+      stateDB.write('j_archive', stateMap.j_archive());
+    }catch(e){}
+  }
+  setInterval(periodicStateMirror, 20000);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState!=='hidden') return; periodicStateMirror(); });
+  window.addEventListener('beforeunload', periodicStateMirror);
+
+  var _render = typeof window.render==='function' ? window.render : null;
+  if(_render){
+    window.render = function(){
+      var out = _render.apply(this, arguments);
+      try{ mergeSimilarFilterBars(); }catch(e){}
+      return out;
+    };
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ mergeSimilarFilterBars(); hydrateStateFromIndexedDB(); if(typeof window.render==='function') setTimeout(function(){ try{ window.render(true); }catch(e){} }, 30); });
+  else { mergeSimilarFilterBars(); hydrateStateFromIndexedDB(); if(typeof window.render==='function') setTimeout(function(){ try{ window.render(true); }catch(e){} }, 30); }
+})();
+</script>
+
 </body></html>';
   }
   function cleanupFrame(frame){
@@ -26828,6 +27533,192 @@ html,body,#app,button,input,select,textarea{font-family:var(--app-font)!importan
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ ensureAlertsButtons(); try{ window.updateSmartAlertsBadge(); }catch(e){} });
   else { ensureAlertsButtons(); try{ window.updateSmartAlertsBadge(); }catch(e){} }
+})();
+</script>
+
+
+<style id="v93-ios-professional-ui-style">
+:root{
+  --ios-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Tajawal","Helvetica Neue",Arial,sans-serif;
+  --ios-title:clamp(17px,4.5vw,20px);
+  --ios-subtitle:clamp(13px,3.8vw,15px);
+  --ios-body:13px;
+  --ios-small:11px;
+}
+html,body,#app,button,input,select,textarea{font-family:var(--ios-font)!important;letter-spacing:0!important}
+body{font-size:13px!important;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+#app{max-width:430px!important;width:100%!important;margin:0 auto!important;background:linear-gradient(180deg,#060a14 0%,#08101c 100%)!important}
+#hdr{box-shadow:0 10px 30px rgba(0,0,0,.18)!important}
+.hdr-inner{padding:10px 14px 9px!important}
+.hdr-eyebrow{font-size:9px!important;letter-spacing:.10em!important}
+.hdr-title,.v68-title,[style*="Scheherazade New"],.main-head .ttl,.unified-shell .ttl{font-family:var(--ios-font)!important;font-size:var(--ios-title)!important;line-height:1.35!important;font-weight:800!important}
+.hdr-date,.hdr-sub,.sub, .v68-sub{font-size:11px!important;line-height:1.7!important}
+.tab,.subtab,.bnav-btn,.chip,.ux-chip,.v68-chip-btn,.v68-folder-chip,.smart-mode-chip,.v39-more-chips button,.v40-chiprow button,.v49-tab,.v49-chiprow button{font-size:11.5px!important;min-height:36px!important}
+.btn-icon,.hdr-tools-btn{width:34px!important;height:34px!important;border-radius:11px!important}
+.btn-new{font-size:11.5px!important;padding:8px 12px!important;border-radius:11px!important}
+#cnt,.main-pane{padding-inline:12px!important}
+.search-wrap input,.search-wrap textarea,.search-wrap select,input,select,textarea,.v68-search input,.v68-input,.v68-inline-select,.unified-filter-grid input,.unified-filter-grid select{font-size:13px!important;min-height:42px!important;border-radius:14px!important}
+button,.v68-btn,.unified-filter-grid button,.v68-chip-btn,.ux-chip,.chip,.subtab,.tab{font-size:11.5px!important}
+.stat-value,.kpi-value,.v68-money,.v68-money.strong{font-size:17px!important}
+.stat-label,.kpi-label,.v68-mini-note,.empty-sub,[style*="font-size:10px"],[style*="font-size:11px"]{font-size:11px!important;line-height:1.7!important}
+[style*="font-size:18px"],[style*="font-size:19px"],[style*="font-size:20px"],[style*="font-size:21px"],[style*="font-size:22px"],[style*="font-size:24px"],[style*="font-size:28px"],[style*="font-size:30px"]{font-size:16px!important;line-height:1.55!important}
+.folder-card,.card,.stat-card,.v68-file-card,.v68-fee-card,.v68-fee-client-card,.panel,.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel{border-radius:18px!important;box-shadow:0 10px 26px rgba(0,0,0,.14)!important}
+.ux-actionbar,.main-head,.v68-panel,.unified-shell{backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
+.unified-filter-grid,.v68-filter-grid,.v68-form-grid{gap:8px!important}
+.ux-chiprow,.chips,.premium-chiprow,.v49-chiprow,.v40-chiprow,.v68-folder-strip,.v68-toggle,.v39-more-chips{display:flex!important;gap:8px!important;flex-wrap:wrap!important;overflow:visible!important}
+.search-wrap{margin-bottom:0!important}
+.v93-filter-shell{background:rgba(10,16,28,.84)!important;border:1px solid rgba(255,255,255,.07)!important;border-radius:18px!important;padding:10px!important;box-shadow:0 10px 26px rgba(0,0,0,.14)!important;margin-bottom:12px!important}
+.v93-filter-shell .v93-filter-row{display:flex!important;gap:8px!important;flex-wrap:wrap!important;align-items:center!important}
+.v93-filter-shell .v93-filter-row + .v93-filter-row{margin-top:8px!important}
+.v93-filter-shell .search-wrap,.v93-filter-shell .v68-search{flex:1 1 220px!important;min-width:0!important}
+.v93-filter-shell select,.v93-filter-shell input,.v93-filter-shell textarea{flex:1 1 140px!important;min-width:110px!important}
+.v93-filter-shell button{flex-shrink:0!important}
+.v93-filter-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;color:var(--gold2)!important;font-size:11px!important;font-weight:800!important}
+.v93-filter-meta{color:var(--text3)!important;font-size:10px!important;font-weight:700!important}
+.v93-soft-hide{display:none!important}
+@media (max-width:430px){
+  .hdr-inner{padding-inline:12px!important}
+  .tabs-scroll{padding-inline:8px!important}
+  #cnt,.main-pane{padding-inline:10px!important}
+  .btn-new{padding:8px 10px!important}
+  .v68-kpi-grid,.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .unified-filter-grid,.v68-filter-grid,.v68-form-grid{grid-template-columns:1fr!important}
+  .unified-filter-grid button{grid-column:auto!important;width:100%!important}
+}
+</style>
+<script id="v93-ios-professional-ui-script">
+(function(){
+  if(window.__v93IOSProfessionalApplied) return;
+  window.__v93IOSProfessionalApplied = true;
+
+  function norm(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function safeLower(s){return norm(s).toLowerCase();}
+  function isVisible(el){return !!(el && el.isConnected && el.offsetParent!==null);}
+  function isFilterNode(el){
+    if(!el || !el.querySelectorAll) return false;
+    var cls = String(el.className||'');
+    if(/v93-filter-shell/.test(cls)) return true;
+    var controls = el.querySelectorAll('input,select,textarea,button').length;
+    if(!controls) return false;
+    var txt = norm(el.textContent||'').slice(0,280);
+    return /filter|search|chip|toolbar|actionbar|sticky|topbar|head|v68-panel|unified-shell|v66-filters|v40-filter|ux-actionbar|search-wrap/i.test(cls)
+      || /بحث|الكل|الحالة|النوع|الفرز|ترتيب|الأولوية|الموكل|القضية|المحكمة|الفترة|المجلد|مسح الفلاتر|التاريخ|المصدر|المهام|الجلسات|الملفات|الأتعاب/.test(txt);
+  }
+  function controlSignature(el){
+    if(!el || !el.querySelectorAll) return '';
+    var bits = [];
+    el.querySelectorAll('input,select,textarea,button,.chip,.ux-chip,.v68-chip-btn,.subtab,.smart-mode-chip').forEach(function(node){
+      if(bits.length > 40) return;
+      var tag = (node.tagName||'').toLowerCase();
+      var val = '';
+      if(tag === 'input' || tag === 'textarea') val = node.getAttribute('placeholder') || node.value || '';
+      else if(tag === 'select') val = Array.prototype.slice.call(node.options||[],0,6).map(function(o){ return norm(o.textContent); }).join('|');
+      else val = node.textContent || '';
+      val = norm(val).replace(/\d+/g,'#');
+      if(val) bits.push((tag||'x')+':'+val);
+    });
+    var textBits = norm(el.textContent||'').replace(/\d+/g,'#').slice(0,180);
+    return bits.join('||')+'::'+textBits;
+  }
+  function pruneDuplicateChildren(scope){
+    if(!scope || !scope.querySelectorAll) return;
+    [['button','.chip,.ux-chip,.v68-chip-btn,.smart-mode-chip,.subtab,.v39-more-chips button,.v40-chiprow button,.v49-chiprow button'],['input','input[type="search"],input:not([type]),input[type="text"]'],['select','select']].forEach(function(entry){
+      var seen = new Set();
+      scope.querySelectorAll(entry[1]).forEach(function(el){
+        var key = entry[0] + ':' + norm(el.textContent || el.placeholder || el.value || '').replace(/\d+/g,'#');
+        if(!key || key === entry[0]+':') return;
+        var parent = el.parentElement;
+        if(!parent) return;
+        var pkey = key + '|p:' + (parent.className || parent.tagName);
+        if(seen.has(pkey)){
+          el.remove();
+        }else{
+          seen.add(pkey);
+        }
+      });
+    });
+  }
+  function annotateFilterShell(shell){
+    if(!shell || shell.__v93Done) return;
+    shell.__v93Done = true;
+    shell.classList.add('v93-filter-shell');
+    var title = document.createElement('div');
+    title.className = 'v93-filter-title';
+    title.innerHTML = '<span>الفلاتر</span><span class="v93-filter-meta">واجهة موحدة</span>';
+    var hasTitleAlready = /الفلاتر|بحث|ترتيب|حالة|نوع/.test(norm(shell.firstElementChild && shell.firstElementChild.textContent));
+    if(!hasTitleAlready) shell.insertBefore(title, shell.firstChild);
+    Array.prototype.forEach.call(shell.children, function(ch){
+      if(ch === title) return;
+      var ccls = String(ch.className||'');
+      if(/search-wrap|ux-chiprow|premium-chiprow|chips|v49-chiprow|v40-chiprow|v68-folder-strip|v68-toggle|v68-filter-grid|v68-form-grid|unified-filter-grid|v39-more-chips|ux-row/i.test(ccls) || ch.querySelector('input,select,textarea,button')) ch.classList.add('v93-filter-row');
+    });
+    pruneDuplicateChildren(shell);
+  }
+  function dedupeSiblingFilterShells(root){
+    if(!root || !root.querySelectorAll) return;
+    root.querySelectorAll('#cnt > *, .main-pane > *, .v67-shell > *, .v68-shell > *, .main-head > *, .unified-shell > *').forEach(function(){});
+    var parents = root.querySelectorAll('#cnt, .main-pane, .v67-shell, .v68-shell, .main-head, .unified-shell, .panel');
+    parents.forEach(function(parent){
+      var seen = new Set();
+      Array.prototype.slice.call(parent.children||[]).forEach(function(child){
+        if(!isFilterNode(child) || !isVisible(child)) return;
+        var sig = controlSignature(child);
+        if(!sig) return;
+        if(seen.has(sig)){
+          child.remove();
+          return;
+        }
+        seen.add(sig);
+        annotateFilterShell(child);
+      });
+    });
+  }
+  function mergeNearbySearches(root){
+    if(!root || !root.querySelectorAll) return;
+    root.querySelectorAll('.search-wrap').forEach(function(wrap){
+      var shell = wrap.closest('.v93-filter-shell,.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel') || wrap.parentElement;
+      if(!shell) return;
+      var searches = shell.querySelectorAll('.search-wrap input[type="search"], .search-wrap input:not([type]), .search-wrap input[type="text"]');
+      if(searches.length <= 1) return;
+      var seen = new Set();
+      searches.forEach(function(inp, idx){
+        var key = norm(inp.getAttribute('placeholder') || '').replace(/\d+/g,'#');
+        if(seen.has(key) && inp.closest('.search-wrap')) inp.closest('.search-wrap').remove();
+        else seen.add(key || ('q'+idx));
+      });
+    });
+  }
+  function compactMainTabs(){
+    document.querySelectorAll('.tab,.subtab,.bnav-btn').forEach(function(el){
+      el.style.whiteSpace = 'nowrap';
+      el.style.textOverflow = 'ellipsis';
+      el.style.overflow = 'hidden';
+    });
+  }
+  function polish(){
+    var root = document.getElementById('cnt') || document;
+    compactMainTabs();
+    dedupeSiblingFilterShells(root);
+    mergeNearbySearches(root);
+    root.querySelectorAll('.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel').forEach(annotateFilterShell);
+  }
+  var raf = 0;
+  function schedulePolish(){
+    if(raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function(){ raf = 0; try{ polish(); }catch(e){} });
+  }
+  var _render = window.render;
+  if(typeof _render === 'function'){
+    window.render = function(){
+      var out = _render.apply(this, arguments);
+      schedulePolish();
+      return out;
+    };
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedulePolish);
+  else schedulePolish();
+  var observer = new MutationObserver(function(){ schedulePolish(); });
+  if(document.documentElement) observer.observe(document.documentElement, {childList:true, subtree:true});
 })();
 </script>
 
@@ -27557,6 +28448,192 @@ html,body,#app,button,input,select,textarea{font-family:var(--app-font)!importan
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ ensureAlertsButtons(); try{ window.updateSmartAlertsBadge(); }catch(e){} });
   else { ensureAlertsButtons(); try{ window.updateSmartAlertsBadge(); }catch(e){} }
+})();
+</script>
+
+
+<style id="v93-ios-professional-ui-style">
+:root{
+  --ios-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Tajawal","Helvetica Neue",Arial,sans-serif;
+  --ios-title:clamp(17px,4.5vw,20px);
+  --ios-subtitle:clamp(13px,3.8vw,15px);
+  --ios-body:13px;
+  --ios-small:11px;
+}
+html,body,#app,button,input,select,textarea{font-family:var(--ios-font)!important;letter-spacing:0!important}
+body{font-size:13px!important;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+#app{max-width:430px!important;width:100%!important;margin:0 auto!important;background:linear-gradient(180deg,#060a14 0%,#08101c 100%)!important}
+#hdr{box-shadow:0 10px 30px rgba(0,0,0,.18)!important}
+.hdr-inner{padding:10px 14px 9px!important}
+.hdr-eyebrow{font-size:9px!important;letter-spacing:.10em!important}
+.hdr-title,.v68-title,[style*="Scheherazade New"],.main-head .ttl,.unified-shell .ttl{font-family:var(--ios-font)!important;font-size:var(--ios-title)!important;line-height:1.35!important;font-weight:800!important}
+.hdr-date,.hdr-sub,.sub, .v68-sub{font-size:11px!important;line-height:1.7!important}
+.tab,.subtab,.bnav-btn,.chip,.ux-chip,.v68-chip-btn,.v68-folder-chip,.smart-mode-chip,.v39-more-chips button,.v40-chiprow button,.v49-tab,.v49-chiprow button{font-size:11.5px!important;min-height:36px!important}
+.btn-icon,.hdr-tools-btn{width:34px!important;height:34px!important;border-radius:11px!important}
+.btn-new{font-size:11.5px!important;padding:8px 12px!important;border-radius:11px!important}
+#cnt,.main-pane{padding-inline:12px!important}
+.search-wrap input,.search-wrap textarea,.search-wrap select,input,select,textarea,.v68-search input,.v68-input,.v68-inline-select,.unified-filter-grid input,.unified-filter-grid select{font-size:13px!important;min-height:42px!important;border-radius:14px!important}
+button,.v68-btn,.unified-filter-grid button,.v68-chip-btn,.ux-chip,.chip,.subtab,.tab{font-size:11.5px!important}
+.stat-value,.kpi-value,.v68-money,.v68-money.strong{font-size:17px!important}
+.stat-label,.kpi-label,.v68-mini-note,.empty-sub,[style*="font-size:10px"],[style*="font-size:11px"]{font-size:11px!important;line-height:1.7!important}
+[style*="font-size:18px"],[style*="font-size:19px"],[style*="font-size:20px"],[style*="font-size:21px"],[style*="font-size:22px"],[style*="font-size:24px"],[style*="font-size:28px"],[style*="font-size:30px"]{font-size:16px!important;line-height:1.55!important}
+.folder-card,.card,.stat-card,.v68-file-card,.v68-fee-card,.v68-fee-client-card,.panel,.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel{border-radius:18px!important;box-shadow:0 10px 26px rgba(0,0,0,.14)!important}
+.ux-actionbar,.main-head,.v68-panel,.unified-shell{backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important}
+.unified-filter-grid,.v68-filter-grid,.v68-form-grid{gap:8px!important}
+.ux-chiprow,.chips,.premium-chiprow,.v49-chiprow,.v40-chiprow,.v68-folder-strip,.v68-toggle,.v39-more-chips{display:flex!important;gap:8px!important;flex-wrap:wrap!important;overflow:visible!important}
+.search-wrap{margin-bottom:0!important}
+.v93-filter-shell{background:rgba(10,16,28,.84)!important;border:1px solid rgba(255,255,255,.07)!important;border-radius:18px!important;padding:10px!important;box-shadow:0 10px 26px rgba(0,0,0,.14)!important;margin-bottom:12px!important}
+.v93-filter-shell .v93-filter-row{display:flex!important;gap:8px!important;flex-wrap:wrap!important;align-items:center!important}
+.v93-filter-shell .v93-filter-row + .v93-filter-row{margin-top:8px!important}
+.v93-filter-shell .search-wrap,.v93-filter-shell .v68-search{flex:1 1 220px!important;min-width:0!important}
+.v93-filter-shell select,.v93-filter-shell input,.v93-filter-shell textarea{flex:1 1 140px!important;min-width:110px!important}
+.v93-filter-shell button{flex-shrink:0!important}
+.v93-filter-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;color:var(--gold2)!important;font-size:11px!important;font-weight:800!important}
+.v93-filter-meta{color:var(--text3)!important;font-size:10px!important;font-weight:700!important}
+.v93-soft-hide{display:none!important}
+@media (max-width:430px){
+  .hdr-inner{padding-inline:12px!important}
+  .tabs-scroll{padding-inline:8px!important}
+  #cnt,.main-pane{padding-inline:10px!important}
+  .btn-new{padding:8px 10px!important}
+  .v68-kpi-grid,.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .unified-filter-grid,.v68-filter-grid,.v68-form-grid{grid-template-columns:1fr!important}
+  .unified-filter-grid button{grid-column:auto!important;width:100%!important}
+}
+</style>
+<script id="v93-ios-professional-ui-script">
+(function(){
+  if(window.__v93IOSProfessionalApplied) return;
+  window.__v93IOSProfessionalApplied = true;
+
+  function norm(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function safeLower(s){return norm(s).toLowerCase();}
+  function isVisible(el){return !!(el && el.isConnected && el.offsetParent!==null);}
+  function isFilterNode(el){
+    if(!el || !el.querySelectorAll) return false;
+    var cls = String(el.className||'');
+    if(/v93-filter-shell/.test(cls)) return true;
+    var controls = el.querySelectorAll('input,select,textarea,button').length;
+    if(!controls) return false;
+    var txt = norm(el.textContent||'').slice(0,280);
+    return /filter|search|chip|toolbar|actionbar|sticky|topbar|head|v68-panel|unified-shell|v66-filters|v40-filter|ux-actionbar|search-wrap/i.test(cls)
+      || /بحث|الكل|الحالة|النوع|الفرز|ترتيب|الأولوية|الموكل|القضية|المحكمة|الفترة|المجلد|مسح الفلاتر|التاريخ|المصدر|المهام|الجلسات|الملفات|الأتعاب/.test(txt);
+  }
+  function controlSignature(el){
+    if(!el || !el.querySelectorAll) return '';
+    var bits = [];
+    el.querySelectorAll('input,select,textarea,button,.chip,.ux-chip,.v68-chip-btn,.subtab,.smart-mode-chip').forEach(function(node){
+      if(bits.length > 40) return;
+      var tag = (node.tagName||'').toLowerCase();
+      var val = '';
+      if(tag === 'input' || tag === 'textarea') val = node.getAttribute('placeholder') || node.value || '';
+      else if(tag === 'select') val = Array.prototype.slice.call(node.options||[],0,6).map(function(o){ return norm(o.textContent); }).join('|');
+      else val = node.textContent || '';
+      val = norm(val).replace(/\d+/g,'#');
+      if(val) bits.push((tag||'x')+':'+val);
+    });
+    var textBits = norm(el.textContent||'').replace(/\d+/g,'#').slice(0,180);
+    return bits.join('||')+'::'+textBits;
+  }
+  function pruneDuplicateChildren(scope){
+    if(!scope || !scope.querySelectorAll) return;
+    [['button','.chip,.ux-chip,.v68-chip-btn,.smart-mode-chip,.subtab,.v39-more-chips button,.v40-chiprow button,.v49-chiprow button'],['input','input[type="search"],input:not([type]),input[type="text"]'],['select','select']].forEach(function(entry){
+      var seen = new Set();
+      scope.querySelectorAll(entry[1]).forEach(function(el){
+        var key = entry[0] + ':' + norm(el.textContent || el.placeholder || el.value || '').replace(/\d+/g,'#');
+        if(!key || key === entry[0]+':') return;
+        var parent = el.parentElement;
+        if(!parent) return;
+        var pkey = key + '|p:' + (parent.className || parent.tagName);
+        if(seen.has(pkey)){
+          el.remove();
+        }else{
+          seen.add(pkey);
+        }
+      });
+    });
+  }
+  function annotateFilterShell(shell){
+    if(!shell || shell.__v93Done) return;
+    shell.__v93Done = true;
+    shell.classList.add('v93-filter-shell');
+    var title = document.createElement('div');
+    title.className = 'v93-filter-title';
+    title.innerHTML = '<span>الفلاتر</span><span class="v93-filter-meta">واجهة موحدة</span>';
+    var hasTitleAlready = /الفلاتر|بحث|ترتيب|حالة|نوع/.test(norm(shell.firstElementChild && shell.firstElementChild.textContent));
+    if(!hasTitleAlready) shell.insertBefore(title, shell.firstChild);
+    Array.prototype.forEach.call(shell.children, function(ch){
+      if(ch === title) return;
+      var ccls = String(ch.className||'');
+      if(/search-wrap|ux-chiprow|premium-chiprow|chips|v49-chiprow|v40-chiprow|v68-folder-strip|v68-toggle|v68-filter-grid|v68-form-grid|unified-filter-grid|v39-more-chips|ux-row/i.test(ccls) || ch.querySelector('input,select,textarea,button')) ch.classList.add('v93-filter-row');
+    });
+    pruneDuplicateChildren(shell);
+  }
+  function dedupeSiblingFilterShells(root){
+    if(!root || !root.querySelectorAll) return;
+    root.querySelectorAll('#cnt > *, .main-pane > *, .v67-shell > *, .v68-shell > *, .main-head > *, .unified-shell > *').forEach(function(){});
+    var parents = root.querySelectorAll('#cnt, .main-pane, .v67-shell, .v68-shell, .main-head, .unified-shell, .panel');
+    parents.forEach(function(parent){
+      var seen = new Set();
+      Array.prototype.slice.call(parent.children||[]).forEach(function(child){
+        if(!isFilterNode(child) || !isVisible(child)) return;
+        var sig = controlSignature(child);
+        if(!sig) return;
+        if(seen.has(sig)){
+          child.remove();
+          return;
+        }
+        seen.add(sig);
+        annotateFilterShell(child);
+      });
+    });
+  }
+  function mergeNearbySearches(root){
+    if(!root || !root.querySelectorAll) return;
+    root.querySelectorAll('.search-wrap').forEach(function(wrap){
+      var shell = wrap.closest('.v93-filter-shell,.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel') || wrap.parentElement;
+      if(!shell) return;
+      var searches = shell.querySelectorAll('.search-wrap input[type="search"], .search-wrap input:not([type]), .search-wrap input[type="text"]');
+      if(searches.length <= 1) return;
+      var seen = new Set();
+      searches.forEach(function(inp, idx){
+        var key = norm(inp.getAttribute('placeholder') || '').replace(/\d+/g,'#');
+        if(seen.has(key) && inp.closest('.search-wrap')) inp.closest('.search-wrap').remove();
+        else seen.add(key || ('q'+idx));
+      });
+    });
+  }
+  function compactMainTabs(){
+    document.querySelectorAll('.tab,.subtab,.bnav-btn').forEach(function(el){
+      el.style.whiteSpace = 'nowrap';
+      el.style.textOverflow = 'ellipsis';
+      el.style.overflow = 'hidden';
+    });
+  }
+  function polish(){
+    var root = document.getElementById('cnt') || document;
+    compactMainTabs();
+    dedupeSiblingFilterShells(root);
+    mergeNearbySearches(root);
+    root.querySelectorAll('.ux-actionbar,.main-head,.v68-panel,.unified-shell,.v67-sticky-panel').forEach(annotateFilterShell);
+  }
+  var raf = 0;
+  function schedulePolish(){
+    if(raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function(){ raf = 0; try{ polish(); }catch(e){} });
+  }
+  var _render = window.render;
+  if(typeof _render === 'function'){
+    window.render = function(){
+      var out = _render.apply(this, arguments);
+      schedulePolish();
+      return out;
+    };
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedulePolish);
+  else schedulePolish();
+  var observer = new MutationObserver(function(){ schedulePolish(); });
+  if(document.documentElement) observer.observe(document.documentElement, {childList:true, subtree:true});
 })();
 </script>
 
