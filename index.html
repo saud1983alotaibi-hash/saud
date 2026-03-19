@@ -19165,6 +19165,563 @@ window.setSessionFormMode=function(mode){
   }
   inject();
 })();
+
+(function(){
+  if(window.__v40CasesSessionsFiltersApplied) return;
+  window.__v40CasesSessionsFiltersApplied = true;
+
+  function ensureListUFExtras(){
+    try{
+      window._uFilters = window._uFilters || {};
+      window._uFilters.list = window._uFilters.list || {};
+      if(!window._uFilters.list.view) window._uFilters.list.view = 'both';
+      if(!window._uFilters.list.caseType) window._uFilters.list.caseType = 'all';
+      if(!window._uFilters.list.attach) window._uFilters.list.attach = 'all';
+      try{ localStorage.setItem('j_unified_filters_v26', JSON.stringify(window._uFilters||{})); }catch(e){}
+    }catch(e){}
+  }
+  ensureListUFExtras();
+
+  function getListUFEnhanced(){
+    ensureListUFExtras();
+    return (window._uFilters && window._uFilters.list) ? window._uFilters.list : {view:'both',caseType:'all',attach:'all'};
+  }
+
+  window.setCaseSessionView = function(v){
+    ensureListUFExtras();
+    window.setUnifiedFilter ? window.setUnifiedFilter('list','view',v||'both') : (window._uFilters.list.view=v||'both', render(true));
+  };
+  window.setCaseTypeFilter = function(v){
+    ensureListUFExtras();
+    window.setUnifiedFilter ? window.setUnifiedFilter('list','caseType',v||'all') : (window._uFilters.list.caseType=v||'all', render(true));
+  };
+  window.setCaseAttachFilter = function(v){
+    ensureListUFExtras();
+    window.setUnifiedFilter ? window.setUnifiedFilter('list','attach',v||'all') : (window._uFilters.list.attach=v||'all', render(true));
+  };
+
+  function normCaseType(v){
+    return String(v||'').trim();
+  }
+  function dateInRange(dateValue, mode){
+    var d = String(dateValue||'').trim();
+    if(!d) return mode==='all';
+    var td = (typeof todaySafe==='function' ? todaySafe() : (new Date()).toISOString().slice(0,10));
+    function add(base, days){
+      var x = new Date(base+'T00:00:00');
+      x.setDate(x.getDate()+days);
+      return x.toISOString().slice(0,10);
+    }
+    if(mode==='today') return d===td;
+    if(mode==='7days') return d>=td && d<=add(td,7);
+    if(mode==='month') return d>=td && d<=add(td,30);
+    if(mode==='past') return d<td;
+    return true;
+  }
+
+  aggregateCaseCards = window.aggregateCaseCards = function(scope){
+    var source=(scope==='deleted' ? (window.archivedSessions||[]) : (window.data||[]));
+    var map={};
+    source.forEach(function(s){
+      var num=(typeof caseNumNorm==='function' ? caseNumNorm(s&&s.num) : String((s&&s.num)||'').trim());
+      if(!num) return;
+      if(!map[num]){
+        map[num]={num:num,type:s.type||'',court:s.court||'',client:s.client||'',plnt:s.plnt||'',dfnd:s.dfnd||'',sessions:[],sessionAttachments:0,caseAttachments:0,standalone:false};
+      }
+      map[num].sessions.push(s);
+      map[num].sessionAttachments += ((s.attachments||[]).length||0);
+      if(!map[num].court && s.court) map[num].court=s.court;
+      if(!map[num].type && s.type) map[num].type=s.type;
+      if(!map[num].client && s.client) map[num].client=s.client;
+      if(!map[num].plnt && s.plnt) map[num].plnt=s.plnt;
+      if(!map[num].dfnd && s.dfnd) map[num].dfnd=s.dfnd;
+    });
+    if(scope!=='deleted'){
+      (window.caseFiles||[]).forEach(function(cf){
+        var num=(typeof caseNumNorm==='function' ? caseNumNorm(cf&&cf.num) : String((cf&&cf.num)||'').trim());
+        if(!num) return;
+        if(!map[num]){
+          map[num]={num:num,type:cf.type||'',court:cf.court||'',client:cf.client||'',plnt:cf.plnt||'',dfnd:cf.dfnd||'',sessions:[],sessionAttachments:0,caseAttachments:0,standalone:true};
+        }
+        map[num].caseAttachments=((cf.attachments||[]).length||0);
+        if(!map[num].court && cf.court) map[num].court=cf.court;
+        if(!map[num].type && cf.type) map[num].type=cf.type;
+        if(!map[num].client && cf.client) map[num].client=cf.client;
+        if(!map[num].plnt && cf.plnt) map[num].plnt=cf.plnt;
+        if(!map[num].dfnd && cf.dfnd) map[num].dfnd=cf.dfnd;
+      });
+    }
+    var arr=Object.keys(map).map(function(k){
+      var c=map[k];
+      c.sessions.sort(function(a,b){ return String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||'')); });
+      var td=(typeof todaySafe==='function' ? todaySafe() : (new Date()).toISOString().slice(0,10));
+      c.next=c.sessions.find(function(s){ return String(s.date||'')>=td; }) || c.sessions[c.sessions.length-1] || null;
+      c.totalAttachments=(c.sessionAttachments||0)+(c.caseAttachments||0);
+      c.status=(c.next&&c.next.status) || (c.sessions[0]&&c.sessions[0].status) || 'scheduled';
+      return c;
+    });
+
+    var f = getListUFEnhanced();
+    var q = String(f.search||'').toLowerCase().trim();
+    var status = String(f.status||'all');
+    var dateMode = String(f.date||'all');
+    var typeMode = String(f.caseType||'all');
+    var attachMode = String(f.attach||'all');
+    var sortMode = String(f.sort||'priority_date');
+
+    arr = arr.filter(function(c){
+      if(q){
+        var hay=(c.num+' '+c.court+' '+c.client+' '+c.plnt+' '+c.dfnd+' '+c.type).toLowerCase();
+        if(hay.indexOf(q)===-1) return false;
+      }
+      if(status!=='all'){
+        if((c.status||'')!==status) return false;
+      }
+      if(typeMode!=='all'){
+        if(normCaseType(c.type)!==normCaseType(typeMode)) return false;
+      }
+      if(attachMode==='with_any' && !(c.totalAttachments>0)) return false;
+      if(attachMode==='with_case' && !(c.caseAttachments>0)) return false;
+      if(attachMode==='with_session' && !(c.sessionAttachments>0)) return false;
+      if(attachMode==='none' && !((c.totalAttachments||0)===0)) return false;
+      if(dateMode!=='all'){
+        var d = (c.next&&c.next.date) || (c.sessions[0]&&c.sessions[0].date) || '';
+        if(!dateInRange(d, dateMode)) return false;
+      }
+      return true;
+    });
+
+    arr.sort(function(a,b){
+      var ad=((a.next&&a.next.date)||'9999-99-99')+((a.next&&a.next.time)||'');
+      var bd=((b.next&&b.next.date)||'9999-99-99')+((b.next&&b.next.time)||'');
+      if(sortMode==='newest') return bd.localeCompare(ad);
+      if(sortMode==='oldest') return ad.localeCompare(bd);
+      if(sortMode==='court') return String(a.court||'').localeCompare(String(b.court||''),'ar');
+      if(sortMode==='case') return String(a.num||'').localeCompare(String(b.num||''),'ar');
+      return ad.localeCompare(bd) || String(a.num||'').localeCompare(String(b.num||''),'ar');
+    });
+    return arr;
+  };
+
+  function chip(on, text, onclick){
+    return '<button type="button" class="v40-chip'+(on?' on':'')+'" onclick="'+onclick+'">'+text+'</button>';
+  }
+
+  buildCaseCardsHtml = window.buildCaseCardsHtml = function(){
+    var f = getListUFEnhanced();
+    var scope = f.scope || 'active';
+    var view = f.view || 'both';
+    var cases = aggregateCaseCards(scope);
+    var html = '<div class="unified-shell v37-cases-shell v40-cases-shell">';
+    html += '<div class="hdr"><div class="ttl">🗂️ القضايا والجلسات</div><div class="sub">تبويب موحّد للقضايا والجلسات مع مرفقات خاصة بكل قضية، وجميع الجلسات المرتبطة بها، وفلاتر مناسبة للمراجعة اليومية.</div></div>';
+
+    html += '<div class="v40-topstats">';
+    html += '<div class="v40-stat"><span>📁 القضايا</span><strong>'+cases.length+'</strong></div>';
+    html += '<div class="v40-stat"><span>⚖️ الجلسات المرتبطة</span><strong>'+cases.reduce(function(a,c){return a+((c.sessions&&c.sessions.length)||0);},0)+'</strong></div>';
+    html += '<div class="v40-stat"><span>📎 مرفقات القضايا</span><strong>'+cases.reduce(function(a,c){return a+(c.caseAttachments||0);},0)+'</strong></div>';
+    html += '<div class="v40-stat"><span>📁 جميع المرفقات</span><strong>'+cases.reduce(function(a,c){return a+(c.totalAttachments||0);},0)+'</strong></div>';
+    html += '</div>';
+
+    html += '<div class="v40-filterbox">';
+    html += '<div class="v40-filterline"><div class="v40-filterlabel">نوع العرض</div><div class="v40-chiprow">';
+    html += chip(view==='both','الكل','setCaseSessionView(\'both\')');
+    html += chip(view==='cases','القضايا فقط','setCaseSessionView(\'cases\')');
+    html += chip(view==='sessions','الجلسات فقط','setCaseSessionView(\'sessions\')');
+    html += '</div></div>';
+
+    html += '<div class="v40-selectgrid">';
+    html += '<div><label>نوع القضية</label><select onchange="setCaseTypeFilter(this.value)" dir="rtl">';
+    [['all','الكل'],['جنائية','جنائية'],['مدنية','مدنية'],['تجارية','تجارية'],['عمالية','عمالية'],['أحوال شخصية','أحوال شخصية'],['إدارية','إدارية']].forEach(function(o){
+      html += '<option value="'+o[0]+'"'+(String(f.caseType||'all')===String(o[0])?' selected':'')+'>'+o[1]+'</option>';
+    });
+    html += '</select></div>';
+    html += '<div><label>المرفقات</label><select onchange="setCaseAttachFilter(this.value)" dir="rtl">';
+    [['all','كل القضايا'],['with_any','التي لديها مرفقات'],['with_case','مرفقات قضية فقط'],['with_session','مرفقات جلسات فقط'],['none','بدون مرفقات']].forEach(function(o){
+      html += '<option value="'+o[0]+'"'+(String(f.attach||'all')===String(o[0])?' selected':'')+'>'+o[1]+'</option>';
+    });
+    html += '</select></div>';
+    html += '</div>';
+    html += '</div>';
+
+    if(view!=='sessions'){
+      if(cases.length){
+        html += '<div class="v40-grid">';
+        cases.forEach(function(c){
+          var nextLabel = c.next ? ((c.next.date||'—')+' · '+(c.next.time||'—')) : 'بدون جلسة قادمة';
+          html += '<button type="button" class="v40-casecard" onclick="openCaseByNum(\''+String(c.num||'').replace(/'/g,"\\'")+'\')">';
+          html += '<div class="v40-cardtop"><div><div class="num">'+sanitize(c.num)+'</div><div class="meta">'+sanitize(c.type||'—')+' · '+sanitize(c.court||'—')+'</div></div><div class="count">'+((c.sessions&&c.sessions.length)||0)+'</div></div>';
+          html += '<div class="line">👤 '+sanitize(c.client||c.plnt||'—')+'</div>';
+          html += '<div class="line">📅 '+sanitize(nextLabel)+'</div>';
+          html += '<div class="chips"><span>📎 قضية '+(c.caseAttachments||0)+'</span><span>📁 جلسات '+(c.sessionAttachments||0)+'</span><span>🧾 الإجمالي '+(c.totalAttachments||0)+'</span></div>';
+          html += '</button>';
+        });
+        html += '</div>';
+      } else {
+        html += '<div class="v40-empty">لا توجد قضايا مطابقة للفلاتر الحالية. غيّر الفلاتر أو أضف قضية/جلسة جديدة.</div>';
+      }
+    } else {
+      html += '<div class="v40-note">أنت الآن في وضع <b>الجلسات فقط</b>. تم إخفاء بطاقات القضايا، وسترى قائمة الجلسات التفصيلية أسفل هذا القسم.</div>';
+    }
+
+    html += '</div>';
+    return html;
+  };
+
+  var __prevRListV40 = window.rList;
+  window.rList = function(){
+    var h = __prevRListV40();
+    var f = getListUFEnhanced();
+    if((f.view||'both')==='cases'){
+      h = h.replace('<div id="listResults">','<div id="listResults" style="display:none">');
+    }else{
+      h = h.replace('<div id="listResults" style="display:none">','<div id="listResults">');
+    }
+    h = h.replace('⚖️ الجلسات','⚖️ القضايا والجلسات');
+    h = h.replace('شريط موحّد للإضافة، البحث، الفلترة، الحذف والاسترجاع والتصدير.','لوحة موحّدة للقضايا والجلسات مع مرفقات القضية والجلسة وفلاتر مناسبة للعمل القضائي.');
+    h = h.replace('بحث في الجلسات أو رقم القضية أو الأطراف','بحث في القضايا والجلسات أو رقم القضية أو الأطراف');
+    return h;
+  };
+
+  if(!document.getElementById('v40CaseSessionStyles')){
+    var st = document.createElement('style');
+    st.id = 'v40CaseSessionStyles';
+    st.textContent = `
+      .v40-cases-shell{margin-bottom:12px}
+      .v40-topstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+      .v40-stat{background:var(--surface2);border:1px solid var(--border2);border-radius:18px;padding:12px}
+      .v40-stat span{display:block;font-size:10px;color:var(--text3);margin-bottom:5px}
+      .v40-stat strong{display:block;font-size:20px;color:var(--text);font-weight:900}
+      .v40-filterbox{background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:18px;padding:12px;margin-bottom:12px}
+      .v40-filterline{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+      .v40-filterlabel{font-size:11px;color:var(--text2);font-weight:800}
+      .v40-chiprow{display:flex;gap:8px;flex-wrap:wrap}
+      .v40-chip{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:999px;padding:8px 12px;font-size:11px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif}
+      .v40-chip.on{background:var(--gold-a10);border-color:var(--gold-a20);color:var(--gold2)}
+      .v40-selectgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+      .v40-selectgrid label{display:block;font-size:10px;color:var(--text3);font-weight:700;margin-bottom:4px}
+      .v40-selectgrid select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:10px;color:var(--text);font-family:Tajawal,sans-serif}
+      .v40-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+      .v40-casecard{background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid var(--border2);border-radius:22px;padding:15px;text-align:right;color:inherit;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.10)}
+      .v40-casecard:hover{border-color:var(--gold-a20);transform:translateY(-1px)}
+      .v40-cardtop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+      .v40-casecard .num{font-size:15px;font-weight:900;color:var(--text)}
+      .v40-casecard .meta{font-size:11px;color:var(--text3);margin-top:4px}
+      .v40-casecard .count{min-width:38px;height:38px;border-radius:14px;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;color:var(--gold2);font-size:16px;font-weight:900}
+      .v40-casecard .line{font-size:11px;color:var(--text2);margin-top:6px;line-height:1.8}
+      .v40-casecard .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+      .v40-casecard .chips span{font-size:10px;color:var(--text3);background:var(--surface3);border:1px solid var(--border);border-radius:999px;padding:5px 8px}
+      .v40-empty,.v40-note{background:rgba(255,255,255,.03);border:1px dashed var(--border2);border-radius:16px;padding:14px;font-size:12px;color:var(--text2);line-height:1.9}
+      @media (max-width:640px){
+        .v40-topstats{grid-template-columns:1fr 1fr}
+        .v40-selectgrid{grid-template-columns:1fr}
+        .v40-filterline{align-items:flex-start}
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  try{
+    if(window.TAB_LABELS) window.TAB_LABELS.list='القضايا والجلسات';
+    var a=document.getElementById('tb-list'); if(a) a.textContent='القضايا والجلسات';
+    var b=document.getElementById('bn-list'); if(b){ var lbl=b.querySelector('.bnav-lbl'); if(lbl) lbl.textContent='القضايا والجلسات'; }
+  }catch(e){}
+})();
+
+</script>
+
+
+<script>
+(function(){
+  if(window.__v41InteractiveCaseInstalled) return;
+  window.__v41InteractiveCaseInstalled = true;
+
+  var CASE_FILES_KEY='j_case_files_v37';
+  function q(v){ return String(v||'').trim(); }
+  function escHtml(v){ return (typeof sanitize==='function') ? sanitize(v==null?'':String(v)) : String(v==null?'':String(v)).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
+  function escJs(v){ return String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+  function loadCaseFilesV41(){ try{ var arr=JSON.parse(localStorage.getItem(CASE_FILES_KEY)||'[]'); return Array.isArray(arr)?arr:[]; }catch(e){ return []; } }
+  function saveCaseFilesV41(arr){ try{ localStorage.setItem(CASE_FILES_KEY, JSON.stringify(arr||[])); return true; }catch(e){ if(typeof toast==='function') toast('⚠️ تعذر حفظ ملف القضية'); return false; } }
+  function findCaseFileV41(num){ num=q(num); return loadCaseFilesV41().find(function(cf){ return q(cf&&cf.num)===num; }) || null; }
+  function currentCaseSeedV41(){
+    function g(id){ var el=document.getElementById(id); return el? q(el.value):''; }
+    return {num:g('fNum'),type:g('fType'),court:g('fCourt'),client:g('fClient'),plnt:g('fPlnt'),dfnd:g('fDfnd'),ref:g('fRef'),notes:g('fNotes')};
+  }
+  function upsertCaseFileV41(num, mutator){
+    num=q(num); if(!num) return null;
+    var all=loadCaseFilesV41();
+    var i=all.findIndex(function(cf){ return q(cf&&cf.num)===num; });
+    var base=i>-1 && all[i] ? all[i] : {id:'case_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),num:num,type:'',court:'',client:'',plnt:'',dfnd:'',ref:'',notes:'',attachments:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    base.attachments=Array.isArray(base.attachments)?base.attachments:[];
+    if(typeof mutator==='function') mutator(base);
+    base.updatedAt=new Date().toISOString();
+    if(i>-1) all[i]=base; else all.unshift(base);
+    saveCaseFilesV41(all);
+    return base;
+  }
+  function caseSessionsV41(num){
+    num=q(num); if(!num) return [];
+    return (window.data||[]).filter(function(s){ return q(s&&s.num)===num; }).sort(function(a,b){ return String(a.date||'').localeCompare(String(b.date||'')) || String(a.time||'').localeCompare(String(b.time||'')); });
+  }
+  function relatedTasksV41(num){
+    num=q(num); if(!num) return [];
+    return (window.tasks||[]).filter(function(t){ return q(t&&t.caseNum)===num; });
+  }
+  function caseAttDataUrlV41(a){
+    if(!a) return '';
+    if(a.url && /^data:/i.test(a.url)) return a.url;
+    var mime=a.mime||a.type||'application/octet-stream';
+    var raw=a.data||'';
+    if(/^data:/i.test(raw)) return raw;
+    return raw ? ('data:'+mime+';base64,'+raw) : '';
+  }
+  function caseAttKindV41(a){
+    var t=String((a&&a.type)||(a&&a.mime)||'').toLowerCase();
+    var n=String((a&&a.name)||'').toLowerCase();
+    if(/^image\//.test(t) || /\.(png|jpe?g|gif|webp)$/i.test(n)) return 'image';
+    if(/pdf/.test(t) || /\.pdf$/i.test(n)) return 'pdf';
+    return 'doc';
+  }
+  function caseAttIconV41(a){ return caseAttKindV41(a)==='image'?'🖼️':(caseAttKindV41(a)==='pdf'?'📄':'🗂️'); }
+  function fmtSizeV41(sz){ sz=Number(sz||0); if(!sz) return '—'; if(sz<1024) return Math.round(sz)+' B'; if(sz<1024*1024) return (sz/1024).toFixed(1)+' KB'; return (sz/1024/1024).toFixed(1)+' MB'; }
+  function statusLabelV41(s){ try{return (window.ST&&window.ST[s.status]&&window.ST[s.status].lbl)||s.status||'—';}catch(e){return s.status||'—';} }
+  function statusChipClsV41(s){ var st=String((s&&s.status)||'scheduled'); if(/completed|done/.test(st)) return 'done'; if(/cancel/.test(st)) return 'cancel'; return 'live'; }
+  function noteValV41(s){ return q(s&& (s.minutes||s.quickNote||'')); }
+  window.openSessionAttachmentFromCasePanel = function(sid, idx){
+    var s=(window.data||[]).find(function(x){return x.id===sid;});
+    if(!s || !Array.isArray(s.attachments) || !s.attachments[idx]) return;
+    var a=s.attachments[idx];
+    var kind='doc';
+    try{ kind=(typeof attKind==='function')?attKind(a):'doc'; }catch(e){}
+    if(kind==='image' && typeof previewAtt==='function') return previewAtt(sid,idx);
+    if(kind==='pdf' && typeof previewPDFAttFull==='function') return previewPDFAttFull(sid,idx);
+    if(typeof downloadAtt==='function') return downloadAtt(sid,idx);
+  }
+  window.saveCaseFileNotesV41=function(num){
+    num=q(num); if(!num) return;
+    var el=document.getElementById('caseFileNotesV41');
+    var val=el? String(el.value||'').trim() : '';
+    upsertCaseFileV41(num, function(cf){
+      var seed=currentCaseSeedV41();
+      ['type','court','client','plnt','dfnd','ref'].forEach(function(k){ if(seed[k] && !cf[k]) cf[k]=seed[k]; });
+      cf.notes=val;
+    });
+    if(typeof toast==='function') toast('💾 تم حفظ ملاحظات القضية');
+    setTimeout(function(){ renderInteractiveCasePanelV41(); }, 80);
+  };
+  window.saveCaseSessionInlineNoteV41=function(sid){
+    var s=(window.data||[]).find(function(x){ return x.id===sid; }); if(!s) return;
+    var el=document.getElementById('caseSessNote_'+sid); if(!el) return;
+    s.minutes=String(el.value||'').trim(); s.updatedAt=new Date().toISOString();
+    Promise.resolve(typeof dbPut==='function' ? dbPut(s) : null).then(function(){
+      if(typeof toast==='function') toast('💾 تم حفظ ملاحظات الجلسة');
+      setTimeout(function(){ renderInteractiveCasePanelV41(); }, 60);
+    });
+  };
+  window.addCasePanelSessionAttachmentV41=function(input, sid){
+    if(!input || !input.files || !input.files.length) return;
+    if(typeof addAtt==='function') addAtt(sid, input);
+    setTimeout(function(){ renderInteractiveCasePanelV41(); }, 450);
+  };
+  window.quickOpenTaskFormForCaseV41=function(num){
+    try{
+      if(typeof go==='function') go('tasks');
+      setTimeout(function(){
+        if(typeof opnTaskForm==='function') opnTaskForm();
+        var tc=document.getElementById('tc'); if(tc) tc.value=q(num);
+        var tt=document.getElementById('tt'); if(tt) tt.focus();
+      },180);
+    }catch(e){}
+  };
+  window.previewCaseAttachmentV41=function(num, idx){
+    var cf=findCaseFileV41(num); if(!cf || !cf.attachments || !cf.attachments[idx]) return;
+    var a=cf.attachments[idx], url=caseAttDataUrlV41(a); if(!url) return;
+    if(caseAttKindV41(a)==='image'){
+      var modal=document.createElement('div');
+      modal.style.cssText='position:fixed;inset:0;z-index:1300;background:rgba(3,6,12,.94);display:flex;align-items:center;justify-content:center;padding:18px';
+      modal.onclick=function(){ modal.remove(); };
+      modal.innerHTML='<div style="max-width:min(96vw,900px);max-height:92vh;position:relative" onclick="event.stopPropagation()"><img src="'+url+'" style="max-width:100%;max-height:84vh;border-radius:18px;display:block;box-shadow:0 18px 60px rgba(0,0,0,.42)"><div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><button type="button" onclick="downloadCaseAttachmentV41(\''+escJs(num)+'\','+idx+')" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px 16px;cursor:pointer;font-family:Tajawal,sans-serif">📥 تنزيل</button><button type="button" onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:rgba(232,80,80,.16);color:#fff;border:1px solid rgba(232,80,80,.28);border-radius:12px;padding:10px 16px;cursor:pointer;font-family:Tajawal,sans-serif">إغلاق</button></div></div>';
+      document.body.appendChild(modal);
+      return;
+    }
+    if(caseAttKindV41(a)==='pdf'){
+      var modal=document.createElement('div');
+      modal.id='v41PdfCasePreview';
+      modal.style.cssText='position:fixed;inset:0;z-index:1300;background:rgba(2,6,12,.96);display:flex;flex-direction:column;font-family:Tajawal,sans-serif;direction:rtl';
+      modal.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08)"><span style="font-size:20px">📄</span><div style="flex:1;font-size:13px;font-weight:700;color:#fff">'+escHtml(a.name||'PDF')+'</div><button type="button" onclick="downloadCaseAttachmentV41(\''+escJs(num)+'\','+idx+')" style="background:rgba(96,165,250,.16);color:#dbeafe;border:1px solid rgba(96,165,250,.24);border-radius:10px;padding:8px 12px;cursor:pointer;font-family:Tajawal,sans-serif">📥 تنزيل</button><button type="button" onclick="document.getElementById(\'v41PdfCasePreview\').remove()" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:8px 12px;cursor:pointer;font-family:Tajawal,sans-serif">إغلاق</button></div><div style="flex:1;padding:12px"><iframe src="'+url+'" style="width:100%;height:100%;border:none;border-radius:14px;background:#111"></iframe></div>';
+      document.body.appendChild(modal);
+      return;
+    }
+    var w=window.open(url,'_blank'); if(!w && typeof toast==='function') toast('⚠️ المتصفح منع فتح الملف. استخدم زر التنزيل.');
+  };
+  window.downloadCaseAttachmentV41=function(num, idx){
+    var cf=findCaseFileV41(num); if(!cf || !cf.attachments || !cf.attachments[idx]) return;
+    var a=cf.attachments[idx], url=caseAttDataUrlV41(a); if(!url) return;
+    var link=document.createElement('a'); link.href=url; link.download=a.name||('case-file-'+(idx+1)); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  };
+  window.delCaseAttachmentV41=function(num, idx){
+    var cf=findCaseFileV41(num); if(!cf || !cf.attachments || !cf.attachments[idx]) return;
+    if(!confirm('حذف هذا المرفق من ملف القضية؟')) return;
+    upsertCaseFileV41(num, function(file){ file.attachments.splice(idx,1); });
+    if(typeof toast==='function') toast('🗑️ تم حذف مرفق القضية');
+    setTimeout(function(){ renderInteractiveCasePanelV41(); }, 80);
+  };
+  function sessionAttachmentItemsHtmlV41(s){
+    var atts=Array.isArray(s.attachments)?s.attachments:[];
+    if(!atts.length) return '<div class="v41-empty">لا توجد مرفقات داخل هذه الجلسة بعد. يمكنك رفع ملف أو صورة وسيتم حفظها داخل القضية أيضًا.</div>';
+    return '<div class="v41-mini-list">'+atts.map(function(a,idx){
+      var kind='doc'; try{ kind=(typeof attKind==='function')?attKind(a):'doc'; }catch(e){}
+      var icon=kind==='image'?'🖼️':(kind==='pdf'?'📄':'🗂️');
+      var name=escHtml(a&&a.name || ('مرفق '+(idx+1)));
+      var size=''; try{ size=(typeof attSizeLabel==='function'?attSizeLabel(a):''); }catch(e){}
+      return '<div class="v41-mini-item"><div class="v41-mini-left"><div class="v41-mini-icon">'+icon+'</div><div><div class="t">'+name+'</div><div class="m">'+(size?escHtml(size):'مرفق محفوظ داخل الجلسة')+'</div></div></div><div class="v41-mini-actions"><button type="button" onclick="openSessionAttachmentFromCasePanel('+s.id+','+idx+')">فتح</button><button type="button" onclick="downloadAtt('+s.id+','+idx+')">تنزيل</button><button type="button" onclick="delAtt('+s.id+','+idx+')">حذف</button></div></div>';
+    }).join('')+'</div>';
+  }
+  function buildSessionCardV41(s, num){
+    var status=statusLabelV41(s), cls=statusChipClsV41(s), note=escHtml(noteValV41(s));
+    return '<details class="v41-session-card"'+(String(s.date||'')>= (typeof todaySafe==='function'?todaySafe():'') ? ' open':'')+'>'+
+      '<summary><div class="v41-session-top"><div><div class="v41-session-title">⚖️ جلسة '+escHtml(s.num||num)+'</div><div class="v41-session-meta">'+escHtml(s.court||'—')+' · '+escHtml(s.date||'—')+' · '+escHtml(s.time||'—')+'</div></div><div class="v41-session-right"><span class="v41-chip '+cls+'">'+escHtml(status)+'</span><span class="v41-openhint">فتح</span></div></div></summary>'+
+      '<div class="v41-session-body">'+
+        '<div class="v41-session-actions"><button type="button" class="v41-btn primary" onclick="openDet('+s.id+')">عرض الجلسة</button><button type="button" class="v41-btn" onclick="openEdit(data.find(function(x){return x.id==='+s.id+';}))">تعديل</button><label class="v41-btn upload">📎 رفع داخل الجلسة<input type="file" multiple style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.csv" onchange="addCasePanelSessionAttachmentV41(this,'+s.id+')"></label></div>'+
+        '<div class="v41-grid2"><div class="v41-info-box"><div class="lbl">المدعي</div><div class="val">'+escHtml(s.plnt||'—')+'</div></div><div class="v41-info-box"><div class="lbl">المدعى عليه</div><div class="val">'+escHtml(s.dfnd||'—')+'</div></div></div>'+
+        '<div class="v41-note-wrap"><div class="v41-section-mini">📝 ملاحظات هذه الجلسة</div><textarea id="caseSessNote_'+s.id+'" dir="rtl" placeholder="اكتب ما دار في الجلسة، التوجيهات، أو ما يلزم متابعته...">'+note+'</textarea><div class="v41-note-actions"><button type="button" class="v41-btn primary" onclick="saveCaseSessionInlineNoteV41('+s.id+')">💾 حفظ الملاحظات</button></div></div>'+
+        '<div class="v41-section-mini">📎 مرفقات الجلسة</div>'+sessionAttachmentItemsHtmlV41(s)+
+      '</div></details>';
+  }
+  function renderCaseTasksSectionV41(num){
+    var rel=relatedTasksV41(num);
+    var h='<details class="v41-case-section"><summary><span>📋 المهمات المرتبطة بالقضية</span><span class="badge">'+rel.length+'</span></summary><div class="body">';
+    h+='<div class="v41-section-actions"><button type="button" class="v41-btn primary" onclick="quickOpenTaskFormForCaseV41(\''+escJs(num)+'\')">+ مهمة مرتبطة</button></div>';
+    if(!rel.length) h+='<div class="v41-empty">لا توجد مهمات مرتبطة بهذه القضية بعد. يمكنك إضافة مهمة مرتبطة برقم القضية لمتابعتها يوميًا.</div>';
+    else h+='<div class="v41-mini-list">'+rel.slice(0,12).map(function(t){ return '<div class="v41-mini-item"><div><div class="t">'+escHtml(t.title||'—')+'</div><div class="m">'+(t.due?('📅 '+escHtml(t.due)+' · '):'')+(t.done?'✅ منجزة':'⏳ مفتوحة')+' · '+(t.priority==='high'?'عالية':t.priority==='med'?'متوسطة':'عادية')+'</div></div></div>'; }).join('')+'</div>';
+    return h+'</div></details>';
+  }
+  function buildInteractiveCasePanelV41(mode, s){
+    var num=q((s&&s.num) || (document.getElementById('fNum')&&document.getElementById('fNum').value));
+    if(!num){
+      return '<div class="v41-case-pro"><div class="v41-hero"><div><div class="ttl">📁 ملف القضية التفاعلي</div><div class="sub">أدخل رقم القضية أولًا ليظهر لك ملف موحّد احترافي يضم المرفقات، جلسات القضية، والملاحظات لكل جلسة بشكل قابل للفتح والإغلاق.</div></div><div class="badge">0</div></div><div class="v41-empty">بعد إدخال رقم القضية ستتمكن من رفع مرفقات للقضية نفسها، وربط ملاحظات ومرفقات لكل جلسة، مع فتح وتنزيل الملفات من نفس المكان.</div></div>';
+    }
+    var cf=findCaseFileV41(num) || upsertCaseFileV41(num, function(file){ var seed=currentCaseSeedV41(); ['type','court','client','plnt','dfnd','ref','notes'].forEach(function(k){ if(seed[k]) file[k]=file[k]||seed[k]; }); });
+    var sessions=caseSessionsV41(num);
+    var caseAtts=Array.isArray(cf.attachments)?cf.attachments:[];
+    var sessAttCount=sessions.reduce(function(sum,cs){ return sum+((cs.attachments||[]).length||0); },0);
+    var openTasks=relatedTasksV41(num).filter(function(t){ return !t.done; }).length;
+    var next=sessions.find(function(cs){ return String(cs.date||'') >= (typeof todaySafe==='function'?todaySafe():''); }) || sessions[sessions.length-1] || null;
+    var h='<div class="v41-case-pro">';
+    h+='<div class="v41-hero"><div><div class="ttl">📁 ملف القضية التفاعلي</div><div class="sub">رقم القضية: <b>'+escHtml(num)+'</b> · واجهة مهنية تجمع كل ما يتعلق بالقضية: الجلسات، المرفقات، الملاحظات، والمهام، مع رفع وفتح وتنزيل من مكان واحد.</div></div><div class="badge">'+(caseAtts.length+sessAttCount)+'</div></div>';
+    h+='<div class="v41-stats"><div class="box"><div class="n">'+sessions.length+'</div><div class="l">جلسات القضية</div></div><div class="box"><div class="n">'+caseAtts.length+'</div><div class="l">مرفقات القضية</div></div><div class="box"><div class="n">'+sessAttCount+'</div><div class="l">مرفقات الجلسات</div></div><div class="box"><div class="n">'+openTasks+'</div><div class="l">مهمات مفتوحة</div></div></div>';
+    h+='<div class="v41-top-actions"><label class="v41-btn primary upload">📎 رفع للقضية<input type="file" multiple style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.csv" onchange="addCaseAttachmentsFromInput(this,\''+escJs(num)+'\');setTimeout(renderInteractiveCasePanelV41,320)"></label><button type="button" class="v41-btn" onclick="quickOpenTaskFormForCaseV41(\''+escJs(num)+'\')">+ مهمة مرتبطة</button>'+(next?'<button type="button" class="v41-btn" onclick="openDet('+next.id+')">الجلسة القادمة</button>':'')+'</div>';
+    h+='<details class="v41-case-section" open><summary><span>🧾 بيانات القضية وملاحظاتها</span><span class="badge">'+escHtml(cf.type||'—')+'</span></summary><div class="body"><div class="v41-grid2"><div class="v41-info-box"><div class="lbl">المحكمة</div><div class="val">'+escHtml(cf.court||s&&s.court||'—')+'</div></div><div class="v41-info-box"><div class="lbl">نوع القضية</div><div class="val">'+escHtml(cf.type||s&&s.type||'—')+'</div></div><div class="v41-info-box"><div class="lbl">الموكل</div><div class="val">'+escHtml(cf.client||s&&s.client||'—')+'</div></div><div class="v41-info-box"><div class="lbl">الأطراف</div><div class="val">'+escHtml((cf.plnt||s&&s.plnt||'—')+' ← ضد ← '+(cf.dfnd||s&&s.dfnd||'—'))+'</div></div></div><div class="v41-note-wrap"><div class="v41-section-mini">📝 ملاحظات عامة على القضية</div><textarea id="caseFileNotesV41" dir="rtl" placeholder="اكتب ملخص القضية أو الاستراتيجية أو النقاط المهمة...">'+escHtml(cf.notes||s&&s.notes||'')+'</textarea><div class="v41-note-actions"><button type="button" class="v41-btn primary" onclick="saveCaseFileNotesV41(\''+escJs(num)+'\')">💾 حفظ ملاحظات القضية</button></div></div></div></details>';
+    h+='<details class="v41-case-section"'+(caseAtts.length?' open':'')+'><summary><span>📎 مرفقات القضية</span><span class="badge">'+caseAtts.length+'</span></summary><div class="body"><div class="v41-section-actions"><label class="v41-btn primary upload">➕ رفع مرفقات للقضية<input type="file" multiple style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.csv" onchange="addCaseAttachmentsFromInput(this,\''+escJs(num)+'\');setTimeout(renderInteractiveCasePanelV41,320)"></label></div>';
+    if(!caseAtts.length) h+='<div class="v41-empty">لا توجد مرفقات محفوظة على مستوى القضية بعد. أضف PDF أو صورًا أو مستندات وستبقى مرتبطة بهذه القضية وتظهر مع كل جلساتها.</div>';
+    else h+='<div class="v41-mini-list">'+caseAtts.map(function(a,idx){ return '<div class="v41-mini-item"><div class="v41-mini-left"><div class="v41-mini-icon">'+caseAttIconV41(a)+'</div><div><div class="t">'+escHtml(a.name||('مرفق '+(idx+1)))+'</div><div class="m">ملف القضية · '+escHtml((a.createdAt||'').slice(0,10)||'—')+' · '+fmtSizeV41(a.size)+'</div></div></div><div class="v41-mini-actions"><button type="button" onclick="previewCaseAttachmentV41(\''+escJs(num)+'\','+idx+')">فتح</button><button type="button" onclick="downloadCaseAttachmentV41(\''+escJs(num)+'\','+idx+')">تنزيل</button><button type="button" onclick="delCaseAttachmentV41(\''+escJs(num)+'\','+idx+')">حذف</button></div></div>'; }).join('')+'</div>';
+    h+='</div></details>';
+    h+='<details class="v41-case-section" open><summary><span>⚖️ جلسات القضية ومجريات كل جلسة</span><span class="badge">'+sessions.length+'</span></summary><div class="body">';
+    if(!sessions.length) h+='<div class="v41-empty">لا توجد جلسات مرتبطة بهذه القضية بعد. أضف جلسة جديدة وسيظهر سجلها هنا تلقائيًا.</div>';
+    else h+=sessions.map(function(cs){ return buildSessionCardV41(cs, num); }).join('');
+    h+='</div></details>';
+    h+=renderCaseTasksSectionV41(num);
+    h+='</div>';
+    return h;
+  }
+  function ensureInteractiveCaseNodeV41(){
+    var body=document.querySelector('#formSheet .sheet-body'); if(!body) return null;
+    var node=document.getElementById('sessionCaseFilePanel');
+    if(!node){ node=document.createElement('div'); node.id='sessionCaseFilePanel'; var footer=document.getElementById('sessionUnifiedFooter'); body.insertBefore(node, footer||null); }
+    return node;
+  }
+  window.renderInteractiveCasePanelV41=function(){
+    try{
+      var form=document.getElementById('formSheet');
+      if(!form || form.classList.contains('hid')) return;
+      var mode=form.dataset.mode||'create';
+      var sid=window.detId || window.editId;
+      var s=sid ? (window.data||[]).find(function(x){ return x.id===sid; }) : null;
+      var node=ensureInteractiveCaseNodeV41(); if(!node) return;
+      node.innerHTML=buildInteractiveCasePanelV41(mode, s||null);
+    }catch(e){}
+  };
+
+  function bindCaseInputsV41(){
+    ['fNum','fClient','fPlnt','fDfnd','fCourt','fType','fRef','fNotes'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el || el.dataset.v41Bound==='1') return;
+      el.dataset.v41Bound='1';
+      el.addEventListener('input', function(){ setTimeout(window.renderInteractiveCasePanelV41, 40); });
+    });
+  }
+  function wrapAfter(name, delay){
+    var fn=window[name]; if(typeof fn!=='function' || fn.__v41wrapped) return;
+    var wrapped=function(){ var out=fn.apply(this, arguments); setTimeout(function(){ bindCaseInputsV41(); window.renderInteractiveCasePanelV41(); }, delay||80); return out; };
+    wrapped.__v41wrapped=true; window[name]=wrapped;
+  }
+  if(typeof window.updateUnifiedSessionUI==='function' && !window.updateUnifiedSessionUI.__v41wrapped){
+    var _u=window.updateUnifiedSessionUI;
+    window.updateUnifiedSessionUI=function(){ var out=_u.apply(this, arguments); setTimeout(function(){ bindCaseInputsV41(); window.renderInteractiveCasePanelV41(); }, 70); return out; };
+    window.updateUnifiedSessionUI.__v41wrapped=true;
+  }
+  ['openAdd','openEdit','openDet','saveS','addCaseAttachmentsFromInput','delCaseAttachment','addAtt','delAtt','ssmSaveNotes'].forEach(function(n){ wrapAfter(n, n==='addAtt'?450:120); });
+  if(typeof window.render==='function' && !window.render.__v41wrappedCaseHook){
+    var _r=window.render;
+    window.render=function(){ var out=_r.apply(this, arguments); setTimeout(function(){ bindCaseInputsV41(); window.renderInteractiveCasePanelV41(); }, 120); return out; };
+    window.render.__v41wrappedCaseHook=true;
+  }
+
+  function injectV41CaseStyles(){
+    if(document.getElementById('v41InteractiveCaseStyles')) return;
+    var st=document.createElement('style');
+    st.id='v41InteractiveCaseStyles';
+    st.textContent=`
+      .v41-case-pro{background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.018));border:1px solid var(--border2);border-radius:24px;padding:14px;margin-top:12px;box-shadow:0 14px 34px rgba(0,0,0,.14)}
+      .v41-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+      .v41-hero .ttl{font-size:18px;font-weight:900;color:var(--text);font-family:"SF Arabic","Scheherazade New","Amiri",serif}
+      .v41-hero .sub{font-size:11px;color:var(--text3);line-height:1.9;margin-top:4px}
+      .v41-hero .badge{min-width:46px;height:46px;border-radius:16px;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;color:var(--gold2);font-weight:900}
+      .v41-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+      .v41-stats .box{background:var(--surface3);border:1px solid var(--border);border-radius:16px;padding:11px 12px}
+      .v41-stats .n{font-size:17px;font-weight:900;color:var(--text)}
+      .v41-stats .l{font-size:10px;color:var(--text3);margin-top:4px}
+      .v41-top-actions,.v41-section-actions,.v41-note-actions,.v41-session-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+      .v41-btn{appearance:none;background:var(--surface3);border:1px solid var(--border);color:var(--text2);border-radius:14px;padding:10px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+      .v41-btn.primary{background:var(--gold);color:#12100a;border-color:transparent}
+      .v41-btn.upload{position:relative;overflow:hidden}
+      .v41-btn.upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+      .v41-case-section,.v41-session-card{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;margin-top:10px;overflow:hidden}
+      .v41-case-section summary,.v41-session-card summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:900;color:var(--text);font-size:13px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01))}
+      .v41-case-section summary::-webkit-details-marker,.v41-session-card summary::-webkit-details-marker{display:none}
+      .v41-case-section .badge,.v41-session-card .badge{min-width:34px;height:34px;border-radius:12px;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;color:var(--gold2);font-size:12px;font-weight:900}
+      .v41-case-section .body,.v41-session-body{padding:0 14px 14px}
+      .v41-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+      .v41-info-box{background:var(--surface3);border:1px solid var(--border);border-radius:15px;padding:11px 12px}
+      .v41-info-box .lbl{font-size:10px;color:var(--text3);margin-bottom:5px;font-weight:700}
+      .v41-info-box .val{font-size:12px;color:var(--text);line-height:1.8}
+      .v41-note-wrap textarea{width:100%;min-height:110px;background:var(--surface3);border:1px solid var(--border);border-radius:16px;padding:12px;font-size:13px;color:var(--text);resize:vertical;font-family:Tajawal,sans-serif;line-height:1.9}
+      .v41-section-mini{font-size:11px;color:var(--gold2);font-weight:900;margin-bottom:8px}
+      .v41-empty{background:rgba(255,255,255,.03);border:1px dashed var(--border2);border-radius:16px;padding:14px;font-size:12px;color:var(--text2);line-height:1.9}
+      .v41-mini-list{display:grid;gap:8px}
+      .v41-mini-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface3);border:1px solid var(--border);border-radius:16px;padding:10px 11px}
+      .v41-mini-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+      .v41-mini-icon{width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+      .v41-mini-item .t{font-size:12px;color:var(--text);font-weight:800;line-height:1.6}
+      .v41-mini-item .m{font-size:10px;color:var(--text3);line-height:1.7;margin-top:2px}
+      .v41-mini-actions{display:flex;gap:6px;flex-wrap:wrap}
+      .v41-mini-actions button{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:12px;padding:8px 10px;font-size:11px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif}
+      .v41-session-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;width:100%}
+      .v41-session-title{font-size:14px;font-weight:900;color:var(--text)}
+      .v41-session-meta{font-size:10px;color:var(--text3);line-height:1.8;margin-top:4px}
+      .v41-session-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+      .v41-chip{border-radius:999px;padding:7px 10px;font-size:10px;font-weight:900;border:1px solid transparent}
+      .v41-chip.live{background:rgba(74,142,245,.12);color:#9cc2ff;border-color:rgba(74,142,245,.22)}
+      .v41-chip.done{background:rgba(52,211,153,.12);color:#8ff0c7;border-color:rgba(52,211,153,.24)}
+      .v41-chip.cancel{background:rgba(248,113,113,.12);color:#ffb4b4;border-color:rgba(248,113,113,.24)}
+      .v41-openhint{font-size:10px;color:var(--text3)}
+      .v41-session-card[open] summary,.v41-case-section[open] summary{border-bottom:1px solid var(--border2)}
+      @media (max-width:700px){.v41-stats{grid-template-columns:1fr 1fr}.v41-grid2{grid-template-columns:1fr}.v41-mini-item{flex-direction:column;align-items:stretch}.v41-mini-actions{justify-content:flex-end}.v41-hero{align-items:flex-start}}
+    `;
+    document.head.appendChild(st);
+  }
+  injectV41CaseStyles();
+  setTimeout(function(){ bindCaseInputsV41(); window.renderInteractiveCasePanelV41(); }, 200);
+})();
 </script>
 
 </body>
