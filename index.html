@@ -29977,5 +29977,401 @@ body{
   }
 })();
 </script>
+
+<style id="v99-cases-pro-style">
+.cases-pro-shell{padding-bottom:calc(var(--safe-bottom) + 18px)}
+.cases-pro-shell .main-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.cases-pro-shell .main-title{font-size:24px;font-weight:900;letter-spacing:.01em;color:var(--text);font-family:'Tajawal',sans-serif}
+.cases-pro-shell .main-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cases-pro-shell .main-actions button,
+.cases-top-actions button,
+.case-pro-action,
+.case-pro-action-ghost,
+.case-pro-meet,
+.case-pro-open,
+.case-pro-edit,
+.case-pro-filter,
+.case-search-wrap button{min-height:44px;font-family:'Tajawal',sans-serif}
+.cases-pro-shell .main-actions button{border:none;border-radius:15px;padding:0 14px;font-size:13px;font-weight:800;cursor:pointer}
+.cases-pro-shell .main-actions button:first-child{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#050608;box-shadow:0 10px 26px rgba(200,168,75,.18)}
+.cases-pro-shell .main-actions button:last-child{background:rgba(59,130,246,.12);color:#a9c9ff;border:1px solid rgba(96,165,250,.28)}
+.cases-pro-tabs{display:flex;gap:8px;overflow:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cases-pro-tabs::-webkit-scrollbar{display:none}
+.cases-pro-tabs button{border:1px solid var(--border2);background:rgba(15,20,35,.9);color:var(--text2);border-radius:16px;padding:0 14px;min-height:44px;font-size:13px;font-weight:800;white-space:nowrap;cursor:pointer}
+.cases-pro-tabs button.on{background:linear-gradient(180deg,rgba(200,168,75,.18),rgba(200,168,75,.08));color:var(--gold3);border-color:rgba(200,168,75,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.cases-overview{display:flex;flex-direction:column;gap:14px}
+.cases-hero{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(14,18,34,.98),rgba(10,14,27,.94));border:1px solid rgba(200,168,75,.16);border-radius:24px;padding:16px 16px 15px;box-shadow:0 16px 40px rgba(0,0,0,.22)}
+.cases-hero:before{content:'';position:absolute;inset:auto auto -35px -25px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(200,168,75,.18),rgba(200,168,75,0));pointer-events:none}
+.cases-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative;z-index:1}
+.cases-hero-title{font-family:'Scheherazade New',serif;font-size:29px;line-height:1;color:var(--gold2)}
+.cases-hero-sub{margin-top:5px;font-size:12px;color:var(--text2);font-weight:700}
+.cases-top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.cases-top-actions button{border:none;border-radius:15px;padding:0 14px;font-size:13px;font-weight:800;cursor:pointer}
+.case-pro-action{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#060708;box-shadow:0 10px 24px rgba(200,168,75,.18)}
+.case-pro-action-ghost{background:rgba(59,130,246,.12);color:#a9c9ff;border:1px solid rgba(96,165,250,.28)}
+.cases-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px;position:relative;z-index:1}
+.case-kpi{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:12px 10px 11px;min-height:84px}
+.case-kpi .v{font-size:24px;font-weight:900;color:var(--text)}
+.case-kpi .l{font-size:11.8px;color:var(--text2);font-weight:800;margin-top:4px}
+.case-kpi .s{font-size:11px;color:var(--gold2);font-weight:700;margin-top:7px}
+.case-toolbar{display:flex;flex-direction:column;gap:10px;background:rgba(11,16,29,.94);border:1px solid var(--border);border-radius:22px;padding:12px}
+.case-search-wrap{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:8px 10px}
+.case-search-ico{font-size:15px;opacity:.82}
+.case-search-wrap input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text);font-size:14px;font-weight:700;font-family:'Tajawal',sans-serif}
+.case-search-wrap button{border:none;background:rgba(200,168,75,.12);color:var(--gold2);border-radius:12px;padding:0 12px;font-size:12px;font-weight:800;cursor:pointer}
+.case-filters{display:flex;gap:8px;overflow:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.case-filters::-webkit-scrollbar{display:none}
+.case-pro-filter{white-space:nowrap;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);border-radius:14px;padding:0 14px;font-size:12.4px;font-weight:800;cursor:pointer}
+.case-pro-filter.on{background:rgba(200,168,75,.12);border-color:rgba(200,168,75,.32);color:var(--gold2)}
+.cases-spotlights{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cases-spot-card{background:linear-gradient(180deg,rgba(14,20,34,.95),rgba(9,13,24,.95));border:1px solid var(--border);border-radius:20px;padding:14px}
+.cases-spot-label{font-size:11.5px;color:var(--gold2);font-weight:800;margin-bottom:10px}
+.cases-spot-main{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cases-spot-num{font-size:14px;font-weight:900;color:var(--text)}
+.cases-spot-meta{margin-top:6px;font-size:12px;color:var(--text2);font-weight:700;line-height:1.7}
+.cases-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.case-pro-card{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(14,19,34,.97),rgba(8,12,24,.96));border:1px solid rgba(100,140,220,.12);border-radius:22px;padding:15px;box-shadow:0 16px 34px rgba(0,0,0,.18);cursor:pointer}
+.case-pro-card:before{content:'';position:absolute;inset:0 auto 0 0;width:4px;background:var(--case-accent,rgba(200,168,75,.6));border-radius:22px}
+.case-pro-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.case-pro-card-num{font-size:15px;font-weight:900;color:var(--text);line-height:1.45;word-break:break-word}
+.case-pro-card-sub{margin-top:4px;font-size:12px;color:var(--text2);font-weight:700;line-height:1.6}
+.case-status-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 10px;font-size:11.5px;font-weight:800;border:1px solid rgba(255,255,255,.08);white-space:nowrap}
+.case-card-lines{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.case-card-line{display:flex;align-items:flex-start;gap:8px;font-size:12.6px;color:var(--text);font-weight:700;line-height:1.7}
+.case-card-line span:first-child{width:18px;flex:0 0 18px;opacity:.9;text-align:center}
+.case-card-line .muted{color:var(--text2);font-weight:700}
+.case-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid rgba(255,255,255,.05)}
+.case-card-badges{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.case-count-badge,.case-prio-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;font-size:11.5px;font-weight:800}
+.case-count-badge{background:rgba(255,255,255,.04);color:var(--text2);border:1px solid rgba(255,255,255,.06)}
+.case-prio-badge{border:1px solid transparent}
+.case-card-actions{display:flex;gap:8px;flex-wrap:wrap}
+.case-pro-open,.case-pro-edit,.case-pro-meet{border:none;border-radius:14px;padding:0 14px;font-size:12.5px;font-weight:800;cursor:pointer}
+.case-pro-open{background:rgba(200,168,75,.14);color:var(--gold2);border:1px solid rgba(200,168,75,.28)}
+.case-pro-edit{background:rgba(255,255,255,.04);color:var(--text2);border:1px solid rgba(255,255,255,.07)}
+.case-pro-meet{background:rgba(59,130,246,.12);color:#9cc4ff;border:1px solid rgba(96,165,250,.26)}
+.case-empty{background:rgba(10,14,25,.95);border:1px dashed rgba(200,168,75,.22);border-radius:22px;padding:30px 18px;text-align:center;color:var(--text2);font-size:13px;font-weight:700}
+.case-pane-card{background:rgba(10,14,25,.92);border:1px solid var(--border);border-radius:22px;padding:10px;overflow:hidden}
+@media (max-width:900px){
+  .cases-kpis,.cases-spotlights,.cases-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:720px){
+  .cases-pro-shell .main-title{font-size:22px}
+  .cases-hero{padding:15px 14px}
+  .cases-hero-title{font-size:27px}
+  .cases-hero-top{flex-direction:column;align-items:stretch}
+  .cases-top-actions{justify-content:stretch}
+  .cases-top-actions button{flex:1}
+  .cases-kpis,.cases-spotlights,.cases-grid{grid-template-columns:1fr}
+  .case-kpi{min-height:78px}
+  .case-pro-card{padding:14px}
+}
+</style>
+
+<script id="v99-cases-pro-script">
+(function(){
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];});}
+  function fmtDate(v){try{return typeof fmtS==='function'?fmtS(v):String(v||'—');}catch(e){return String(v||'—');}}
+  function hijri(v){try{return (typeof toHijriShort==='function'&&v)?toHijriShort(v):'';}catch(e){return '';}}
+  function numVal(s){
+    try{
+      var d=(s&&s.date?s.date:'1970-01-01');
+      var t=(s&&s.time?s.time:'00:00');
+      return new Date(d+'T'+t+':00').getTime()||0;
+    }catch(e){return 0;}
+  }
+  function todayVal(){try{return typeof today==='function'?today():new Date().toISOString().split('T')[0];}catch(e){return new Date().toISOString().split('T')[0];}}
+  function statusMeta(st){
+    var map={
+      scheduled:{lbl:'مجدولة',bg:'rgba(74,142,245,.12)',bd:'rgba(74,142,245,.26)',fg:'#9cc4ff',accent:'rgba(74,142,245,.72)'},
+      inProgress:{lbl:'جارية',bg:'rgba(40,184,112,.12)',bd:'rgba(40,184,112,.26)',fg:'#78e5b1',accent:'rgba(40,184,112,.72)'},
+      completed:{lbl:'منتهية',bg:'rgba(163,163,163,.12)',bd:'rgba(163,163,163,.22)',fg:'#d6d9e2',accent:'rgba(160,160,170,.55)'},
+      postponed:{lbl:'مؤجلة',bg:'rgba(216,144,48,.12)',bd:'rgba(216,144,48,.26)',fg:'#f6c56d',accent:'rgba(216,144,48,.72)'}
+    };
+    if(map[st])return map[st];
+    try{ if(window.ST&&ST[st]&&ST[st].lbl) return {lbl:ST[st].lbl,bg:'rgba(200,168,75,.12)',bd:'rgba(200,168,75,.26)',fg:'var(--gold2)',accent:'rgba(200,168,75,.72)'}; }catch(e){}
+    return {lbl:'غير محددة',bg:'rgba(200,168,75,.10)',bd:'rgba(200,168,75,.22)',fg:'var(--gold2)',accent:'rgba(200,168,75,.72)'};
+  }
+  function priorityMeta(p){
+    if(p==='high')return{lbl:'عالية',bg:'rgba(224,69,85,.12)',bd:'rgba(224,69,85,.26)',fg:'#ff8b96'};
+    if(p==='med')return{lbl:'متوسطة',bg:'rgba(216,144,48,.12)',bd:'rgba(216,144,48,.26)',fg:'#f7c46e'};
+    if(p==='low')return{lbl:'منخفضة',bg:'rgba(40,184,112,.12)',bd:'rgba(40,184,112,.26)',fg:'#7fe4b0'};
+    return{lbl:'عادية',bg:'rgba(255,255,255,.04)',bd:'rgba(255,255,255,.08)',fg:'var(--text2)'};
+  }
+  function caseTabs(view){
+    function btn(key,label){
+      return '<button type="button" class="'+(view===key?'on':'')+'" onclick="setCasesMainView(\''+key+'\')">'+label+'</button>';
+    }
+    return '<div class="cases-pro-tabs">'+btn('overview','القضايا')+btn('sessions','الجلسات')+btn('fees','الأتعاب')+btn('clients','الأطراف')+btn('tasks','المهام')+'</div>';
+  }
+  function groupCases(){
+    var arr=Array.isArray(window.data)?window.data.slice():[];
+    var groups={};
+    arr.forEach(function(s){
+      var key=String((s&&s.num)||('SESSION-'+(s&&s.id||Math.random()))).trim();
+      if(!groups[key]) groups[key]={key:key,num:(s&&s.num)||'بدون رقم',sessions:[]};
+      groups[key].sessions.push(s||{});
+    });
+    var today=todayVal();
+    var search=String(window._caseBoardSearch||'').trim().toLowerCase();
+    var filter=window._caseBoardFilter||'all';
+    var rows=Object.keys(groups).map(function(key){
+      var g=groups[key];
+      g.sessions.sort(function(a,b){return numVal(a)-numVal(b);});
+      var future=g.sessions.filter(function(s){return (s.date||'')>=today && s.status!=='completed';});
+      var primary=(future[0]||g.sessions[g.sessions.length-1]||{});
+      var high=g.sessions.some(function(s){return s.priority==='high';});
+      var med=g.sessions.some(function(s){return s.priority==='med';});
+      g.primary=primary;
+      g.latest=g.sessions.slice().sort(function(a,b){return numVal(b)-numVal(a);})[0]||primary||{};
+      g.count=g.sessions.length;
+      g.priority=high?'high':(med?'med':((g.sessions.some(function(s){return s.priority==='low';}))?'low':'none'));
+      g.hasRemote=g.sessions.some(function(s){return !!(s&&s.meetUrl);});
+      g.hasToday=g.sessions.some(function(s){return s.date===today;});
+      g.hasPostponed=g.sessions.some(function(s){return s.status==='postponed';});
+      g.allCompleted=g.sessions.every(function(s){return s.status==='completed';});
+      g.active=g.sessions.some(function(s){return s.status==='scheduled'||s.status==='inProgress';});
+      g.sortTime=future.length?numVal(future[0]||primary):numVal(g.latest||primary);
+      g.sortBucket=future.length?0:(g.allCompleted?2:1);
+      return g;
+    }).filter(function(g){
+      if(search){
+        var blob=[g.num,g.primary&&g.primary.type,g.primary&&g.primary.court,g.primary&&g.primary.plnt,g.primary&&g.primary.dfnd,g.primary&&g.primary.client,g.primary&&g.primary.notes,g.primary&&g.primary.ref].join(' ').toLowerCase();
+        if(blob.indexOf(search)===-1) return false;
+      }
+      if(filter==='today') return g.hasToday;
+      if(filter==='high') return g.priority==='high';
+      if(filter==='active') return g.active;
+      if(filter==='remote') return g.hasRemote;
+      if(filter==='completed') return g.allCompleted;
+      if(filter==='postponed') return g.hasPostponed;
+      return true;
+    });
+    rows.sort(function(a,b){ if(a.sortBucket!==b.sortBucket) return a.sortBucket-b.sortBucket; return a.sortTime-b.sortTime; });
+    return rows;
+  }
+  function kpi(title,val,sub){return '<div class="case-kpi"><div class="v">'+val+'</div><div class="l">'+title+'</div><div class="s">'+sub+'</div></div>';}
+  function renderSpotCard(label,g){
+    if(!g) return '';
+    var p=g.primary||{};
+    return '<div class="cases-spot-card" onclick="openDet('+Number(p.id||0)+')">'+
+      '<div class="cases-spot-label">'+label+'</div>'+
+      '<div class="cases-spot-main"><div class="cases-spot-num">'+esc(g.num||'بدون رقم')+'</div><div class="case-status-pill" style="background:'+statusMeta(p.status).bg+';border-color:'+statusMeta(p.status).bd+';color:'+statusMeta(p.status).fg+'">'+statusMeta(p.status).lbl+'</div></div>'+
+      '<div class="cases-spot-meta">'+esc((p.court||'—'))+'<br>'+esc(fmtDate(p.date))+(p.time?' · '+esc(p.time):'')+'</div>'+
+    '</div>';
+  }
+  function renderCaseCard(g){
+    var p=g.primary||{};
+    var st=statusMeta(p.status);
+    var pr=priorityMeta(g.priority);
+    var openId=Number(p.id||g.latest&&g.latest.id||0);
+    var parties=(p.plnt||'—')+' ↔ '+(p.dfnd||'—');
+    var when=fmtDate(p.date)+(p.time?' · '+p.time:'');
+    var h='<article class="case-pro-card" style="--case-accent:'+st.accent+'" onclick="openDet('+openId+')">';
+    h+='<div class="case-pro-card-head">';
+    h+='<div><div class="case-pro-card-num">'+esc(g.num||'بدون رقم')+'</div><div class="case-pro-card-sub">'+esc((p.type||'—')+' · '+(p.court||'—'))+'</div></div>';
+    h+='<div class="case-status-pill" style="background:'+st.bg+';border-color:'+st.bd+';color:'+st.fg+'">'+st.lbl+'</div>';
+    h+='</div>';
+    h+='<div class="case-card-lines">';
+    h+='<div class="case-card-line"><span>👥</span><div>'+esc(parties)+'</div></div>';
+    h+='<div class="case-card-line"><span>📅</span><div>'+esc(when)+(hijri(p.date)?'<div class="muted">'+esc(hijri(p.date))+'</div>':'')+'</div></div>';
+    h+='<div class="case-card-line"><span>🗂️</span><div>'+esc((p.client||'—'))+(p.ref?'<div class="muted">مرجع: '+esc(p.ref)+'</div>':'')+'</div></div>';
+    h+='</div>';
+    h+='<div class="case-card-foot">';
+    h+='<div class="case-card-badges">';
+    h+='<span class="case-count-badge">⚖️ '+g.count+' جلسة</span>';
+    h+='<span class="case-prio-badge" style="background:'+pr.bg+';border-color:'+pr.bd+';color:'+pr.fg+'">'+pr.lbl+'</span>';
+    if(g.hasRemote) h+='<span class="case-count-badge">🎥 عن بُعد</span>';
+    h+='</div>';
+    h+='<div class="case-card-actions">';
+    h+='<button class="case-pro-open" type="button" onclick="event.stopPropagation();openDet('+openId+')">فتح</button>';
+    h+='<button class="case-pro-edit" type="button" onclick="event.stopPropagation();caseBoardEdit('+openId+')">تعديل</button>';
+    if(p.meetUrl) h+='<button class="case-pro-meet" type="button" onclick="event.stopPropagation();caseBoardJoin('+openId+')">حضور</button>';
+    h+='</div></div></article>';
+    return h;
+  }
+  function renderOverview(){
+    var rows=groupCases();
+    var arr=Array.isArray(window.data)?window.data:[];
+    var today=todayVal();
+    var active=rows.filter(function(g){return g.active;}).length;
+    var todayCount=arr.filter(function(s){return s.date===today && (s.status==='scheduled'||s.status==='inProgress');}).length;
+    var remote=arr.filter(function(s){return s.date===today && s.meetUrl;}).length;
+    var urgent=rows.filter(function(g){return g.priority==='high';}).length;
+    var top1=rows[0]||null;
+    var top2=rows.find(function(g){return g!==top1 && g.hasToday;}) || rows[1] || null;
+    var filters=[['all','الكل'],['active','النشطة'],['today','اليوم'],['high','عالية'],['remote','عن بُعد'],['completed','منتهية'],['postponed','مؤجلة']];
+    var h='<div class="cases-overview">';
+    h+='<section class="cases-hero">';
+    h+='<div class="cases-hero-top"><div><div class="cases-hero-title">القضايا</div><div class="cases-hero-sub">منظم · سريع · جاهز للآيفون</div></div>';
+    h+='<div class="cases-top-actions">';
+    h+='<button type="button" class="case-pro-action" onclick="openAdd()">＋ جلسة جديدة</button>';
+    h+='<button type="button" class="case-pro-action-ghost" onclick="if(typeof showNajizImportModal===\'function\'){showNajizImportModal();}else{openAdd();}">🏛️ ناجز</button>';
+    h+='</div></div>';
+    h+='<div class="cases-kpis">';
+    h+=kpi('إجمالي القضايا',rows.length,active+' نشطة');
+    h+=kpi('جلسات اليوم',todayCount,remote+' عن بُعد');
+    h+=kpi('عالية الأهمية',urgent,urgent?'تحتاج متابعة':'مستقرة');
+    h+=kpi('إجمالي الجلسات',arr.length,arr.filter(function(s){return s.status==='completed';}).length+' منتهية');
+    h+='</div></section>';
+    h+='<section class="case-toolbar">';
+    h+='<div class="case-search-wrap"><span class="case-search-ico">🔎</span><input type="search" dir="rtl" placeholder="بحث برقم القضية أو المحكمة أو الأطراف" value="'+esc(window._caseBoardSearch||'')+'" oninput="caseBoardSetSearch(this.value)"><button type="button" onclick="caseBoardClearSearch()">مسح</button></div>';
+    h+='<div class="case-filters">';
+    filters.forEach(function(f){h+='<button type="button" class="case-pro-filter'+((window._caseBoardFilter||'all')===f[0]?' on':'')+'" onclick="caseBoardSetFilter(\''+f[0]+'\')">'+f[1]+'</button>';});
+    h+='</div></section>';
+    if(top1||top2){
+      h+='<section class="cases-spotlights">';
+      if(top1)h+=renderSpotCard('الأقرب',top1);
+      if(top2)h+=renderSpotCard('اليوم',top2);
+      h+='</section>';
+    }
+    if(rows.length){
+      h+='<section class="cases-grid">'+rows.map(renderCaseCard).join('')+'</section>';
+    }else{
+      h+='<div class="case-empty">لا توجد نتائج مطابقة</div>';
+    }
+    h+='</div>';
+    return h;
+  }
+  window.caseBoardSetFilter=function(v){window._caseBoardFilter=v||'all'; render(true);};
+  window.caseBoardSetSearch=function(v){window._caseBoardSearch=String(v||''); render(true);};
+  window.caseBoardClearSearch=function(){window._caseBoardSearch=''; render(true);};
+  window.caseBoardEdit=function(id){ var s=(window.data||[]).find(function(x){return Number(x.id)===Number(id);}); if(s&&typeof openEdit==='function') openEdit(s); };
+  window.caseBoardJoin=function(id){ var s=(window.data||[]).find(function(x){return Number(x.id)===Number(id);}); if(s&&s.meetUrl){ try{window.open(s.meetUrl,'_blank');}catch(e){location.href=s.meetUrl;} } };
+  window.rCasesMain=function(){
+    var view=window._casesMainView||'overview';
+    var body='';
+    if(view==='overview') body=renderOverview();
+    else if(view==='sessions') body='<div class="case-pane-card">'+(typeof rList==='function'?rList():'')+'</div>';
+    else if(view==='fees') body='<div class="case-pane-card">'+_withWindowState({_workspaceView:'fees'}, function(){return rWorkspaceHub();})+'</div>';
+    else if(view==='clients') body='<div class="case-pane-card">'+_withWindowState({_workspaceView:'overview'}, function(){return rWorkspaceHub();})+'</div>';
+    else if(view==='tasks') body='<div class="case-pane-card">'+(typeof rTasks==='function'?rTasks():'')+'</div>';
+    return '<div class="main-hub cases-pro-shell">'+
+      '<div class="main-head"><div class="main-title">القضايا</div><div class="main-actions"><button type="button" onclick="openAdd()">جلسة جديدة</button><button type="button" onclick="if(typeof showNajizImportModal===\'function\'){showNajizImportModal();}else{openAdd();}">استيراد ناجز</button></div></div>'+
+      caseTabs(view)+
+      '<div class="main-pane">'+body+'</div></div>';
+  };
+})();
+</script>
+
+<style id="v100-cases-clean-pro-css">
+.cases-pro{padding:0 0 8px}
+.cases-pro .cp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.cases-pro .cp-title{font:900 22px/1.15 Tajawal,sans-serif;color:var(--text);letter-spacing:-.01em}
+.cases-pro .cp-actions{display:flex;gap:8px;flex-shrink:0}
+.cases-pro .cp-btn{min-height:44px;padding:0 14px;border-radius:14px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font:800 12.5px Tajawal,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.cases-pro .cp-btn.primary{background:linear-gradient(180deg,var(--gold),#d1a942);color:#110f0a;border-color:rgba(209,169,66,.35);box-shadow:0 10px 28px rgba(209,169,66,.22)}
+.cases-pro .cp-tabs{display:flex;gap:8px;overflow:auto;padding:2px 0 8px;scrollbar-width:none;margin-bottom:10px}
+.cases-pro .cp-tabs::-webkit-scrollbar{display:none}
+.cases-pro .cp-tab{min-height:42px;padding:0 14px;border-radius:14px;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font:800 12.5px Tajawal,sans-serif;cursor:pointer;white-space:nowrap}
+.cases-pro .cp-tab.on{background:var(--surface);color:var(--gold2);border-color:var(--gold-a30);box-shadow:inset 0 0 0 1px rgba(209,169,66,.12),0 10px 28px rgba(0,0,0,.08)}
+.cases-pro .cp-panel{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:22px;padding:14px;box-shadow:0 14px 36px rgba(0,0,0,.08)}
+.cases-pro .cp-topline{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:10px}
+.cases-pro .cp-search{position:relative}
+.cases-pro .cp-search input{width:100%;min-height:44px;border-radius:14px;border:1px solid var(--border2);background:var(--surface2);padding:0 42px 0 14px;color:var(--text);font:700 13px Tajawal,sans-serif;outline:none}
+.cases-pro .cp-search .ico{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3)}
+.cases-pro .cp-seg{display:flex;gap:8px;overflow:auto;padding-bottom:2px;scrollbar-width:none}
+.cases-pro .cp-seg::-webkit-scrollbar{display:none}
+.cases-pro .cp-chip{min-height:40px;padding:0 12px;border-radius:999px;border:1px solid var(--border2);background:var(--surface2);color:var(--text3);font:800 12px Tajawal,sans-serif;cursor:pointer;white-space:nowrap}
+.cases-pro .cp-chip.on{background:var(--gold-a10);border-color:var(--gold-a30);color:var(--gold2)}
+.cases-pro .cp-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 6px}
+.cases-pro .cp-stat{background:var(--surface2);border:1px solid var(--border2);border-radius:18px;padding:12px 10px}
+.cases-pro .cp-stat .n{font:900 19px/1 Tajawal,sans-serif;color:var(--text)}
+.cases-pro .cp-stat .l{margin-top:5px;font:700 11.5px/1.5 Tajawal,sans-serif;color:var(--text3)}
+.cases-pro .cp-list{display:grid;gap:10px;margin-top:12px}
+.cases-pro .cp-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:14px;box-shadow:0 10px 24px rgba(0,0,0,.06);cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.cases-pro .cp-card:active{transform:scale(.995)}
+.cases-pro .cp-card-head{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+.cases-pro .cp-num{font:900 15px/1.55 Tajawal,sans-serif;color:var(--text);word-break:break-word}
+.cases-pro .cp-kind{margin-top:3px;font:700 11.5px/1.5 Tajawal,sans-serif;color:var(--text3)}
+.cases-pro .cp-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.cases-pro .cp-line{display:flex;align-items:flex-start;gap:8px;margin-top:10px;color:var(--text2);font:700 12.5px/1.7 Tajawal,sans-serif}
+.cases-pro .cp-line .i{width:18px;flex:0 0 18px;opacity:.82;text-align:center}
+.cases-pro .cp-line .t{min-width:0;word-break:break-word}
+.cases-pro .cp-actions-row{display:flex;gap:8px;margin-top:12px}
+.cases-pro .cp-ghost,.cases-pro .cp-solid{flex:1;min-height:42px;border-radius:12px;font:800 12px Tajawal,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.cases-pro .cp-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+.cases-pro .cp-solid{background:var(--gold-a10);color:var(--gold2);border:1px solid var(--gold-a30)}
+.cases-pro .cp-empty{padding:30px 14px;text-align:center;color:var(--text3)}
+.cases-pro .cp-empty .e1{font-size:32px;opacity:.3;margin-bottom:8px}
+.cases-pro .cp-empty .e2{font:900 14px/1.5 Tajawal,sans-serif;color:var(--text)}
+.cases-pro .cp-empty .e3{margin-top:5px;font:700 12px/1.7 Tajawal,sans-serif;color:var(--text3)}
+@media (max-width:520px){
+  .cases-pro .cp-head{align-items:flex-start;flex-direction:column}
+  .cases-pro .cp-actions{width:100%}
+  .cases-pro .cp-actions .cp-btn{flex:1}
+  .cases-pro .cp-topline{grid-template-columns:1fr}
+}
+</style>
+<script id="v100-cases-clean-pro">
+(function(){
+  if(window.__v100CasesCleanPro) return;
+  window.__v100CasesCleanPro = true;
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];});}
+  function fmtDate(v){try{return (typeof fmtDateSmartShort==='function'?fmtDateSmartShort(v):(typeof fmtS==='function'?fmtS(v):v||'—'));}catch(e){return v||'—';}}
+  function statusBadgeCode(st){if(typeof bdg==='function') return bdg(st); var map={scheduled:['مجدولة','rgba(59,130,246,.12)','#93c5fd','rgba(59,130,246,.24)'],inProgress:['جارية','rgba(16,185,129,.12)','#6ee7b7','rgba(16,185,129,.24)'],completed:['منتهية','rgba(148,163,184,.12)','#cbd5e1','rgba(148,163,184,.24)'],postponed:['مؤجلة','rgba(245,158,11,.12)','#fcd34d','rgba(245,158,11,.24)']}; var m=map[st]||['غير محددة','rgba(255,255,255,.06)','var(--text3)','rgba(255,255,255,.08)']; return '<span class="status-badge" style="background:'+m[1]+';color:'+m[2]+';border-color:'+m[3]+'">'+m[0]+'</span>'; }
+  function prioBadgeCode(p){if(typeof ptag==='function') return ptag(p||'none'); var map={high:['عالية','🔥'],med:['متوسطة','⭐'],low:['منخفضة','▫️'],none:['عادية','•']}; var m=map[p||'none']||map.none; return '<span class="prio-badge">'+m[1]+' '+m[0]+'</span>'; }
+  function getScopeRows(){ try{ if(typeof getListFilteredSessions==='function') return getListFilteredSessions()||[]; }catch(e){} var src=(typeof isDeletedScope==='function'&&isDeletedScope())?(window.archivedSessions||[]):(window.data||[]); return Array.isArray(src)?src:[]; }
+  function countToday(rows){var td=(typeof today==='function')?today():''; return rows.filter(function(s){return s&&s.date===td;}).length;}
+  function countUpcoming(rows){var td=(typeof today==='function')?today():''; return rows.filter(function(s){return s&&s.date&&s.date>td;}).length;}
+  function getPartyLine(s){ var a=s.client||s.plnt||''; var b=s.dfnd||''; if(a&&b) return esc(a)+' <span style="opacity:.45">ضد</span> '+esc(b); return esc(a||b||'—'); }
+  function getCourtLine(s){ var parts=[]; if(s.court) parts.push(esc(s.court)); if(s.room) parts.push('قاعة '+esc(s.room)); return parts.join(' <span style="opacity:.4">•</span> ') || '—'; }
+  window.__v100CasesOpenEditById = function(id){ try{ var src=((typeof isDeletedScope==='function'&&isDeletedScope())?(window.archivedSessions||[]):(window.data||[])); var s=(src||[]).find(function(x){return String(x.id)===String(id);}); if(s&&typeof openEdit==='function') openEdit(s); }catch(e){} };
+  window.__v100CasesAttend = function(id){ try{ var src=((typeof isDeletedScope==='function'&&isDeletedScope())?(window.archivedSessions||[]):(window.data||[])); var s=(src||[]).find(function(x){return String(x.id)===String(id);}); if(s&&s.meetUrl){ window.open(s.meetUrl,'_blank'); return; } if(typeof openDet==='function') openDet(id); }catch(e){ if(typeof openDet==='function') openDet(id); } };
+  function renderCard(s){
+    return '<div class="cp-card" onclick="openDet('+JSON.stringify(s.id)+')">'+
+      '<div class="cp-card-head">'+
+        '<div style="min-width:0;flex:1">'+
+          '<div class="cp-num">'+esc(s.num||'بدون رقم قضية')+'</div>'+
+          '<div class="cp-kind">'+esc(s.type||'قضية')+'</div>'+
+        '</div>'+
+        '<div class="cp-badges">'+statusBadgeCode(s.status)+prioBadgeCode(s.priority)+'</div>'+
+      '</div>'+
+      '<div class="cp-line"><span class="i">👤</span><div class="t">'+getPartyLine(s)+'</div></div>'+
+      '<div class="cp-line"><span class="i">🏛️</span><div class="t">'+getCourtLine(s)+'</div></div>'+
+      '<div class="cp-line"><span class="i">🗓️</span><div class="t">'+esc(fmtDate(s.date))+' <span style="opacity:.4">•</span> '+esc(s.time||'—')+'</div></div>'+
+      (s.notes?'<div class="cp-line"><span class="i">📝</span><div class="t">'+esc(String(s.notes).slice(0,120))+'</div></div>':'')+
+      '<div class="cp-actions-row" onclick="event.stopPropagation()">'+
+        '<button class="cp-ghost" type="button" onclick="openDet('+JSON.stringify(s.id)+')">فتح</button>'+
+        '<button class="cp-ghost" type="button" onclick="__v100CasesOpenEditById('+JSON.stringify(s.id)+')">تعديل</button>'+
+        '<button class="cp-solid" type="button" onclick="__v100CasesAttend('+JSON.stringify(s.id)+')">حضور</button>'+
+      '</div>'+
+    '</div>';
+  }
+  function tabs(view){ var items=[['overview','القضايا'],['sessions','الجلسات'],['fees','الأتعاب'],['clients','الأطراف'],['tasks','المهام']]; return '<div class="cp-tabs">'+items.map(function(it){return '<button type="button" class="cp-tab'+(view===it[0]?' on':'')+'" onclick="setCasesMainView(\''+it[0]+'\')">'+it[1]+'</button>';}).join('')+'</div>'; }
+  function statusRow(){ var items=[['all','الكل'],['scheduled','مجدولة'],['inProgress','جارية'],['completed','منتهية'],['postponed','مؤجلة']]; return '<div class="cp-seg">'+items.map(function(it){ return '<button type="button" class="cp-chip'+((window.filterS||'all')===it[0]?' on':'')+'" onclick="setF(\''+it[0]+'\')">'+it[1]+'</button>'; }).join('')+'</div>'; }
+  function scopeRow(){ var items=[['active','النشطة'],['deleted','المحذوفة']]; return '<div class="cp-seg" style="margin-top:8px">'+items.map(function(it){ return '<button type="button" class="cp-chip'+((window.listScope||'active')===it[0]?' on':'')+'" onclick="setListScope(\''+it[0]+'\')">'+it[1]+'</button>'; }).join('')+'</div>'; }
+  function overviewBody(showStats){
+    var rows=getScopeRows(), total=rows.length, todayC=countToday(rows), upcoming=countUpcoming(rows);
+    var html='<div class="cp-panel">';
+    html+='<div class="cp-topline"><div class="cp-search"><span class="ico">🔍</span><input id="casesCleanSearch" type="search" dir="rtl" placeholder="بحث برقم القضية أو الأطراف أو المحكمة" value="'+esc(window.q||'')+'" oninput="setQ(this.value)"></div><div class="cp-actions"><button type="button" class="cp-btn" onclick="setListScope(\''+((window.listScope||'active')==='active'?'deleted':'active')+'\')">'+(((window.listScope||'active')==='active')?'المحذوفة':'النشطة')+'</button></div></div>';
+    html+=statusRow();
+    if(showStats){ html+='<div class="cp-stats"><div class="cp-stat"><div class="n">'+total+'</div><div class="l">إجمالي النتائج</div></div><div class="cp-stat"><div class="n">'+todayC+'</div><div class="l">جلسات اليوم</div></div><div class="cp-stat"><div class="n">'+upcoming+'</div><div class="l">القادمة</div></div></div>'; }
+    html+='<div class="cp-list">'+(rows.length?rows.map(renderCard).join(''):'<div class="cp-empty"><div class="e1">⚖️</div><div class="e2">لا توجد قضايا مطابقة</div><div class="e3">غيّر البحث أو أضف قضية جديدة</div></div>')+'</div>';
+    html+='</div>';
+    return html;
+  }
+  function renderCasesMainClean(){
+    var view=window._casesMainView||'overview';
+    var body='';
+    if(view==='fees') body=(typeof _withWindowState==='function')?_withWindowState({_workspaceView:'fees'}, function(){ return typeof rWorkspaceHub==='function'?rWorkspaceHub():'<div class="cp-panel">تعذر تحميل الأتعاب</div>'; }):(typeof rWorkspaceHub==='function'?rWorkspaceHub():'<div class="cp-panel">تعذر تحميل الأتعاب</div>');
+    else if(view==='clients') body=(typeof _withWindowState==='function')?_withWindowState({_workspaceView:'overview'}, function(){ return typeof rWorkspaceHub==='function'?rWorkspaceHub():'<div class="cp-panel">تعذر تحميل الأطراف</div>'; }):(typeof rWorkspaceHub==='function'?rWorkspaceHub():'<div class="cp-panel">تعذر تحميل الأطراف</div>');
+    else if(view==='tasks') body=(typeof rTasks==='function'?rTasks():'<div class="cp-panel">تعذر تحميل المهام</div>');
+    else if(view==='sessions') body=overviewBody(false);
+    else body=overviewBody(true);
+    return '<div class="main-hub cases-pro">'+
+      '<div class="cp-head">'+
+        '<div class="cp-title">القضايا</div>'+
+        '<div class="cp-actions">'+
+          '<button type="button" class="cp-btn" onclick="if(typeof showNajizImportModal===\'function\'){showNajizImportModal();}else if(typeof openAdd===\'function\'){openAdd();}">ناجز</button>'+
+          '<button type="button" class="cp-btn primary" onclick="if(typeof openAdd===\'function\'){openAdd();}">قضية جديدة</button>'+
+        '</div>'+
+      '</div>'+tabs(view)+body+'</div>';
+  }
+  window.rCasesMain = renderCasesMainClean;
+  window.setCasesMainView = function(v){ window._casesMainView=(['overview','sessions','fees','clients','tasks'].indexOf(v)>-1?v:'overview'); window.curTab='list'; if(typeof window.render==='function') window.render(true); };
+})();
+</script>
+
 </body>
 </html>
