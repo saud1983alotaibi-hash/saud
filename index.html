@@ -30373,5 +30373,171 @@ body{
 })();
 </script>
 
+
+<style id="v101-unified-tabs-lite-css">
+.unihub-shell{padding:0 0 8px}
+.unihub-shell .main-head{margin-bottom:10px}
+.unihub-shell .main-title{font:900 21px/1.15 Tajawal,sans-serif;letter-spacing:-.01em}
+.unihub-shell .main-actions{display:flex;gap:8px;flex-wrap:wrap}
+.unihub-shell .main-actions button{min-height:44px;padding:0 14px;border-radius:14px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font:800 12.5px Tajawal,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.07)}
+.unihub-shell .main-actions button.primary{background:linear-gradient(180deg,var(--gold),#d1a942);color:#110f0a;border-color:rgba(209,169,66,.35);box-shadow:0 10px 28px rgba(209,169,66,.20)}
+.unihub-shell .subtabs{gap:7px;margin-bottom:10px}
+.unihub-shell .subtab{min-height:42px;padding:0 13px;border-radius:14px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);font:800 12px Tajawal,sans-serif}
+.unihub-shell .subtab.on{background:var(--surface);color:var(--gold2);border-color:var(--gold-a30);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.unihub-hero{background:linear-gradient(160deg,rgba(200,168,75,.11),rgba(17,26,48,.95) 40%,rgba(7,11,24,.98));border:1px solid var(--gold-a20);border-radius:24px;padding:15px;margin-bottom:14px;box-shadow:0 14px 36px rgba(0,0,0,.22);position:relative;overflow:hidden}
+.unihub-hero:before{content:"";position:absolute;top:-26px;left:-24px;width:110px;height:110px;border-radius:50%;background:rgba(200,168,75,.10);filter:blur(20px)}
+.unihub-hero:after{content:"";position:absolute;bottom:-30px;right:-18px;width:112px;height:112px;border-radius:50%;background:rgba(74,142,245,.08);filter:blur(22px)}
+.unihub-hero-top{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.unihub-title{font-family:'Scheherazade New',serif;font-size:23px;line-height:1;color:var(--gold2)}
+.unihub-sub{font:700 11px/1.8 Tajawal,sans-serif;color:var(--text2);margin-top:7px;max-width:280px}
+.unihub-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--border);font:800 10px Tajawal,sans-serif;color:var(--text3);white-space:nowrap}
+.unihub-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;position:relative}
+.unihub-kpi{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:17px;padding:10px 11px;min-height:72px}
+.unihub-kpi .v{font:900 19px/1 Tajawal,sans-serif;color:var(--text);margin-top:4px}
+.unihub-kpi .l{font:700 10.5px/1.5 Tajawal,sans-serif;color:var(--text3)}
+.unihub-kpi .n{font:700 9.5px/1.4 Tajawal,sans-serif;color:var(--text3);margin-top:5px}
+.unihub-groups{display:grid;gap:12px}
+.unihub-card{background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(7,11,24,.92));border:1px solid var(--border);border-radius:22px;padding:14px;box-shadow:0 10px 24px rgba(0,0,0,.14)}
+.unihub-card-head{display:flex;align-items:flex-start;gap:11px;margin-bottom:10px}
+.unihub-icon{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04)}
+.unihub-card-title{font:900 15px/1.4 Tajawal,sans-serif;color:var(--text)}
+.unihub-card-desc{font:700 10.5px/1.7 Tajawal,sans-serif;color:var(--text3);margin-top:4px}
+.unihub-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.unihub-tags span{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:999px;padding:4px 9px;font:700 10px/1 Tajawal,sans-serif;color:var(--text2)}
+.unihub-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.unihub-links button{display:flex;align-items:center;gap:9px;text-align:right;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:15px;padding:10px 10px;cursor:pointer;font:800 11px/1.5 Tajawal,sans-serif;color:var(--text)}
+.unihub-links .mini-ico{width:33px;height:33px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;background:rgba(255,255,255,.05);flex-shrink:0}
+.unihub-links .arrow{margin-right:auto;color:var(--text3)}
+.unihub-pane{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:22px;padding:12px;box-shadow:0 10px 24px rgba(0,0,0,.08)}
+.unihub-pane .cases-overview,.unihub-pane .cases-pro,.unihub-pane .main-hub,.unihub-pane .card,.unihub-pane .grid2{margin-top:0}
+@media (max-width:520px){
+  .unihub-shell .main-head{align-items:flex-start}
+  .unihub-shell .main-actions{width:100%}
+  .unihub-shell .main-actions button{flex:1}
+  .unihub-kpis,.unihub-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+<script id="v101-unified-tabs-lite">
+(function(){
+  if(window.__v101UnifiedTabsLite) return;
+  window.__v101UnifiedTabsLite = true;
+  function safe(v){return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];});}
+  function td(){ try{return typeof today==='function'?today():new Date().toISOString().slice(0,10);}catch(e){return new Date().toISOString().slice(0,10);} }
+  function countSessions(fn){var arr=Array.isArray(window.data)?window.data:[]; return arr.filter(fn||function(){return true;}).length;}
+  function countTasks(fn){var arr=Array.isArray(window.tasks)?window.tasks:[]; return arr.filter(fn||function(){return true;}).length;}
+  function countFees(){var arr=Array.isArray(window.fees)?window.fees:[]; return arr.reduce(function(s,f){return s+(parseFloat(f.amount)||0);},0);}
+  function kpi(label,val,note){return '<div class="unihub-kpi"><div class="l">'+label+'</div><div class="v">'+safe(val)+'</div>'+(note?'<div class="n">'+safe(note)+'</div>':'')+'</div>';}
+  function sectionCard(g){
+    return '<div class="unihub-card">'+
+      '<div class="unihub-card-head">'+
+        '<div class="unihub-icon" style="background:'+g.glow+'">'+g.icon+'</div>'+
+        '<div style="flex:1"><div class="unihub-card-title">'+g.title+'</div><div class="unihub-card-desc">'+g.desc+'</div></div>'+
+      '</div>'+
+      '<div class="unihub-tags">'+(g.tags||[]).map(function(t){return '<span>'+t+'</span>';}).join('')+'</div>'+
+      '<div class="unihub-links">'+(g.links||[]).map(function(l){return '<button type="button" onclick="'+l.act+'"><span class="mini-ico" style="background:'+g.glow+'">'+l.icon+'</span><span>'+l.lbl+'</span><span class="arrow">←</span></button>';}).join('')+'</div>'+
+    '</div>';
+  }
+  function buildHub(cfg){
+    var h='<div class="unihub-shell">';
+    h+='<div class="unihub-hero"><div class="unihub-hero-top"><div><div class="unihub-title">'+cfg.title+'</div><div class="unihub-sub">'+cfg.sub+'</div></div><span class="unihub-pill">'+cfg.pill+'</span></div>';
+    h+='<div class="unihub-kpis">'+cfg.kpis.join('')+'</div></div>';
+    h+='<div class="unihub-groups">'+cfg.groups.map(sectionCard).join('')+'</div>';
+    h+='</div>';
+    return h;
+  }
+  function wrapBody(inner){return '<div class="unihub-pane">'+inner+'</div>';}
+  window.rDashboardMain=function(){
+    var view=window._dashboardMainView||'overview';
+    var tabs=hubTabs([{k:'overview',l:'التحكم'},{k:'workflow',l:'المتابعة'},{k:'reports',l:'التقارير'},{k:'advisor',l:'المستشار'}],view,'setDashboardMainView');
+    var todayVal=td();
+    var active=countSessions(function(s){return s.status==='scheduled'||s.status==='inProgress';});
+    var todayCount=countSessions(function(s){return s.date===todayVal;});
+    var pending=countTasks(function(t){return !t.done;});
+    var hub=buildHub({
+      title:'لوحة التحكم',
+      sub:'واجهة موحدة مثل المزيد: هادئة، مختصرة، وتفتح المراكز المهمة مباشرة.',
+      pill:'مركز القيادة',
+      kpis:[kpi('القضايا النشطة',active,todayCount+' اليوم'),kpi('المهام المفتوحة',pending,pending?'تحتاج متابعة':'مستقرة'),kpi('إجمالي الجلسات',countSessions(),countSessions(function(s){return s.status==='completed';})+' منتهية')],
+      groups:[
+        {icon:'📊',glow:'rgba(74,142,245,.16)',title:'القيادة',desc:'نظرة سريعة على الحالة العامة بدون ازدحام في الصفحة الأولى.',tags:[active+' نشطة',todayCount+' اليوم'],links:[{icon:'📊',lbl:'الملخص',act:"setDashboardMainView('overview')"},{icon:'＋',lbl:'جلسة جديدة',act:"openAdd()"}]},
+        {icon:'🧱',glow:'rgba(216,144,48,.16)',title:'المتابعة',desc:'نقل مباشر إلى لوحة المتابعة وسير العمل.',tags:[pending+' مهمة',countSessions(function(s){return s.status==='postponed';})+' مؤجلة'],links:[{icon:'🧱',lbl:'لوحة المتابعة',act:"setDashboardMainView('workflow')"},{icon:'🌅',lbl:'جلسات اليوم',act:"go('today')"}]},
+        {icon:'📈',glow:'rgba(120,80,216,.16)',title:'التقارير',desc:'التقارير الأساسية والمتقدمة من مركز واحد.',tags:['إحصاءات', 'أداء'],links:[{icon:'📊',lbl:'التقارير',act:"setDashboardMainView('reports')"},{icon:'⚖️',lbl:'القضايا',act:"go('list');setCasesMainView('sessions')"}]},
+        {icon:'🤖',glow:'rgba(16,163,127,.16)',title:'المستشار',desc:'الوصول السريع للمستشار الذكي من نفس النمط البصري.',tags:['قانوني', 'تحليل'],links:[{icon:'🤖',lbl:'المستشار',act:"setDashboardMainView('advisor')"},{icon:'📝',lbl:'المستندات',act:"go('docsHub')"}]}
+      ]
+    });
+    var body='';
+    if(view==='workflow') body=wrapBody(typeof rKanban==='function'?rKanban():'');
+    else if(view==='reports'){ if(!window._statsTab)window._statsTab='basic'; if(!window._reportPeriod)window._reportPeriod='month'; body=wrapBody(typeof rStats==='function'?rStats():''); }
+    else if(view==='advisor') body=wrapBody(typeof rAI==='function'?rAI():'');
+    else body=hub;
+    return '<div class="main-hub unihub-shell"><div class="main-head"><div class="main-title">لوحة التحكم</div><div class="main-actions"><button class="primary" type="button" onclick="openAdd()">جلسة جديدة</button><button type="button" onclick="go(\'today\')">جلسات اليوم</button></div></div>'+tabs+'<div class="main-pane">'+body+'</div></div>';
+  };
+  window.rHomeMain=function(){
+    var view=window._homeMainView||'overview';
+    var tabs=hubTabs([{k:'overview',l:'الرئيسية'},{k:'today',l:'اليوم'},{k:'tasks',l:'المهام'},{k:'calendar',l:'التقويم'}],view,'setHomeMainView');
+    var todayVal=td();
+    var todayCount=countSessions(function(s){return s.date===todayVal && (s.status==='scheduled'||s.status==='inProgress'||s.status==='scheduled');});
+    var remote=countSessions(function(s){return s.date===todayVal && !!s.meetUrl;});
+    var pending=countTasks(function(t){return !t.done;});
+    var upcoming=countSessions(function(s){return s.date && s.date>todayVal;});
+    var hub=buildHub({
+      title:'الرئيسية',
+      sub:'مثل المزيد تمامًا: دخول مباشر للمراكز المهمة بدل تكديس العناصر في الشاشة الأولى.',
+      pill:'واجهة يومية',
+      kpis:[kpi('جلسات اليوم',todayCount,remote+' عن بُعد'),kpi('المهام',pending,pending?'مفتوحة':'لا توجد مهام'),kpi('القادمة',upcoming,'خلال الأيام القادمة')],
+      groups:[
+        {icon:'🌅',glow:'rgba(74,142,245,.16)',title:'اليوم',desc:'جلسات اليوم والمواعيد القريبة في شاشة واحدة.',tags:[todayCount+' جلسة',remote+' مرئية'],links:[{icon:'🌅',lbl:'جلسات اليوم',act:"setHomeMainView('today')"},{icon:'⚖️',lbl:'القضايا',act:"go('list');setCasesMainView('sessions')"}]},
+        {icon:'📋',glow:'rgba(40,184,112,.16)',title:'المهام',desc:'المهام المفتوحة والعاجلة من مركز موحد.',tags:[pending+' مفتوحة',countTasks(function(t){return !t.done&&t.priority==='high';})+' عاجلة'],links:[{icon:'📋',lbl:'المهام',act:"setHomeMainView('tasks')"},{icon:'＋',lbl:'جلسة جديدة',act:"openAdd()"}]},
+        {icon:'📅',glow:'rgba(216,144,48,.16)',title:'التقويم',desc:'التقويم والحضور اليومي دون ازدحام في الواجهة.',tags:[upcoming+' قادمة',countSessions(function(s){return s.status==='postponed';})+' مؤجلة'],links:[{icon:'📅',lbl:'التقويم',act:"setHomeMainView('calendar')"},{icon:'🛠️',lbl:'الأدوات',act:"go('tools')"}]}
+      ]
+    });
+    var body='';
+    if(view==='today') body=wrapBody(typeof rTodayDashboard==='function'?rTodayDashboard():'');
+    else if(view==='tasks') body=wrapBody(typeof rTasks==='function'?rTasks():'');
+    else if(view==='calendar') body=wrapBody(typeof rCal==='function'?rCal():'');
+    else body=hub;
+    return '<div class="main-hub unihub-shell"><div class="main-head"><div class="main-title">الرئيسية</div><div class="main-actions"><button class="primary" type="button" onclick="openAdd()">إضافة</button><button type="button" onclick="setHomeMainView(\'today\')">جلسات اليوم</button></div></div>'+tabs+'<div class="main-pane">'+body+'</div></div>';
+  };
+  window.rCasesMain=function(){
+    var view=window._casesMainView||'overview';
+    var tabs=hubTabs([{k:'overview',l:'القضايا'},{k:'sessions',l:'الجلسات'},{k:'fees',l:'الأتعاب'},{k:'clients',l:'الأطراف'},{k:'tasks',l:'المهام'}],view,'setCasesMainView');
+    var todayVal=td();
+    var totalCases=countSessions();
+    var todayCount=countSessions(function(s){return s.date===todayVal;});
+    var feesTotal=Math.round(countFees());
+    var contactsCount=(Array.isArray(window.contacts)?window.contacts.length:0);
+    var hub=buildHub({
+      title:'القضايا',
+      sub:'بنفس نمط المزيد: مراكز واضحة، أقل ازدحامًا، والتنقل المباشر للأقسام الأساسية.',
+      pill:'مركز القضايا',
+      kpis:[kpi('إجمالي الجلسات',totalCases,todayCount+' اليوم'),kpi('الأطراف',contactsCount,'ملفات وموكلون'),kpi('الأتعاب',feesTotal.toLocaleString('ar-SA'),'سجل مالي')],
+      groups:[
+        {icon:'⚖️',glow:'rgba(74,142,245,.16)',title:'الجلسات',desc:'الانتقال إلى قائمة الجلسات والقضايا عند الحاجة فقط.',tags:[totalCases+' جلسة',todayCount+' اليوم'],links:[{icon:'⚖️',lbl:'الجلسات',act:"setCasesMainView('sessions')"},{icon:'🏛️',lbl:'استيراد ناجز',act:"if(typeof showNajizImportModal==='function'){showNajizImportModal();}else{openAdd();}"}]},
+        {icon:'👥',glow:'rgba(40,184,112,.16)',title:'الأطراف والموكلون',desc:'الأطراف والملفات ضمن مركز واحد بدون تكرار.',tags:[contactsCount+' طرف', (Array.isArray(window.clientProfiles)?window.clientProfiles.length:0)+' موكل'],links:[{icon:'👥',lbl:'الأطراف',act:"setCasesMainView('clients')"},{icon:'📝',lbl:'المستندات',act:"go('docsHub')"}]},
+        {icon:'💼',glow:'rgba(216,144,48,.16)',title:'الأتعاب والمهام',desc:'السجل المالي والمهام من نفس الواجهة الموحدة.',tags:[(Array.isArray(window.fees)?window.fees.length:0)+' قيد', countTasks(function(t){return !t.done;})+' مهمة'],links:[{icon:'💼',lbl:'الأتعاب',act:"setCasesMainView('fees')"},{icon:'📋',lbl:'المهام',act:"setCasesMainView('tasks')"}]}
+      ]
+    });
+    var body='';
+    if(view==='fees') body=wrapBody(_withWindowState({_workspaceView:'fees'}, function(){return typeof rWorkspaceHub==='function'?rWorkspaceHub():'';}));
+    else if(view==='clients') body=wrapBody(_withWindowState({_workspaceView:'overview'}, function(){return typeof rWorkspaceHub==='function'?rWorkspaceHub():'';}));
+    else if(view==='tasks') body=wrapBody(typeof rTasks==='function'?rTasks():'');
+    else if(view==='sessions') body=wrapBody(typeof rList==='function'?rList():'');
+    else body=hub;
+    return '<div class="main-hub unihub-shell"><div class="main-head"><div class="main-title">القضايا</div><div class="main-actions"><button type="button" onclick="if(typeof showNajizImportModal===\'function\'){showNajizImportModal();}else{openAdd();}">ناجز</button><button class="primary" type="button" onclick="openAdd()">قضية جديدة</button></div></div>'+tabs+'<div class="main-pane">'+body+'</div></div>';
+  };
+  window.rMoreMain=function(){
+    var view=window._moreMainView||'overview';
+    var tabs=hubTabs([{k:'overview',l:'المزيد'},{k:'docs',l:'المستندات'},{k:'tools',l:'الأدوات'},{k:'team',l:'الفريق'},{k:'advisor',l:'المستشار'}],view,'setMoreMainView');
+    var body='';
+    if(view==='docs') body=wrapBody(typeof rDocsHub==='function'?rDocsHub():'');
+    else if(view==='tools') body=wrapBody(typeof rTools==='function'?rTools():'');
+    else if(view==='team') body=wrapBody(typeof rTeam==='function'?rTeam():'');
+    else if(view==='advisor') body=wrapBody(typeof rAI==='function'?rAI():'');
+    else body=(typeof buildMoreHub==='function'?buildMoreHub():'');
+    return '<div class="main-hub unihub-shell"><div class="main-head"><div class="main-title">المزيد</div><div class="main-actions"><button type="button" onclick="setMoreMainView(\'tools\')">الأدوات</button><button class="primary" type="button" onclick="setMoreMainView(\'docs\')">المستندات</button></div></div>'+tabs+'<div class="main-pane">'+body+'</div></div>';
+  };
+})();
+</script>
+
 </body>
 </html>
