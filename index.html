@@ -29301,5 +29301,681 @@ body{
 })();
 </script>
 
+
+<script>
+(function(){
+  if(window.__najizV97Interactive) return;
+  window.__najizV97Interactive = true;
+
+  function ensureNajizStyle(){
+    if(document.getElementById('najizInteractiveStyle')) return;
+    var st = document.createElement('style');
+    st.id = 'najizInteractiveStyle';
+    st.textContent = ''+
+      '.najiz-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}'+
+      '.najiz-input,.najiz-ta{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:11px 12px;font-size:13px;color:var(--text);font-family:Tajawal,sans-serif;line-height:1.65;outline:none}'+
+      '.najiz-input:focus,.najiz-ta:focus{border-color:rgba(74,142,245,.45);box-shadow:0 0 0 3px rgba(74,142,245,.12)}'+
+      '.najiz-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:999px;padding:6px 10px;font-size:11.8px;color:var(--text2)}'+
+      '.najiz-card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.02));border:1px solid var(--border);border-radius:18px;padding:12px 12px 10px;margin-bottom:10px;box-shadow:0 10px 24px rgba(0,0,0,.18)}'+
+      '.najiz-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}'+
+      '.najiz-title{font-size:14px;font-weight:800;color:var(--gold2)}'+
+      '.najiz-sub{font-size:11.6px;color:var(--text3);line-height:1.7}'+
+      '.najiz-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}'+
+      '.najiz-btn{border:none;border-radius:12px;padding:11px 12px;font-size:12.8px;font-weight:800;cursor:pointer;font-family:Tajawal,sans-serif;min-height:44px}'+
+      '.najiz-btn.alt{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}'+
+      '.najiz-btn.main{background:var(--gold);color:#0a0905}'+
+      '.najiz-btn.soft{background:rgba(74,142,245,.12);color:#93c5fd;border:1px solid rgba(96,165,250,.32)}'+
+      '.najiz-btn.danger{background:rgba(224,69,85,.10);color:#fda4af;border:1px solid rgba(224,69,85,.24)}'+
+      '.najiz-alert{background:rgba(74,142,245,.08);border:1px solid rgba(74,142,245,.22);border-radius:16px;padding:12px;margin-bottom:12px}'+
+      '.najiz-hint{font-size:11.8px;color:var(--text3);line-height:1.8}'+
+      '.najiz-missing{color:#fda4af}'+
+      '@media(max-width:520px){.najiz-grid,.najiz-actions{grid-template-columns:1fr}}';
+    document.head.appendChild(st);
+  }
+
+  function toAsciiDigits(v){
+    return String(v||'').replace(/[٠-٩]/g,function(d){return '٠١٢٣٤٥٦٧٨٩'.indexOf(d);}).replace(/[۰-۹]/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d);});
+  }
+  function cleanLine(v){
+    return toAsciiDigits(String(v||''))
+      .replace(/[\u200e\u200f\u202a-\u202e]/g,'')
+      .replace(/\s+/g,' ')
+      .replace(/[：]/g,':')
+      .trim();
+  }
+  function normalizeText(v){
+    return toAsciiDigits(String(v||''))
+      .replace(/[\u200e\u200f\u202a-\u202e]/g,'')
+      .replace(/\r/g,'\n')
+      .replace(/[\t\f\v]+/g,' ')
+      .replace(/[ ]{2,}/g,' ')
+      .replace(/[：]/g,':')
+      .replace(/\n{3,}/g,'\n\n')
+      .trim();
+  }
+  function uniq(arr){
+    var seen={};
+    return (arr||[]).filter(function(x){
+      var k=String(x||'');
+      if(seen[k]) return false;
+      seen[k]=1;
+      return !!k;
+    });
+  }
+  function isLabelLine(line){
+    line = cleanLine(line);
+    return /^(صاحب الهوية|نبلغكم|رقم القضية|القضية رقم|للقضية رقم|المقامة من|مقامة من|ضد|المدعي|المدعى عليه|المحكمة|محكمة|الدائرة|المحددة بتاريخ|التاريخ|الساعة|الوقت|ويمكنكم|كما يمكنكم|لحضور الجلسة|الحالة|نوع القضية)/.test(line);
+  }
+  function splitNajizBlocks(text){
+    var norm = normalizeText(text);
+    if(!norm) return [];
+    var lines = norm.split('\n');
+    var blocks = [];
+    var current = [];
+    function pushCurrent(){
+      var joined = current.join('\n').trim();
+      if(joined) blocks.push(joined);
+      current = [];
+    }
+    lines.forEach(function(raw){
+      var line = cleanLine(raw);
+      if(!line){
+        if(current.length && /(?:\d{6,}|القضية|رقم القضية|الساعة|المقامة من|ضد)/.test(current.join(' '))){
+          current.push('');
+        }
+        return;
+      }
+      var isStart = /^(صاحب الهوية|نبلغكم بتفعيل الجلسة|نبلغكم بموعد الجلسة|القضية رقم|رقم القضية|للقضية رقم)/.test(line);
+      var hasCore = current.length && /(القضية رقم|رقم القضية|للقضية رقم|\d{6,}).*(الساعة|المقامة من|ضد)|المقامة من.*ضد|الساعة/.test(current.join(' '));
+      if(isStart && hasCore) pushCurrent();
+      current.push(line);
+    });
+    pushCurrent();
+    if(!blocks.length) blocks = [norm];
+    return blocks;
+  }
+  function findLabeledValue(lines, labels){
+    labels = labels || [];
+    for(var i=0;i<lines.length;i++){
+      var line = cleanLine(lines[i]);
+      for(var j=0;j<labels.length;j++){
+        var label = labels[j];
+        if(line === label || line.indexOf(label+':')===0 || line.indexOf(label+' :')===0){
+          var same = line.slice(label.length).replace(/^\s*:\s*/,'').trim();
+          if(same) return same;
+          for(var k=i+1;k<Math.min(lines.length, i+4);k++){
+            var next = cleanLine(lines[k]);
+            if(!next) continue;
+            if(isLabelLine(next)) break;
+            return next;
+          }
+        }
+        if(line.indexOf(label)===0){
+          var rest = line.slice(label.length).replace(/^\s*:\s*/,'').trim();
+          if(rest) return rest;
+        }
+      }
+    }
+    return '';
+  }
+  function extractHttpUrl(text){
+    var urls = normalizeText(text).match(/https?:\/\/[^\s]+/g) || [];
+    urls = urls.filter(function(url){ return !/youtu\.be|youtube\.com/i.test(url); });
+    return urls[0] || '';
+  }
+  function parseNajizTime(lines, fullText){
+    var raw = findLabeledValue(lines,['الساعة','الوقت','في تمام الساعة']) || normalizeText(fullText);
+    var m = raw.match(/(\d{1,2})\s*[:٫.]\s*(\d{2})\s*(صباحاً|صباحا|صباحًا|ص|am|a\.m\.|مساءً|مساءا|مساءً|مساءًا|م|pm|p\.m\.)?/i);
+    if(!m) return '09:00';
+    var h = parseInt(m[1],10);
+    var mm = parseInt(m[2],10);
+    var p = (m[3]||'').toLowerCase();
+    if(/مساء|pm|p\.m|\bم\b/.test(p) && h<12) h += 12;
+    if(/صباح|am|a\.m|\bص\b/.test(p) && h===12) h = 0;
+    return (h<10?'0'+h:h)+':'+(mm<10?'0'+mm:mm);
+  }
+  function parseNajizDate(lines, fullText){
+    var raw = findLabeledValue(lines,['المحددة بتاريخ','التاريخ','موعد الجلسة','جلسة بتاريخ']) || normalizeText(fullText);
+    raw = cleanLine(raw || fullText);
+    var result = {date:'',hijriDate:''};
+    var g = raw.match(/(20\d{2})[\/\-](\d{1,2})[\/\-](\d{1,2})/) || raw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](20\d{2})/);
+    if(g){
+      var gy,gm,gd;
+      if(parseInt(g[1],10)>1900){ gy=parseInt(g[1],10); gm=parseInt(g[2],10); gd=parseInt(g[3],10); }
+      else { gd=parseInt(g[1],10); gm=parseInt(g[2],10); gy=parseInt(g[3],10); }
+      result.date = gy+'-'+(gm<10?'0'+gm:gm)+'-'+(gd<10?'0'+gd:gd);
+      return result;
+    }
+    var h = raw.match(/(14\d{2})[\/\-](\d{1,2})[\/\-](\d{1,2})/) || raw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](14\d{2})/);
+    if(h){
+      var hy,hm,hd;
+      if(parseInt(h[1],10)>1400){ hy=parseInt(h[1],10); hm=parseInt(h[2],10); hd=parseInt(h[3],10); }
+      else { hd=parseInt(h[1],10); hm=parseInt(h[2],10); hy=parseInt(h[3],10); }
+      result.hijriDate = hd+'/'+hm+'/'+hy+' هـ';
+      if(typeof hijriToGregorian==='function') result.date = hijriToGregorian(hy,hm,hd) || '';
+      return result;
+    }
+    return result;
+  }
+  function inferCaseType(s, text){
+    var hay = normalizeText((s.plnt||'')+' '+(s.court||'')+' '+(s.notes||'')+' '+(text||''));
+    if(/هيئة الرقابة ومكافحة الفساد|النيابة العامة|جزاء|جنائ|مكافحة الفساد|جريمة|مخدر/i.test(hay)) return 'جنائية';
+    if(/تجار|شركة|مؤسسة|عقد|منافسة|كمبيالة|شيك/i.test(hay)) return 'تجارية';
+    if(/عمال|عمل|مكتب العمل/i.test(hay)) return 'عمالية';
+    if(/أحوال شخصية|نفقة|حضانة|طلاق|خلع|زيارة|أسرة/i.test(hay)) return 'أحوال شخصية';
+    if(/إدار|ديوان المظالم/i.test(hay)) return 'إدارية';
+    return s.type || 'مدنية';
+  }
+  function parseNajizBlock(block){
+    var norm = normalizeText(block);
+    var lines = norm.split('\n').map(cleanLine).filter(Boolean);
+    var s = {
+      num:'',type:'مدنية',court:'',date:'',time:'09:00',plnt:'',dfnd:'',client:'',status:'scheduled',priority:'med',notes:'مستورد من ناجز',tags:['ناجز'],hijriDate:'',identityMasked:'',sessionMode:'',meetUrl:'',ref:'NAJIZ'
+    };
+    s.identityMasked = findLabeledValue(lines,['صاحب الهوية','هوية المستفيد','هوية صاحب الطلب']);
+    s.num = findLabeledValue(lines,['للقضية رقم','رقم القضية','القضية رقم','القضية']);
+    if(!s.num){
+      var nm = norm.match(/(?:للقضية رقم|رقم القضية|القضية رقم|القضية)\s*:?\s*([0-9][0-9\/\-]{5,})/i) || norm.match(/\b(\d{8,})\b/);
+      if(nm) s.num = cleanLine(nm[1]);
+    }
+    s.plnt = findLabeledValue(lines,['المقامة من','مقامة من','المدعي','المدعية','الجهة المدعية','من']);
+    s.dfnd = findLabeledValue(lines,['ضد','المدعى عليه','المدعى عليها','المدعى','المستأنف ضده','المطعون ضده']);
+    if((!s.plnt || !s.dfnd) && /المقامة من/.test(norm) && /\bضد\b/.test(norm)){
+      var pm = norm.match(/المقامة من\s*:?\s*([^\n]+?)\s+ضد\s*:?\s*([^\n]+)/i);
+      if(pm){
+        if(!s.plnt) s.plnt = cleanLine(pm[1]);
+        if(!s.dfnd) s.dfnd = cleanLine(pm[2]);
+      }
+    }
+    if(s.plnt && /\bضد\b/.test(s.plnt) && !s.dfnd){
+      var sp = s.plnt.split(/\bضد\b/);
+      s.plnt = cleanLine(sp[0]);
+      s.dfnd = cleanLine(sp.slice(1).join(' '));
+    }
+    s.court = findLabeledValue(lines,['المحكمة','محكمة','الدائرة']);
+    if(s.court && !/محكم|دائرة/.test(s.court) && /محكم|دائرة/.test(norm)){
+      var cm = norm.match(/(المحكمة[^\n]+|محكمة[^\n]+|الدائرة[^\n]+)/);
+      if(cm) s.court = cleanLine(cm[1]);
+    }
+    var d = parseNajizDate(lines, norm);
+    s.date = d.date || '';
+    s.hijriDate = d.hijriDate || '';
+    s.time = parseNajizTime(lines, norm);
+    s.sessionMode = /الجلسة المرئية|جلسة مرئية|عن بعد|عن بُعد|حضور الجلسة عبر ناجز/i.test(norm) ? 'remote' : '';
+    s.meetUrl = extractHttpUrl(norm);
+    if(s.sessionMode==='remote') s.tags.push('مرئي');
+    s.type = inferCaseType(s, norm);
+    var notes = ['مستورد من ناجز'];
+    if(s.sessionMode==='remote') notes.push('جلسة مرئية عبر ناجز');
+    if(s.identityMasked) notes.push('صاحب الهوية: '+s.identityMasked);
+    if(/هيئة الرقابة ومكافحة الفساد/.test(s.plnt||'')) notes.push('المدعي: هيئة الرقابة ومكافحة الفساد');
+    if(!s.court) notes.push('المحكمة غير مذكورة في الرسالة');
+    s.notes = uniq(notes).join(' · ');
+    s.tags = uniq(s.tags);
+    return s;
+  }
+  function setNajizSessions(list){
+    window.najizSessions = (list || []).map(function(s){
+      var copy = Object.assign({}, s || {});
+      copy.tags = uniq(copy.tags || ['ناجز']);
+      copy.num = cleanLine(copy.num || '');
+      copy.plnt = cleanLine(copy.plnt || '');
+      copy.dfnd = cleanLine(copy.dfnd || '');
+      copy.court = cleanLine(copy.court || '');
+      copy.time = cleanLine(copy.time || '09:00');
+      copy.date = cleanLine(copy.date || '');
+      copy.hijriDate = cleanLine(copy.hijriDate || '');
+      copy.identityMasked = cleanLine(copy.identityMasked || '');
+      copy.type = cleanLine(copy.type || 'مدنية');
+      copy.notes = copy.notes || 'مستورد من ناجز';
+      copy.status = copy.status || 'scheduled';
+      copy.priority = copy.priority || 'med';
+      copy.sessionMode = copy.sessionMode || '';
+      copy.ref = copy.ref || 'NAJIZ';
+      return copy;
+    });
+  }
+  window.updateNajizSessionField = function(index, field, value){
+    var sessions = window.najizSessions || [];
+    if(!sessions[index]) return;
+    value = field === 'notes' ? String(value||'') : cleanLine(value||'');
+    sessions[index][field] = value;
+    if(field === 'time') sessions[index][field] = parseNajizTime([value], value);
+    if(field === 'hijriDate' && !sessions[index].date){
+      var dd = parseNajizDate([value], value);
+      sessions[index].date = dd.date || sessions[index].date;
+      sessions[index].hijriDate = dd.hijriDate || sessions[index].hijriDate;
+    }
+    renderNajizPreview();
+  };
+  window.removeNajizSession = function(index){
+    var sessions = window.najizSessions || [];
+    if(index < 0 || index >= sessions.length) return;
+    sessions.splice(index,1);
+    renderNajizPreview();
+  };
+  window.applyNajizToForm = function(index){
+    var s = (window.najizSessions || [])[index];
+    if(!s) return;
+    if(typeof openAdd === 'function') openAdd();
+    var setVal = function(id, value){ var el = document.getElementById(id); if(el) el.value = value || ''; };
+    setVal('fNum', s.num || '');
+    setVal('fType', s.type || 'مدنية');
+    setVal('fCourt', s.court || '');
+    setVal('fPlnt', s.plnt || '');
+    setVal('fDfnd', s.dfnd || '');
+    setVal('fDate', s.date || '');
+    setVal('fTime', s.time || '09:00');
+    setVal('fRef', s.ref || 'NAJIZ');
+    setVal('fClient', s.client || '');
+    setVal('fNotes', s.notes || 'مستورد من ناجز');
+    setVal('fMeetUrl', s.meetUrl || '');
+    if(s.hijriDate) setVal('fDateHijri', s.hijriDate);
+    if(typeof setPrio === 'function') setPrio(s.priority || 'med');
+    if(Array.isArray(s.tags)){
+      window.curTags = s.tags.slice();
+      var tp = document.getElementById('tagsPicker');
+      if(tp && typeof renderTagsPicker === 'function') tp.innerHTML = renderTagsPicker(window.curTags);
+    }
+    if(typeof updMeetIcon === 'function') updMeetIcon(s.meetUrl || '');
+    if(typeof chkV === 'function') chkV();
+    if(typeof goFormStep2 === 'function') goFormStep2();
+    if(typeof updateDateInfo === 'function' && s.date) updateDateInfo(s.date);
+    if(typeof gregToHijriInput === 'function' && s.date) gregToHijriInput(s.date);
+    var modal = document.getElementById('najizModal'); if(modal) modal.remove();
+    if(typeof toast === 'function') toast('✅ تم تعبئة نموذج الجلسة من رسالة ناجز');
+  };
+  window.renderNajizPreview = function(){
+    ensureNajizStyle();
+    var preview = document.getElementById('najizPreview');
+    if(!preview) return;
+    var sessions = window.najizSessions || [];
+    preview.style.display = 'block';
+    if(!sessions.length){
+      preview.innerHTML = '<div class="najiz-alert"><div style="font-size:12.5px;font-weight:800;color:#93c5fd;margin-bottom:6px">لم يتم التعرّف بعد</div><div class="najiz-hint">الصق رسالة ناجز كما تصلك في الجوال، وسأحاول استخراج <strong style="color:var(--gold2)">رقم القضية</strong> و<strong style="color:var(--gold2)">المدعي</strong> و<strong style="color:var(--gold2)">المدعى عليه</strong> و<strong style="color:var(--gold2)">التاريخ</strong> و<strong style="color:var(--gold2)">الوقت</strong> تلقائيًا مع بطاقة مراجعة قابلة للتعديل.</div></div>';
+      return;
+    }
+    var remoteN = sessions.filter(function(s){ return s.sessionMode === 'remote'; }).length;
+    var completeN = sessions.filter(function(s){ return s.num && s.date && s.time; }).length;
+    var missingN = sessions.filter(function(s){ return !s.court || !s.plnt || !s.dfnd; }).length;
+    var html = '';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
+    html += '<span class="najiz-chip">✅ '+sessions.length+' جلسة متعرّف عليها</span>';
+    html += '<span class="najiz-chip">🎥 '+remoteN+' مرئية</span>';
+    html += '<span class="najiz-chip">📅 '+completeN+' مكتملة التاريخ/الوقت</span>';
+    html += '<span class="najiz-chip">✏️ '+missingN+' تحتاج مراجعة</span>';
+    html += '</div>';
+    sessions.forEach(function(s, i){
+      var warn = [];
+      if(!s.court) warn.push('المحكمة غير موجودة');
+      if(!s.plnt) warn.push('المدعي غير موجود');
+      if(!s.dfnd) warn.push('المدعى عليه غير موجود');
+      if(!s.date) warn.push('التاريخ غير واضح');
+      if(!s.time) warn.push('الوقت غير واضح');
+      html += '<div class="najiz-card">';
+      html += '<div class="najiz-card-head"><div><div class="najiz-title">⚖️ '+(s.num||'جلسة ناجز')+'</div><div class="najiz-sub">'+(s.hijriDate?('📆 '+s.hijriDate+' · '):'')+'⏰ '+(s.time||'—')+(s.sessionMode==='remote'?' · 🎥 جلسة مرئية':'')+(s.identityMasked?' · 🪪 '+s.identityMasked:'')+'</div></div>';
+      html += '<span class="najiz-chip">'+(s.type||'مدنية')+'</span></div>';
+      if(warn.length) html += '<div class="najiz-sub najiz-missing" style="margin-bottom:8px">مراجعة مطلوبة: '+warn.join(' · ')+'</div>';
+      html += '<div class="najiz-grid">';
+      html += '<input class="najiz-input" value="'+(s.num||'').replace(/"/g,'&quot;')+'" oninput="updateNajizSessionField('+i+',\'num\',this.value)" placeholder="رقم القضية" dir="rtl">';
+      html += '<input class="najiz-input" value="'+(s.type||'').replace(/"/g,'&quot;')+'" oninput="updateNajizSessionField('+i+',\'type\',this.value)" placeholder="نوع القضية" dir="rtl">';
+      html += '<input class="najiz-input" value="'+(s.plnt||'').replace(/"/g,'&quot;')+'" oninput="updateNajizSessionField('+i+',\'plnt\',this.value)" placeholder="المدعي / الجهة المقيمة" dir="rtl">';
+      html += '<input class="najiz-input" value="'+(s.dfnd||'').replace(/"/g,'&quot;')+'" oninput="updateNajizSessionField('+i+',\'dfnd\',this.value)" placeholder="المدعى عليه" dir="rtl">';
+      html += '<input class="najiz-input" value="'+(s.court||'').replace(/"/g,'&quot;')+'" oninput="updateNajizSessionField('+i+',\'court\',this.value)" placeholder="المحكمة / الدائرة" dir="rtl">';
+      html += '<input class="najiz-input" value="'+(s.identityMasked||'').replace(/"/g,'&quot;')+'" oninput="updateNajizSessionField('+i+',\'identityMasked\',this.value)" placeholder="صاحب الهوية" dir="rtl">';
+      html += '<input class="najiz-input" type="date" value="'+(s.date||'')+'" oninput="updateNajizSessionField('+i+',\'date\',this.value)" dir="rtl">';
+      html += '<input class="najiz-input" type="time" value="'+(s.time||'09:00')+'" oninput="updateNajizSessionField('+i+',\'time\',this.value)" dir="rtl">';
+      html += '</div>';
+      html += '<textarea class="najiz-ta" rows="2" style="margin-top:8px" oninput="updateNajizSessionField('+i+',\'notes\',this.value)" placeholder="ملاحظات الاستيراد">'+(s.notes||'')+'</textarea>';
+      html += '<div class="najiz-actions">';
+      html += '<button class="najiz-btn soft" onclick="applyNajizToForm('+i+')">🧾 تعبئة نموذج الجلسة</button>';
+      html += '<button class="najiz-btn danger" onclick="removeNajizSession('+i+')">حذف هذه البطاقة</button>';
+      html += '</div></div>';
+    });
+    html += '<div class="najiz-actions" style="margin-top:12px">';
+    html += '<button class="najiz-btn main" onclick="confirmNajizImport()">✅ استيراد '+sessions.length+' جلسة</button>';
+    html += '<button class="najiz-btn alt" onclick="applyNajizToForm(0)">🧾 تعبئة أول جلسة في النموذج</button>';
+    html += '</div>';
+    preview.innerHTML = html;
+  };
+  window.parseAndImportNajiz = function(autoMode){
+    var textEl = document.getElementById('najizText');
+    var text = textEl ? textEl.value.trim() : '';
+    if(!text){
+      if(!autoMode && typeof toast==='function') toast('⚠️ الصق النص أولاً');
+      setNajizSessions([]);
+      renderNajizPreview();
+      return;
+    }
+    var blocks = splitNajizBlocks(text);
+    var sessions = [];
+    blocks.forEach(function(block){
+      var s = parseNajizBlock(block);
+      if(s && (s.num || s.plnt || s.dfnd || s.date || s.time)) sessions.push(s);
+    });
+    if(!sessions.length){
+      var fallback = parseNajizBlock(text);
+      if(fallback && (fallback.num || fallback.plnt || fallback.dfnd)) sessions = [fallback];
+    }
+    var seen = {};
+    sessions = sessions.filter(function(s){
+      var key = [s.num||'', s.date||'', s.time||'', s.plnt||'', s.dfnd||''].join('|');
+      if(seen[key]) return false;
+      seen[key] = 1;
+      return true;
+    });
+    setNajizSessions(sessions);
+    renderNajizPreview();
+    if(!autoMode){
+      if(sessions.length){ if(typeof toast==='function') toast('✅ تم التعرف على '+sessions.length+' جلسة من نص ناجز'); }
+      else if(typeof toast==='function') toast('⚠️ لم يُتعرف على بيانات كافية من الرسالة');
+    }
+  };
+  window.confirmNajizImport = function(){
+    var sessions = window.najizSessions || [];
+    if(!sessions.length){ if(typeof toast==='function') toast('⚠️ لا توجد جلسات للاستيراد'); return; }
+    var added = 0;
+    var promises = sessions.map(function(s){
+      var dup = (window.data || []).find(function(x){ return (x.num||'') === (s.num||'') && (x.date||'') === (s.date||'') && (x.time||'') === (s.time||''); });
+      if(dup) return Promise.resolve();
+      var fullNotes = s.notes || 'مستورد من ناجز';
+      if(s.identityMasked && fullNotes.indexOf(s.identityMasked)===-1) fullNotes += ' · صاحب الهوية: '+s.identityMasked;
+      var newS = Object.assign({
+        id: Date.now() + Math.random(),
+        num: s.num || 'جلسة ناجز',
+        type: s.type || 'مدنية',
+        court: s.court || '',
+        room: s.sessionMode === 'remote' ? 'عن بُعد / ناجز' : '',
+        date: s.date || (typeof today === 'function' ? today() : ''),
+        time: s.time || '09:00',
+        status: s.status || 'scheduled',
+        priority: s.priority || 'med',
+        plnt: s.plnt || '',
+        dfnd: s.dfnd || '',
+        client: s.client || '',
+        meetUrl: s.meetUrl || '',
+        ref: s.ref || 'NAJIZ',
+        notes: fullNotes,
+        tags: uniq((s.tags || []).concat(['ناجز'])),
+        hijriDate: s.hijriDate || ''
+      }, s || {});
+      newS.id = Date.now() + (added++);
+      window.data.push(newS);
+      return typeof dbPut === 'function' ? dbPut(newS) : Promise.resolve();
+    });
+    Promise.all(promises).then(function(){
+      if(typeof toast==='function') toast('✅ تم استيراد '+added+' جلسة من ناجز');
+      setNajizSessions([]);
+      var modal = document.getElementById('najizModal'); if(modal) modal.remove();
+      if(typeof render==='function') render();
+    });
+  };
+  window.addNajizManual = function(){
+    var num = (document.getElementById('njNum')||{}).value || '';
+    var type = (document.getElementById('njType')||{}).value || 'مدنية';
+    var date = (document.getElementById('njDate')||{}).value || '';
+    var time = (document.getElementById('njTime')||{}).value || '09:00';
+    var court = (document.getElementById('njCourt')||{}).value || '';
+    var plnt = (document.getElementById('njPlnt')||{}).value || '';
+    var dfnd = (document.getElementById('njDfnd')||{}).value || '';
+    if(!cleanLine(num)){ if(typeof toast==='function') toast('⚠️ أدخل رقم القضية'); return; }
+    if(!date){ if(typeof toast==='function') toast('⚠️ أدخل التاريخ'); return; }
+    var sessions = window.najizSessions || [];
+    sessions.unshift({num:cleanLine(num),type:cleanLine(type)||'مدنية',court:cleanLine(court),date:date,time:time,status:'scheduled',priority:'med',plnt:cleanLine(plnt),dfnd:cleanLine(dfnd),notes:'مستورد يدوي من ناجز',tags:['ناجز'],hijriDate:'',ref:'NAJIZ'});
+    setNajizSessions(sessions);
+    renderNajizPreview();
+    ['njNum','njType','njDate','njTime','njCourt','njPlnt','njDfnd'].forEach(function(id){ var el = document.getElementById(id); if(el) el.value = ''; });
+    if(typeof toast==='function') toast('✅ أُضيفت البطاقة اليدوية إلى المعاينة');
+  };
+  window.showNajizImportModal = function(){
+    ensureNajizStyle();
+    var existing = document.getElementById('najizModal'); if(existing) existing.remove();
+    var modal = document.createElement('div');
+    modal.id = 'najizModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:flex-end;justify-content:center';
+    var bg = document.createElement('div');
+    bg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,.82)';
+    bg.onclick = function(){ modal.remove(); };
+    var box = document.createElement('div');
+    box.style.cssText = 'position:relative;background:var(--surface);border-radius:24px 24px 0 0;border-top:1px solid rgba(74,142,245,.32);width:100%;max-width:460px;padding:18px;padding-bottom:max(20px,env(safe-area-inset-bottom));max-height:93vh;overflow-y:auto;font-family:Tajawal,sans-serif;direction:rtl';
+    var sample = 'صاحب الهوية: ******8360\nنبلغكم بتفعيل الجلسة المرئية للقضية رقم:\n4772134019\nالمقامة من: هيئة الرقابة ومكافحة الفساد\nضد: يوسف فهد العتيبي\nالمحددة بتاريخ:\n27/10/1447\nالساعة: 10:15 صباحاً';
+    box.innerHTML = ''+
+      '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px">'+
+        '<div style="width:46px;height:46px;border-radius:14px;background:rgba(74,142,245,.15);display:flex;align-items:center;justify-content:center;font-size:23px;flex-shrink:0">🏛️</div>'+
+        '<div style="flex:1">'+
+          '<div style="font-size:17px;font-weight:800;color:var(--text)">استيراد جلسات ناجز بشكل تفاعلي</div>'+
+          '<div style="font-size:11.8px;color:var(--text3);margin-top:3px;line-height:1.7">يفهم رسائل التبليغ مثل: رقم القضية، المقامة من، ضد، التاريخ، الساعة، والجلسة المرئية؛ ثم يعرض بطاقة مراجعة قابلة للتعديل قبل الحفظ.</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="najiz-alert">'+
+        '<div style="font-size:12.5px;font-weight:800;color:#93c5fd;margin-bottom:6px">مثال الرسالة المدعومة</div>'+
+        '<div class="najiz-hint">صاحب الهوية: ******8360<br>نبلغكم بتفعيل الجلسة المرئية للقضية رقم:<br>4772134019<br>المقامة من: هيئة الرقابة ومكافحة الفساد<br>ضد: يوسف فهد العتيبي<br>المحددة بتاريخ: 27/10/1447<br>الساعة: 10:15 صباحاً</div>'+
+      '</div>'+
+      '<label style="font-size:11.8px;color:var(--text3);font-weight:800;display:block;margin-bottom:6px">النص المنسوخ من ناجز</label>'+
+      '<textarea id="najizText" class="najiz-ta" rows="8" placeholder="الصق هنا رسالة أو عدة رسائل من ناجز كما وصلتك في الجوال..."></textarea>'+
+      '<div class="najiz-actions" style="margin-top:10px">'+
+        '<button class="najiz-btn main" onclick="parseAndImportNajiz()">🔍 تحليل الرسالة</button>'+
+        '<button class="najiz-btn alt" id="najizSampleBtn">مثال جاهز</button>'+
+      '</div>'+
+      '<div class="najiz-grid" style="margin:14px 0 8px">'+
+        '<input type="text" id="njNum" class="najiz-input" placeholder="رقم القضية" dir="rtl">'+
+        '<input type="text" id="njType" class="najiz-input" placeholder="نوع القضية" dir="rtl">'+
+        '<input type="date" id="njDate" class="najiz-input">'+
+        '<input type="time" id="njTime" class="najiz-input">'+
+        '<input type="text" id="njCourt" class="najiz-input" placeholder="المحكمة / الدائرة" dir="rtl">'+
+        '<input type="text" id="njPlnt" class="najiz-input" placeholder="المدعي / الجهة المدعية" dir="rtl">'+
+        '<input type="text" id="njDfnd" class="najiz-input" placeholder="المدعى عليه" dir="rtl" style="grid-column:1/-1">'+
+      '</div>'+
+      '<div class="najiz-actions" style="margin-bottom:12px">'+
+        '<button class="najiz-btn soft" onclick="addNajizManual()">＋ إضافة بطاقة يدوية</button>'+
+        '<button class="najiz-btn alt" id="najizAiBtn">⚖️ تحليل بـ سعود</button>'+
+      '</div>'+
+      '<div id="najizPreview"></div>'+
+      '<button class="najiz-btn alt" style="width:100%;margin-top:12px" onclick="document.getElementById(\'najizModal\').remove()">إغلاق</button>';
+    modal.appendChild(bg);
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+    setNajizSessions([]);
+    renderNajizPreview();
+    var aiBtn = document.getElementById('najizAiBtn');
+    if(aiBtn) aiBtn.onclick = function(){ if(typeof aiParseNajiz==='function') aiParseNajiz(); };
+    var sampleBtn = document.getElementById('najizSampleBtn');
+    if(sampleBtn) sampleBtn.onclick = function(){ var txt = document.getElementById('najizText'); if(txt){ txt.value = sample; parseAndImportNajiz(true); } };
+    var txt = document.getElementById('najizText');
+    if(txt){
+      var timer = null;
+      txt.addEventListener('input', function(){
+        clearTimeout(timer);
+        timer = setTimeout(function(){ if(txt.value.trim().length > 20) parseAndImportNajiz(true); }, 380);
+      });
+      txt.addEventListener('paste', function(){ setTimeout(function(){ parseAndImportNajiz(true); }, 80); });
+      txt.focus();
+    }
+  };
+})();
+</script>
+
+
+<script>
+(function(){
+  if(window.__v98CasesTabInteractive) return;
+  window.__v98CasesTabInteractive = true;
+
+  function esc(v){
+    if(typeof sanitize==='function') return sanitize(v==null?'':String(v));
+    return String(v==null?'':String(v)).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});
+  }
+  function countByStatus(arr, st){ return (arr||[]).filter(function(x){ return String(x&&x.status||'')===String(st); }).length; }
+  function upcomingSessions(arr){
+    var todayStr = (typeof today==='function') ? today() : new Date().toISOString().slice(0,10);
+    return (arr||[]).filter(function(s){
+      var d=String((s&&s.date)||'');
+      return !d || d>=todayStr;
+    }).sort(function(a,b){
+      return String((a&&a.date)||'').localeCompare(String((b&&b.date)||'')) || String((a&&a.time)||'').localeCompare(String((b&&b.time)||''));
+    });
+  }
+  function setCasesHubView(v){ window._casesHubView = v || 'overview'; render(true); }
+  function setCasesSearch(v){
+    if(window.setUnifiedFilter) window.setUnifiedFilter('list','search',v||'');
+    else { q=v||''; render(true); }
+  }
+  window.setCasesHubView = setCasesHubView;
+  window.setCasesSearch = setCasesSearch;
+
+  function buildAdvPanel(){
+    if(!window.advOpen) return '';
+    var h='';
+    h+='<div class="v98-adv">';
+    h+='<div class="v98-adv-grid">';
+    h+='<div><label>نوع القضية</label><select onchange="advType=this.value;window._listPage=0;render(true)" dir="rtl">';
+    [['','الكل'],['جنائية','جنائية'],['مدنية','مدنية'],['تجارية','تجارية'],['أحوال شخصية','أحوال شخصية'],['عمالية','عمالية'],['إدارية','إدارية']].forEach(function(o){
+      h+='<option value="'+esc(o[0])+'"'+(String(window.advType||'')===String(o[0])?' selected':'')+'>'+o[1]+'</option>';
+    });
+    h+='</select></div>';
+    h+='<div><label>الأهمية</label><select onchange="advPrio=this.value;window._listPage=0;render(true)" dir="rtl">';
+    [['','الكل'],['high','عالية'],['med','متوسطة'],['low','منخفضة'],['none','عادية']].forEach(function(o){
+      h+='<option value="'+esc(o[0])+'"'+(String(window.advPrio||'')===String(o[0])?' selected':'')+'>'+o[1]+'</option>';
+    });
+    h+='</select></div>';
+    h+='<div><label>من تاريخ</label><input type="date" value="'+esc(window.advFrom||'')+'" onchange="advFrom=this.value;window._listPage=0;render(true)"></div>';
+    h+='<div><label>إلى تاريخ</label><input type="date" value="'+esc(window.advTo||'')+'" onchange="advTo=this.value;window._listPage=0;render(true)"></div>';
+    h+='<div class="full"><label>المحكمة</label><input type="text" dir="rtl" value="'+esc(window.advCourt||'')+'" placeholder="المحكمة" oninput="advCourt=this.value;window._listPage=0;render(true)"></div>';
+    h+='</div>';
+    h+='<div class="v98-adv-actions"><button type="button" onclick="clrAdv()">مسح</button></div>';
+    h+='</div>';
+    return h;
+  }
+
+  function miniCaseCard(c){
+    var nextLabel = c && c.next ? ((c.next.date||'—')+' · '+(c.next.time||'—')) : '—';
+    return '<button type="button" class="v98-case-card" onclick="openCaseByNum(\''+String((c&&c.num)||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">'
+      +'<div class="top"><div><div class="num">'+esc((c&&c.num)||'—')+'</div><div class="meta">'+esc(((c&&c.type)||'—')+' · '+((c&&c.court)||'—'))+'</div></div><div class="count">'+(((c&&c.sessions)||[]).length||0)+'</div></div>'
+      +'<div class="line">'+esc((c&&c.client)||(c&&c.plnt)||'—')+'</div>'
+      +'<div class="line">'+esc(nextLabel)+'</div>'
+      +'</button>';
+  }
+
+  function sectionTitle(title, action){
+    return '<div class="v98-sec"><div class="t">'+title+'</div>'+(action?'<button type="button" class="v98-link" onclick="'+action+'">عرض الكل</button>':'')+'</div>';
+  }
+
+  var __prevRListV98 = window.rList;
+  window.rList = function(){
+    var f = (typeof getListUFEnhanced==='function') ? getListUFEnhanced() : ((typeof getUF==='function') ? getUF('list') : {search:'',status:'all',scope:'active'});
+    var view = window._casesHubView || 'overview';
+    var cases = (typeof aggregateCaseCards==='function') ? aggregateCaseCards(f.scope||'active') : [];
+    var sessions = (typeof getListFilteredSessions==='function') ? getListFilteredSessions() : (Array.isArray(window.data)?window.data:[]);
+    var upcoming = upcomingSessions(sessions);
+
+    var h='';
+    h+='<div class="v98-shell">';
+    h+='<div class="v98-head">';
+    h+='<div class="v98-title">⚖️ القضايا</div>';
+    h+='<div class="v98-head-actions"><button type="button" class="v98-gold" onclick="showNajizImportModal()">استيراد ناجز</button><button type="button" class="v98-gold" onclick="openAdd()">جلسة +</button></div>';
+    h+='</div>';
+
+    h+='<div class="v98-search-row">';
+    h+='<div class="v98-search"><span>🔎</span><input type="search" dir="rtl" placeholder="بحث في القضايا أو الأطراف أو رقم القضية" value="'+esc(f.search||'')+'" oninput="setCasesSearch(this.value)"></div>';
+    h+='<button type="button" class="v98-ghost" onclick="window.setUnifiedListScope&&setUnifiedListScope(\'active\')">النشطة</button>';
+    h+='<button type="button" class="v98-ghost" onclick="window.setUnifiedListScope&&setUnifiedListScope(\'deleted\')">المحذوفة</button>';
+    h+='<button type="button" class="v98-ghost" onclick="tgAdv()">فلتر</button>';
+    h+='</div>';
+
+    h+='<div class="v98-stats">';
+    h+='<button type="button" class="v98-stat" onclick="setCasesHubView(\'cases\')"><span>القضايا</span><strong>'+cases.length+'</strong></button>';
+    h+='<button type="button" class="v98-stat" onclick="setCasesHubView(\'sessions\')"><span>الجلسات</span><strong>'+sessions.length+'</strong></button>';
+    h+='<button type="button" class="v98-stat" onclick="setF(\'scheduled\')"><span>المجدولة</span><strong>'+countByStatus(sessions,'scheduled')+'</strong></button>';
+    h+='<button type="button" class="v98-stat" onclick="setF(\'inProgress\')"><span>الجارية</span><strong>'+countByStatus(sessions,'inProgress')+'</strong></button>';
+    h+='</div>';
+
+    h+='<div class="v98-tabs">';
+    [['overview','الرئيسية'],['cases','القضايا'],['sessions','الجلسات']].forEach(function(tab){
+      h+='<button type="button" class="v98-tab'+(view===tab[0]?' on':'')+'" onclick="setCasesHubView(\''+tab[0]+'\')">'+tab[1]+'</button>';
+    });
+    h+='</div>';
+
+    h+='<div class="v98-filters">';
+    [['all','الكل'],['scheduled','مجدولة'],['inProgress','جارية'],['completed','منتهية'],['postponed','مؤجلة']].forEach(function(st){
+      h+='<button type="button" class="v98-pill'+(String(window.filterS||'all')===String(st[0])?' on':'')+'" onclick="setF(\''+st[0]+'\')">'+st[1]+'</button>';
+    });
+    h+='</div>';
+
+    h+=buildAdvPanel();
+
+    if(view==='overview'){
+      h+=sectionTitle('القضايا','setCasesHubView(\'cases\')');
+      if(cases.length){
+        h+='<div class="v98-case-grid">'+cases.slice(0,6).map(miniCaseCard).join('')+'</div>';
+      } else {
+        h+='<div class="v98-empty">لا توجد قضايا</div>';
+      }
+      h+=sectionTitle('الجلسات','setCasesHubView(\'sessions\')');
+      if(upcoming.length){
+        h+='<div class="v98-session-list">';
+        upcoming.slice(0,6).forEach(function(s){ h += (typeof renderListCard==='function' ? renderListCard(s) : ''); });
+        h+='</div>';
+      } else if(sessions.length){
+        h+='<div class="v98-session-list">';
+        sessions.slice(0,6).forEach(function(s){ h += (typeof renderListCard==='function' ? renderListCard(s) : ''); });
+        h+='</div>';
+      } else {
+        h+='<div class="v98-empty">لا توجد جلسات</div>';
+      }
+    } else if(view==='cases'){
+      h += (typeof buildCaseCardsHtml==='function') ? buildCaseCardsHtml() : '<div class="v98-empty">لا توجد قضايا</div>';
+    } else {
+      h += '<div id="listResults">'+(typeof buildListResults==='function' ? buildListResults() : '')+'</div>';
+    }
+
+    h+='</div>';
+    return h;
+  };
+
+  if(!document.getElementById('v98CasesInteractiveStyles')){
+    var st=document.createElement('style');
+    st.id='v98CasesInteractiveStyles';
+    st.textContent=''
+      +'.v98-shell{display:flex;flex-direction:column;gap:12px}'
+      +'.v98-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}'
+      +'.v98-title{font-family:Scheherazade New,serif;font-size:25px;line-height:1;color:var(--gold2)}'
+      +'.v98-head-actions{display:flex;gap:8px;flex-wrap:wrap}'
+      +'.v98-gold,.v98-ghost,.v98-tab,.v98-pill,.v98-link,.v98-stat{font-family:Tajawal,sans-serif;cursor:pointer}'
+      +'.v98-gold{background:var(--gold);color:#0a0905;border:none;border-radius:14px;padding:11px 14px;font-size:12px;font-weight:900;min-height:44px}'
+      +'.v98-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:14px;padding:10px 12px;font-size:12px;font-weight:800;min-height:44px}'
+      +'.v98-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px}'
+      +'.v98-search{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:0 12px;min-height:46px}'
+      +'.v98-search input{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--text);font-size:14px;font-family:Tajawal,sans-serif}'
+      +'.v98-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}'
+      +'.v98-stat{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid var(--border2);border-radius:20px;padding:14px 12px;text-align:right;min-height:82px}'
+      +'.v98-stat span{display:block;font-size:12px;color:var(--text3);margin-bottom:8px}'
+      +'.v98-stat strong{display:block;font-size:22px;color:var(--text);font-weight:900}'
+      +'.v98-tabs,.v98-filters{display:flex;gap:8px;flex-wrap:wrap}'
+      +'.v98-tab,.v98-pill{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:999px;padding:10px 14px;font-size:12px;font-weight:800;min-height:44px}'
+      +'.v98-tab.on,.v98-pill.on{background:var(--gold-a10);border-color:var(--gold-a20);color:var(--gold2)}'
+      +'.v98-sec{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}'
+      +'.v98-sec .t{font-size:15px;font-weight:900;color:var(--text)}'
+      +'.v98-link{background:none;border:none;color:var(--gold2);font-size:12px;font-weight:900;min-height:44px}'
+      +'.v98-case-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}'
+      +'.v98-case-card{background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid var(--border2);border-radius:22px;padding:15px;text-align:right;color:inherit;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.10)}'
+      +'.v98-case-card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}'
+      +'.v98-case-card .num{font-size:15px;font-weight:900;color:var(--text)}'
+      +'.v98-case-card .meta{font-size:12px;color:var(--text3);margin-top:4px}'
+      +'.v98-case-card .count{min-width:38px;height:38px;border-radius:14px;background:var(--gold-a10);border:1px solid var(--gold-a20);display:flex;align-items:center;justify-content:center;color:var(--gold2);font-size:16px;font-weight:900}'
+      +'.v98-case-card .line{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.8}'
+      +'.v98-session-list{display:flex;flex-direction:column;gap:10px}'
+      +'.v98-empty{background:rgba(255,255,255,.03);border:1px dashed var(--border2);border-radius:18px;padding:18px 14px;font-size:13px;color:var(--text2)}'
+      +'.v98-adv{background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:18px;padding:12px}'
+      +'.v98-adv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}'
+      +'.v98-adv-grid .full{grid-column:1/-1}'
+      +'.v98-adv-grid label{display:block;font-size:12px;color:var(--text3);font-weight:800;margin-bottom:5px}'
+      +'.v98-adv-grid input,.v98-adv-grid select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:13px;padding:11px 12px;color:var(--text);font-family:Tajawal,sans-serif;font-size:13px;min-height:44px}'
+      +'.v98-adv-actions{display:flex;justify-content:flex-end;margin-top:10px}'
+      +'.v98-adv-actions button{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:12px;padding:10px 12px;font-size:12px;font-weight:800;min-height:44px}'
+      +'@media (max-width:760px){.v98-search-row{grid-template-columns:1fr 1fr}.v98-search{grid-column:1/-1}.v98-stats{grid-template-columns:1fr 1fr}.v98-adv-grid{grid-template-columns:1fr}}';
+    document.head.appendChild(st);
+  }
+})();
+</script>
 </body>
 </html>
