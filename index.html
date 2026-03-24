@@ -4098,7 +4098,7 @@ function rTools(){
     {icon:'💼',title:'مكافأة نهاية الخدمة',fn:'showGratuityCal()'},
     {icon:'⏱️',title:'الفوائد التأخيرية',fn:'showInterestCal()'},
     {icon:'👨‍👩‍👧',title:'حاسبة النفقة',fn:'showAlimonyСal()'},
-    {icon:'⚖️',title:'المواعيد القانونية',fn:'showFeeCalcModal()'},
+    {icon:'⚖️',title:'الاتعاب التقديرية',fn:'showFeeCalcModal()'},
   ].forEach(function(c){
     h+='<button onclick="'+c.fn+'" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 10px;cursor:pointer;text-align:center;transition:all .12s;font-family:Tajawal,sans-serif" onmousedown="this.style.transform=\'scale(.96)\'" onmouseup="this.style.transform=\'scale(1)\'">';
     h+='<div style="font-size:24px;margin-bottom:6px">'+c.icon+'</div>';
@@ -12522,7 +12522,7 @@ function printContractDoc() {
   var p = lawyerProfile;
   var pa = document.getElementById('pa');
   pa.innerHTML = '<style>@page{size:A4;margin:20mm}body{direction:rtl;font-family:"Traditional Arabic",Arial,sans-serif;color:#0a0905;font-size:12pt;line-height:2}.hdr{text-align:center;border-bottom:3px solid #c8a84b;padding-bottom:14px;margin-bottom:24px}.firm{font-size:16pt;font-weight:900}.content{white-space:pre-wrap;font-size:11pt;line-height:2.2}.footer{margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:center}</style>' +
-    '<div class="hdr"><div class="firm">⚖️ ' + (p.name||'مكتب المحاماة') + '</div>' + (p.license?'<div style="font-size:10pt;color:#666">ترخيص: '+p.license+'</div>':'') + '</div>' +
+    '<div class="hdr"><div class="firm">⚖️ ' + (p.name||'سعود محمد العتيبي') + '</div>' + (p.license?'<div style="font-size:10pt;color:#666">ترخيص: '+p.license+'</div>':'') + '</div>' +
     '<div class="content">' + el.value.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' +
     '<div class="footer"><div style="border-top:1px solid #999;padding-top:8px">توقيع المحامي<br>' + (p.name||'') + '</div><div style="border-top:1px solid #999;padding-top:8px">توقيع الموكل</div></div>';
   setTimeout(function() { window.print(); }, 150);
@@ -13359,7 +13359,7 @@ function rKanban(){
       h+='<div style="font-size:9px;color:var(--text3)">'+sanitize(s.type)+(s.court?' · '+sanitize(s.court.substring(0,10)):'')+'</div>';
       h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">';
       h+='<div style="font-size:9px;color:var(--text3)">📅 '+s.date+'</div>';
-      h+='<div style="width:7px;height:7px;border-radius:50%;background:'+h2.color+'" title="صحة القضية: '+h2.label+'"></div>';
+      h+='<div style="width:7px;height:7px;border-radius:50%;background:'+h2.color+'" title="وضع القضية: '+h2.label+'"></div>';
       h+='</div></div>';
     });
     if(data.filter(function(s){return s.status===col.k;}).length>10){
@@ -13499,7 +13499,7 @@ function showQuickPeek(sid,anchorEl){
     ph+='</div>';
     ph+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">';
     ph+='<div style="width:7px;height:7px;border-radius:50%;background:'+h2.color+'"></div>';
-    ph+='<div style="font-size:9px;color:'+h2.color+'">صحة القضية: '+h2.label+' ('+h2.score+'%)</div>';
+    ph+='<div style="font-size:9px;color:'+h2.color+'">وضع القضية: '+h2.label+' ('+h2.score+'%)</div>';
     ph+='</div>';
     if(vt)ph+='<div style="font-size:9px;color:'+vt.clr+';margin-bottom:5px">'+vt.icon+' النتيجة: '+vt.l+'</div>';
     if(expTotal>0)ph+='<div style="font-size:9px;color:var(--amber)">💸 نفقات: '+expTotal.toLocaleString('ar-SA')+' ر.س</div>';
@@ -22596,6 +22596,347 @@ setTimeout(function(){
 })();
 </script>
 
+
+<script id="fees-export-hardfix-20260324">
+(function(){
+  function arr(v){ return Array.isArray(v) ? v : []; }
+  function txt(v){ return String(v==null?'':v); }
+  function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
+  function esc(v){
+    return txt(v).replace(/[&<>"']/g,function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+  function note(msg){
+    try{
+      if(typeof toastMsg==='function') return toastMsg(msg);
+      if(typeof toast==='function') return toast(msg);
+    }catch(e){}
+  }
+  function fmtMoney(v){
+    try{ return num(v).toLocaleString('ar-SA'); }catch(e){ return String(num(v)); }
+  }
+  function getStatusLabel(st){
+    try{
+      if(window.ST && window.ST[st] && window.ST[st].lbl) return window.ST[st].lbl;
+    }catch(e){}
+    return st || '—';
+  }
+  function printableDoc(title, bodyHtml){
+    var html='<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>'+esc(title)+'</title>'+
+      '<style>body{font-family:Arial,sans-serif;direction:rtl;padding:24px;color:#111;line-height:1.8}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{border:1px solid #cfcfcf;padding:8px;text-align:right;font-size:12px}th{background:#111;color:#d4a843}h1,h2,h3{margin:0 0 10px} .muted{color:#666;font-size:12px} .card{border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0} .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px} .stat{border:1px solid #ddd;border-radius:10px;padding:10px;text-align:center;background:#fafafa} .stat .v{font-size:22px;font-weight:700;color:#c8a84b}.footer{margin-top:18px;padding-top:10px;border-top:1px solid #ddd;color:#777;font-size:11px;text-align:center}</style>'+
+      '</head><body>'+bodyHtml+'<script>setTimeout(function(){try{window.print()}catch(e){} setTimeout(function(){try{window.close()}catch(e){}},300)},120)<\/script></body></html>';
+    try{
+      var blob=new Blob([html], {type:'text/html;charset=utf-8'});
+      var url=URL.createObjectURL(blob);
+      var w=window.open(url,'_blank');
+      if(!w){ note('⚠️ السماح بالنوافذ المنبثقة مطلوب للتصدير'); return false; }
+      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 120000);
+      return true;
+    }catch(e){
+      try{
+        var w2=window.open('','_blank');
+        if(!w2){ note('⚠️ السماح بالنوافذ المنبثقة مطلوب للتصدير'); return false; }
+        w2.document.open();
+        w2.document.write(html);
+        w2.document.close();
+        return true;
+      }catch(err){
+        note('⚠️ تعذر فتح نافذة التصدير');
+        return false;
+      }
+    }
+  }
+
+  function closeFeeModal(){
+    var m=document.getElementById('feeModalHardFix2026');
+    if(m) m.remove();
+  }
+
+  function buildFeeSessionOptions(selected){
+    return arr(window.data).slice().sort(function(a,b){
+      return txt(b.date).localeCompare(txt(a.date)) || txt(b.time).localeCompare(txt(a.time));
+    }).map(function(s){
+      var label=(txt(s.num)||'بدون رقم')+' · '+(txt(s.court)||'—');
+      return '<option value="'+esc(s.id)+'"'+(String(selected||'')===String(s.id)?' selected':'')+'>'+esc(label)+'</option>';
+    }).join('');
+  }
+
+  function syncPartialVisibility(){
+    var st=document.getElementById('feStatusHardFix');
+    var row=document.getElementById('fePartRowHardFix');
+    if(row) row.style.display=(st && st.value==='partial')?'block':'none';
+  }
+
+  function saveFeeFromModal(){
+    var desc=document.getElementById('feDescHardFix');
+    var amt=document.getElementById('feAmtHardFix');
+    if(!desc || !txt(desc.value).trim() || !amt || !txt(amt.value).trim()){
+      note('⚠️ أدخل الوصف والمبلغ');
+      return;
+    }
+    var statusEl=document.getElementById('feStatusHardFix');
+    var st=statusEl ? statusEl.value : 'pending';
+    var partAmt=st==='partial' ? num((document.getElementById('fePaidAmtHardFix')||{}).value) : 0;
+    var sessEl=document.getElementById('feSessHardFix');
+    var clientEl=document.getElementById('feClientHardFix');
+    var dateEl=document.getElementById('feDateHardFix');
+    var caseEl=document.getElementById('feCaseNumHardFix');
+
+    var item={
+      id:'fee_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+      desc:txt(desc.value).trim(),
+      client:txt(clientEl && clientEl.value).trim(),
+      amount:num(amt.value),
+      date:txt(dateEl && dateEl.value),
+      sessionId:sessEl && txt(sessEl.value) ? parseInt(sessEl.value,10) || txt(sessEl.value) : null,
+      status:st,
+      paid:st==='paid',
+      paidAmount:partAmt,
+      caseNum:txt(caseEl && caseEl.value).trim()
+    };
+
+    window.fees = arr(window.fees);
+    window.fees.push(item);
+    try{
+      if(typeof saveFees==='function') saveFees();
+      else localStorage.setItem('j_fees', JSON.stringify(window.fees));
+    }catch(e){}
+    closeFeeModal();
+    note('✅ تم تسجيل الأتعاب');
+    try{ if(typeof render==='function') render(true); }catch(e){ try{ render(); }catch(_e){} }
+  }
+
+  window.openFeeForm=function(){
+    closeFeeModal();
+    var modal=document.createElement('div');
+    modal.id='feeModalHardFix2026';
+    modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(4,6,10,.78);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center';
+    var box=document.createElement('div');
+    box.style.cssText='width:100%;max-width:460px;background:var(--surface,#111827);border-top-left-radius:24px;border-top-right-radius:24px;border:1px solid var(--border2,#333);padding:16px;max-height:92vh;overflow:auto;direction:rtl;font-family:Tajawal,sans-serif';
+    var pendingCase='';
+    try{ pendingCase=sessionStorage.getItem('j_case_pending_fee')||sessionStorage.getItem('case_pending_fee')||''; }catch(e){}
+    var pendingClient='';
+    try{
+      var oldClient=document.getElementById('feClient');
+      if(oldClient && oldClient.value) pendingClient=oldClient.value;
+    }catch(e){}
+    box.innerHTML=
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'+
+        '<div style="flex:1"><div style="font-size:18px;font-weight:900;color:var(--gold2,#d4a843)">💰 تسجيل أتعاب / رسوم</div><div style="font-size:11px;color:var(--text3,#9ca3af)">إضافة سجل أتعاب بدون إظهار أي أكواد أو نصوص خاطئة</div></div>'+
+        '<button type="button" id="closeFeeModalHardFix" style="background:var(--surface2,#1f2937);color:var(--text2,#e5e7eb);border:1px solid var(--border2,#374151);border-radius:10px;padding:8px 12px;cursor:pointer">إغلاق</button>'+
+      '</div>'+
+      '<input id="feDescHardFix" type="text" placeholder="وصف الأتعاب / الخدمة *" dir="rtl" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">'+
+      '<input id="feClientHardFix" type="text" placeholder="اسم العميل (اختياري)" dir="rtl" value="'+esc(pendingClient)+'" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">'+
+      '<input id="feCaseNumHardFix" type="text" placeholder="رقم القضية (اختياري)" dir="rtl" value="'+esc(pendingCase)+'" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">'+
+      '<input id="feAmtHardFix" type="number" placeholder="المبلغ الكلي (ر.س) *" dir="ltr" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block">'+
+      '<input id="feDateHardFix" type="date" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block;color-scheme:dark">'+
+      '<select id="feSessHardFix" dir="rtl" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block"><option value="">— ربط بجلسة (اختياري) —</option>'+buildFeeSessionOptions('')+'</select>'+
+      '<select id="feStatusHardFix" dir="rtl" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block"><option value="pending">⏳ معلق</option><option value="partial">⚡ مسدد جزئي</option><option value="paid">✅ تم التسديد</option></select>'+
+      '<div id="fePartRowHardFix" style="display:none;margin-bottom:8px"><input id="fePaidAmtHardFix" type="number" placeholder="المبلغ المسدد جزئياً (ر.س)" dir="ltr" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);display:block"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px"><button type="button" id="saveFeeHardFix" style="flex:1;background:var(--gold,#d4a843);color:#0a0905;border:none;border-radius:12px;padding:12px;font-weight:800;font-size:13px;cursor:pointer">حفظ</button><button type="button" id="cancelFeeHardFix" style="flex:1;background:var(--surface2,#1f2937);color:var(--text2,#e5e7eb);border:1px solid var(--border2,#374151);border-radius:12px;padding:12px;font-size:13px;cursor:pointer">إلغاء</button></div>';
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+    document.getElementById('closeFeeModalHardFix').onclick=closeFeeModal;
+    document.getElementById('cancelFeeHardFix').onclick=closeFeeModal;
+    document.getElementById('saveFeeHardFix').onclick=saveFeeFromModal;
+    var st=document.getElementById('feStatusHardFix');
+    if(st) st.onchange=syncPartialVisibility;
+    syncPartialVisibility();
+    var d=document.getElementById('feDateHardFix');
+    if(d && !d.value){
+      try{ d.value=new Date().toISOString().slice(0,10); }catch(e){}
+    }
+    var desc=document.getElementById('feDescHardFix');
+    if(desc) desc.focus();
+  };
+
+  window.saveFee=function(){
+    var hard=document.getElementById('feeModalHardFix2026');
+    if(hard) return saveFeeFromModal();
+    try{
+      var desc=document.getElementById('feDesc');var amt=document.getElementById('feAmt');
+      if(!desc||!txt(desc.value).trim()||!amt||!txt(amt.value).trim()){ note('⚠️ أدخل الوصف والمبلغ'); return; }
+      var statusEl=document.getElementById('feStatus');
+      var st=statusEl?statusEl.value:'pending';
+      var partAmt=st==='partial'?num((document.getElementById('fePaidAmt')||{}).value):0;
+      var sessEl=document.getElementById('feSess');
+      var feClient=document.getElementById('feClient');
+      window.fees=arr(window.fees);
+      window.fees.push({
+        id:'fee_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+        desc:txt(desc.value).trim(),
+        client:txt(feClient&&feClient.value).trim(),
+        amount:num(amt.value),
+        date:txt((document.getElementById('feDate')||{}).value),
+        sessionId:sessEl&&txt(sessEl.value)?parseInt(sessEl.value,10)||txt(sessEl.value):null,
+        status:st,
+        paid:st==='paid',
+        paidAmount:partAmt,
+        caseNum:txt((document.getElementById('feCaseNum')||{}).value).trim()
+      });
+      if(typeof saveFees==='function') saveFees();
+      note('✅ تم التسجيل');
+      try{ if(typeof render==='function') render(true); }catch(e){ try{ render(); }catch(_e){} }
+    }catch(e){
+      note('⚠️ تعذر حفظ الأتعاب');
+    }
+  };
+
+  window.previewWordFile=function(id){
+    var files=arr(window.wordFiles).map(function(f){ return f||{}; });
+    var f=files.find(function(x){ return String(x.id)===String(id); });
+    if(!f){ note('⚠️ الملف غير موجود'); return; }
+    var name=txt(f.name)||'ملف';
+    var type=txt(f.type).toLowerCase();
+    var data=txt(f.data);
+    if(data){
+      if(/^data:(image\/|application\/pdf|text\/)/i.test(data)){
+        var w=window.open(data,'_blank');
+        if(!w) note('⚠️ السماح بالنوافذ المنبثقة مطلوب للمعاينة');
+        return;
+      }
+      try{
+        var bin=atob(data.split(',')[1]||'');
+        var arr8=new Uint8Array(bin.length);
+        for(var i=0;i<bin.length;i++) arr8[i]=bin.charCodeAt(i);
+        var mime=(data.match(/^data:([^;]+)/i)||[])[1] || 'application/octet-stream';
+        var blob=new Blob([arr8],{type:mime});
+        var url=URL.createObjectURL(blob);
+        var w2=window.open(url,'_blank');
+        if(!w2){ note('⚠️ السماح بالنوافذ المنبثقة مطلوب للمعاينة'); return; }
+        setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 120000);
+        return;
+      }catch(e){}
+    }
+    printableDoc(name, '<h2>'+esc(name)+'</h2><pre style="white-space:pre-wrap">'+esc(
+      (typeof summaryText==='function' ? summaryText(f) : (f.text||f.content||''))
+    )+'</pre>');
+  };
+
+  window.downloadWordFile=function(id){
+    var files=arr(window.wordFiles).map(function(f){ return f||{}; });
+    var f=files.find(function(x){ return String(x.id)===String(id); });
+    if(!f){ note('⚠️ الملف غير موجود'); return; }
+    var name=txt(f.name)||'file';
+    if(f.data){
+      var a=document.createElement('a');
+      a.href=f.data;
+      a.download=name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      note('📥 تم بدء تنزيل الملف');
+      return;
+    }
+    var content=(typeof summaryText==='function' ? summaryText(f) : (f.text||f.content||''));
+    var blob=new Blob([txt(content)],{type:'text/plain;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a2=document.createElement('a');
+    a2.href=url;
+    a2.download=(name.replace(/\.[^.]+$/,'')||'record')+'.txt';
+    document.body.appendChild(a2);
+    a2.click();
+    document.body.removeChild(a2);
+    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 60000);
+    note('📥 تم تنزيل السجل');
+  };
+
+  window.expPDF=function(){
+    var td=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+    var rows=arr(window.data).slice().sort(function(a,b){
+      return txt(a.date+a.time).localeCompare(txt(b.date+b.time));
+    }).map(function(s){
+      return '<tr><td>'+esc(s.num)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.court||'—')+'</td><td>'+esc(s.plnt||'—')+'</td><td>'+esc(s.dfnd||'—')+'</td><td>'+esc(s.date)+'</td><td>'+esc(s.time)+'</td><td>'+esc(getStatusLabel(s.status))+'</td></tr>';
+    }).join('');
+    printableDoc('تقرير الجلسات القضائية',
+      '<div style="text-align:center;margin-bottom:20px"><h1>⚖️ تقرير الجلسات القضائية</h1><div class="muted">'+esc(td)+' | إجمالي: '+arr(window.data).length+' جلسة</div></div>'+
+      '<table><thead><tr><th>رقم القضية</th><th>النوع</th><th>المحكمة</th><th>المدعي</th><th>المدعى عليه</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    );
+    note('🖨️ جارٍ فتح تقرير الجلسات');
+  };
+
+  window.printAdvancedReport=function(){
+    var td=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+    var totalFees=arr(window.fees).reduce(function(s,f){ return s+num(f.amount); },0);
+    var paidFees=arr(window.fees).reduce(function(s,f){
+      var st=f&&f.status ? f.status : ((f&&f.paid) ? 'paid' : 'pending');
+      if(st==='paid') return s+num(f.amount);
+      if(st==='partial') return s+num(f.paidAmount);
+      return s;
+    },0);
+    var body='<div style="text-align:center;margin-bottom:20px"><h1>⚖️ التقرير القانوني</h1><div class="muted">تاريخ التقرير: '+esc(td)+'</div></div>'+
+      '<div class="grid">'+
+      '<div class="stat"><div class="v">'+arr(window.data).length+'</div><div>إجمالي الجلسات</div></div>'+
+      '<div class="stat"><div class="v">'+arr(window.data).filter(function(s){return s.status==="completed";}).length+'</div><div>منتهية</div></div>'+
+      '<div class="stat"><div class="v">'+arr(window.data).filter(function(s){return s.status==="scheduled";}).length+'</div><div>مجدولة</div></div>'+
+      '<div class="stat"><div class="v">'+fmtMoney(totalFees)+'</div><div>إجمالي الأتعاب</div></div>'+
+      '<div class="stat"><div class="v">'+fmtMoney(paidFees)+'</div><div>المحصل</div></div>'+
+      '<div class="stat"><div class="v">'+arr(window.archivedSessions).length+'</div><div>مؤرشف</div></div>'+
+      '</div>'+
+      '<div class="card"><h3>قائمة الجلسات</h3><table><thead><tr><th>رقم القضية</th><th>النوع</th><th>المحكمة</th><th>المدعي</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>'+
+      arr(window.data).map(function(s,i){ return '<tr><td>'+esc(s.num)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.court||'—')+'</td><td>'+esc(s.plnt||'—')+'</td><td>'+esc(s.date)+'</td><td>'+esc(getStatusLabel(s.status))+'</td></tr>'; }).join('')+
+      '</tbody></table></div>';
+    printableDoc('التقرير القانوني', body);
+    note('🖨️ جارٍ فتح التقرير القانوني');
+  };
+
+  window.printClientStatement=function(clientName){
+    clientName=txt(clientName).trim();
+    var fees=arr(window.fees).filter(function(f){ return txt(f.client).trim()===clientName; });
+    var total=fees.reduce(function(s,f){ return s+num(f.amount); },0);
+    var paid=fees.reduce(function(s,f){
+      var st=f&&f.status ? f.status : ((f&&f.paid) ? 'paid' : 'pending');
+      if(st==='paid') return s+num(f.amount);
+      if(st==='partial') return s+num(f.paidAmount);
+      return s;
+    },0);
+    var rows=fees.map(function(f){
+      var sess=arr(window.data).find(function(x){ return String(x.id)===String(f.sessionId); });
+      var st=f&&f.status ? f.status : ((f&&f.paid) ? 'paid' : 'pending');
+      return '<tr><td>'+esc(f.desc)+'</td><td>'+esc(sess ? sess.num : (f.caseNum||'—'))+'</td><td>'+esc(fmtMoney(f.amount))+' ر.س</td><td>'+esc(st==='paid'?'✅ مسدد':st==='partial'?'⚡ جزئي':'⏳ معلق')+'</td><td>'+esc(f.date||'—')+'</td></tr>';
+    }).join('');
+    printableDoc('كشف حساب العميل - '+clientName,
+      '<h1>💰 كشف حساب العميل</h1><div class="muted">العميل: '+esc(clientName||'غير محدد')+'</div>'+
+      '<table><thead><tr><th>الوصف</th><th>القضية</th><th>المبلغ</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div class="card"><div>الإجمالي: <strong>'+esc(fmtMoney(total))+' ر.س</strong></div><div style="color:green">المسدد: <strong>'+esc(fmtMoney(paid))+' ر.س</strong></div><div style="color:red">المتبقي: <strong>'+esc(fmtMoney(total-paid))+' ر.س</strong></div></div>'
+    );
+    note('🖨️ جارٍ فتح كشف الحساب');
+  };
+
+  if(typeof window.generateMonthlyReportPDF==='function'){
+    var _generateMonthlyReportPDF=window.generateMonthlyReportPDF;
+    window.generateMonthlyReportPDF=function(){
+      try{
+        var monthInput=document.getElementById('monthlyReportMonth');
+        var monthVal=monthInput && monthInput.value ? monthInput.value : '';
+        var items=arr(window.data).filter(function(s){ return !monthVal || txt(s.date).indexOf(monthVal)===0; });
+        var fees=arr(window.fees).filter(function(f){ return !monthVal || txt(f.date).indexOf(monthVal)===0; });
+        var body='<h1>📊 التقرير الشهري</h1><div class="muted">الفترة: '+esc(monthVal||'كل الفترات')+'</div>'+
+          '<div class="grid"><div class="stat"><div class="v">'+items.length+'</div><div>الجلسات</div></div><div class="stat"><div class="v">'+fees.length+'</div><div>سجلات الأتعاب</div></div><div class="stat"><div class="v">'+fmtMoney(fees.reduce(function(s,f){return s+num(f.amount);},0))+'</div><div>إجمالي الأتعاب</div></div></div>'+
+          '<div class="card"><h3>الجلسات</h3><table><thead><tr><th>رقم القضية</th><th>النوع</th><th>المحكمة</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>'+
+          items.map(function(s){ return '<tr><td>'+esc(s.num)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.court||'—')+'</td><td>'+esc(s.date)+'</td><td>'+esc(getStatusLabel(s.status))+'</td></tr>'; }).join('')+
+          '</tbody></table></div>';
+        printableDoc('التقرير الشهري', body);
+        note('🖨️ جارٍ فتح التقرير الشهري');
+      }catch(e){
+        return _generateMonthlyReportPDF.apply(this, arguments);
+      }
+    };
+  }
+
+  if(typeof window.wdExportPDF==='function'){
+    window.wdExportPDF=function(){
+      var ed=document.getElementById('wdEditor');
+      var html=(ed && ed.innerHTML) ? ed.innerHTML : (window.wdBodyText||'');
+      if(!txt(html).trim()){ note('⚠️ المستند فارغ'); return; }
+      printableDoc('المستند', '<div dir="rtl">'+html+'</div>');
+      note('🖨️ جارٍ فتح المستند للطباعة');
+    };
+  }
+})();
+</script>
+
 </body></html>');
         w.document.close();
         return;
@@ -25014,6 +25355,347 @@ setTimeout(function(){
   });
 
   setTimeout(syncTeamGroups, 800);
+})();
+</script>
+
+
+<script id="fees-export-hardfix-20260324">
+(function(){
+  function arr(v){ return Array.isArray(v) ? v : []; }
+  function txt(v){ return String(v==null?'':v); }
+  function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
+  function esc(v){
+    return txt(v).replace(/[&<>"']/g,function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+  function note(msg){
+    try{
+      if(typeof toastMsg==='function') return toastMsg(msg);
+      if(typeof toast==='function') return toast(msg);
+    }catch(e){}
+  }
+  function fmtMoney(v){
+    try{ return num(v).toLocaleString('ar-SA'); }catch(e){ return String(num(v)); }
+  }
+  function getStatusLabel(st){
+    try{
+      if(window.ST && window.ST[st] && window.ST[st].lbl) return window.ST[st].lbl;
+    }catch(e){}
+    return st || '—';
+  }
+  function printableDoc(title, bodyHtml){
+    var html='<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>'+esc(title)+'</title>'+
+      '<style>body{font-family:Arial,sans-serif;direction:rtl;padding:24px;color:#111;line-height:1.8}table{width:100%;border-collapse:collapse;margin-top:14px}th,td{border:1px solid #cfcfcf;padding:8px;text-align:right;font-size:12px}th{background:#111;color:#d4a843}h1,h2,h3{margin:0 0 10px} .muted{color:#666;font-size:12px} .card{border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0} .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px} .stat{border:1px solid #ddd;border-radius:10px;padding:10px;text-align:center;background:#fafafa} .stat .v{font-size:22px;font-weight:700;color:#c8a84b}.footer{margin-top:18px;padding-top:10px;border-top:1px solid #ddd;color:#777;font-size:11px;text-align:center}</style>'+
+      '</head><body>'+bodyHtml+'<script>setTimeout(function(){try{window.print()}catch(e){} setTimeout(function(){try{window.close()}catch(e){}},300)},120)<\/script></body></html>';
+    try{
+      var blob=new Blob([html], {type:'text/html;charset=utf-8'});
+      var url=URL.createObjectURL(blob);
+      var w=window.open(url,'_blank');
+      if(!w){ note('⚠️ السماح بالنوافذ المنبثقة مطلوب للتصدير'); return false; }
+      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 120000);
+      return true;
+    }catch(e){
+      try{
+        var w2=window.open('','_blank');
+        if(!w2){ note('⚠️ السماح بالنوافذ المنبثقة مطلوب للتصدير'); return false; }
+        w2.document.open();
+        w2.document.write(html);
+        w2.document.close();
+        return true;
+      }catch(err){
+        note('⚠️ تعذر فتح نافذة التصدير');
+        return false;
+      }
+    }
+  }
+
+  function closeFeeModal(){
+    var m=document.getElementById('feeModalHardFix2026');
+    if(m) m.remove();
+  }
+
+  function buildFeeSessionOptions(selected){
+    return arr(window.data).slice().sort(function(a,b){
+      return txt(b.date).localeCompare(txt(a.date)) || txt(b.time).localeCompare(txt(a.time));
+    }).map(function(s){
+      var label=(txt(s.num)||'بدون رقم')+' · '+(txt(s.court)||'—');
+      return '<option value="'+esc(s.id)+'"'+(String(selected||'')===String(s.id)?' selected':'')+'>'+esc(label)+'</option>';
+    }).join('');
+  }
+
+  function syncPartialVisibility(){
+    var st=document.getElementById('feStatusHardFix');
+    var row=document.getElementById('fePartRowHardFix');
+    if(row) row.style.display=(st && st.value==='partial')?'block':'none';
+  }
+
+  function saveFeeFromModal(){
+    var desc=document.getElementById('feDescHardFix');
+    var amt=document.getElementById('feAmtHardFix');
+    if(!desc || !txt(desc.value).trim() || !amt || !txt(amt.value).trim()){
+      note('⚠️ أدخل الوصف والمبلغ');
+      return;
+    }
+    var statusEl=document.getElementById('feStatusHardFix');
+    var st=statusEl ? statusEl.value : 'pending';
+    var partAmt=st==='partial' ? num((document.getElementById('fePaidAmtHardFix')||{}).value) : 0;
+    var sessEl=document.getElementById('feSessHardFix');
+    var clientEl=document.getElementById('feClientHardFix');
+    var dateEl=document.getElementById('feDateHardFix');
+    var caseEl=document.getElementById('feCaseNumHardFix');
+
+    var item={
+      id:'fee_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+      desc:txt(desc.value).trim(),
+      client:txt(clientEl && clientEl.value).trim(),
+      amount:num(amt.value),
+      date:txt(dateEl && dateEl.value),
+      sessionId:sessEl && txt(sessEl.value) ? parseInt(sessEl.value,10) || txt(sessEl.value) : null,
+      status:st,
+      paid:st==='paid',
+      paidAmount:partAmt,
+      caseNum:txt(caseEl && caseEl.value).trim()
+    };
+
+    window.fees = arr(window.fees);
+    window.fees.push(item);
+    try{
+      if(typeof saveFees==='function') saveFees();
+      else localStorage.setItem('j_fees', JSON.stringify(window.fees));
+    }catch(e){}
+    closeFeeModal();
+    note('✅ تم تسجيل الأتعاب');
+    try{ if(typeof render==='function') render(true); }catch(e){ try{ render(); }catch(_e){} }
+  }
+
+  window.openFeeForm=function(){
+    closeFeeModal();
+    var modal=document.createElement('div');
+    modal.id='feeModalHardFix2026';
+    modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(4,6,10,.78);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center';
+    var box=document.createElement('div');
+    box.style.cssText='width:100%;max-width:460px;background:var(--surface,#111827);border-top-left-radius:24px;border-top-right-radius:24px;border:1px solid var(--border2,#333);padding:16px;max-height:92vh;overflow:auto;direction:rtl;font-family:Tajawal,sans-serif';
+    var pendingCase='';
+    try{ pendingCase=sessionStorage.getItem('j_case_pending_fee')||sessionStorage.getItem('case_pending_fee')||''; }catch(e){}
+    var pendingClient='';
+    try{
+      var oldClient=document.getElementById('feClient');
+      if(oldClient && oldClient.value) pendingClient=oldClient.value;
+    }catch(e){}
+    box.innerHTML=
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'+
+        '<div style="flex:1"><div style="font-size:18px;font-weight:900;color:var(--gold2,#d4a843)">💰 تسجيل أتعاب / رسوم</div><div style="font-size:11px;color:var(--text3,#9ca3af)">إضافة سجل أتعاب بدون إظهار أي أكواد أو نصوص خاطئة</div></div>'+
+        '<button type="button" id="closeFeeModalHardFix" style="background:var(--surface2,#1f2937);color:var(--text2,#e5e7eb);border:1px solid var(--border2,#374151);border-radius:10px;padding:8px 12px;cursor:pointer">إغلاق</button>'+
+      '</div>'+
+      '<input id="feDescHardFix" type="text" placeholder="وصف الأتعاب / الخدمة *" dir="rtl" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">'+
+      '<input id="feClientHardFix" type="text" placeholder="اسم العميل (اختياري)" dir="rtl" value="'+esc(pendingClient)+'" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">'+
+      '<input id="feCaseNumHardFix" type="text" placeholder="رقم القضية (اختياري)" dir="rtl" value="'+esc(pendingCase)+'" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block;font-family:Tajawal,sans-serif">'+
+      '<input id="feAmtHardFix" type="number" placeholder="المبلغ الكلي (ر.س) *" dir="ltr" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block">'+
+      '<input id="feDateHardFix" type="date" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block;color-scheme:dark">'+
+      '<select id="feSessHardFix" dir="rtl" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block"><option value="">— ربط بجلسة (اختياري) —</option>'+buildFeeSessionOptions('')+'</select>'+
+      '<select id="feStatusHardFix" dir="rtl" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);margin-bottom:8px;display:block"><option value="pending">⏳ معلق</option><option value="partial">⚡ مسدد جزئي</option><option value="paid">✅ تم التسديد</option></select>'+
+      '<div id="fePartRowHardFix" style="display:none;margin-bottom:8px"><input id="fePaidAmtHardFix" type="number" placeholder="المبلغ المسدد جزئياً (ر.س)" dir="ltr" style="width:100%;background:var(--surface3,#111827);border:1.5px solid var(--border,#374151);border-radius:12px;padding:12px;font-size:13px;color:var(--text,#fff);display:block"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px"><button type="button" id="saveFeeHardFix" style="flex:1;background:var(--gold,#d4a843);color:#0a0905;border:none;border-radius:12px;padding:12px;font-weight:800;font-size:13px;cursor:pointer">حفظ</button><button type="button" id="cancelFeeHardFix" style="flex:1;background:var(--surface2,#1f2937);color:var(--text2,#e5e7eb);border:1px solid var(--border2,#374151);border-radius:12px;padding:12px;font-size:13px;cursor:pointer">إلغاء</button></div>';
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+    document.getElementById('closeFeeModalHardFix').onclick=closeFeeModal;
+    document.getElementById('cancelFeeHardFix').onclick=closeFeeModal;
+    document.getElementById('saveFeeHardFix').onclick=saveFeeFromModal;
+    var st=document.getElementById('feStatusHardFix');
+    if(st) st.onchange=syncPartialVisibility;
+    syncPartialVisibility();
+    var d=document.getElementById('feDateHardFix');
+    if(d && !d.value){
+      try{ d.value=new Date().toISOString().slice(0,10); }catch(e){}
+    }
+    var desc=document.getElementById('feDescHardFix');
+    if(desc) desc.focus();
+  };
+
+  window.saveFee=function(){
+    var hard=document.getElementById('feeModalHardFix2026');
+    if(hard) return saveFeeFromModal();
+    try{
+      var desc=document.getElementById('feDesc');var amt=document.getElementById('feAmt');
+      if(!desc||!txt(desc.value).trim()||!amt||!txt(amt.value).trim()){ note('⚠️ أدخل الوصف والمبلغ'); return; }
+      var statusEl=document.getElementById('feStatus');
+      var st=statusEl?statusEl.value:'pending';
+      var partAmt=st==='partial'?num((document.getElementById('fePaidAmt')||{}).value):0;
+      var sessEl=document.getElementById('feSess');
+      var feClient=document.getElementById('feClient');
+      window.fees=arr(window.fees);
+      window.fees.push({
+        id:'fee_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+        desc:txt(desc.value).trim(),
+        client:txt(feClient&&feClient.value).trim(),
+        amount:num(amt.value),
+        date:txt((document.getElementById('feDate')||{}).value),
+        sessionId:sessEl&&txt(sessEl.value)?parseInt(sessEl.value,10)||txt(sessEl.value):null,
+        status:st,
+        paid:st==='paid',
+        paidAmount:partAmt,
+        caseNum:txt((document.getElementById('feCaseNum')||{}).value).trim()
+      });
+      if(typeof saveFees==='function') saveFees();
+      note('✅ تم التسجيل');
+      try{ if(typeof render==='function') render(true); }catch(e){ try{ render(); }catch(_e){} }
+    }catch(e){
+      note('⚠️ تعذر حفظ الأتعاب');
+    }
+  };
+
+  window.previewWordFile=function(id){
+    var files=arr(window.wordFiles).map(function(f){ return f||{}; });
+    var f=files.find(function(x){ return String(x.id)===String(id); });
+    if(!f){ note('⚠️ الملف غير موجود'); return; }
+    var name=txt(f.name)||'ملف';
+    var type=txt(f.type).toLowerCase();
+    var data=txt(f.data);
+    if(data){
+      if(/^data:(image\/|application\/pdf|text\/)/i.test(data)){
+        var w=window.open(data,'_blank');
+        if(!w) note('⚠️ السماح بالنوافذ المنبثقة مطلوب للمعاينة');
+        return;
+      }
+      try{
+        var bin=atob(data.split(',')[1]||'');
+        var arr8=new Uint8Array(bin.length);
+        for(var i=0;i<bin.length;i++) arr8[i]=bin.charCodeAt(i);
+        var mime=(data.match(/^data:([^;]+)/i)||[])[1] || 'application/octet-stream';
+        var blob=new Blob([arr8],{type:mime});
+        var url=URL.createObjectURL(blob);
+        var w2=window.open(url,'_blank');
+        if(!w2){ note('⚠️ السماح بالنوافذ المنبثقة مطلوب للمعاينة'); return; }
+        setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 120000);
+        return;
+      }catch(e){}
+    }
+    printableDoc(name, '<h2>'+esc(name)+'</h2><pre style="white-space:pre-wrap">'+esc(
+      (typeof summaryText==='function' ? summaryText(f) : (f.text||f.content||''))
+    )+'</pre>');
+  };
+
+  window.downloadWordFile=function(id){
+    var files=arr(window.wordFiles).map(function(f){ return f||{}; });
+    var f=files.find(function(x){ return String(x.id)===String(id); });
+    if(!f){ note('⚠️ الملف غير موجود'); return; }
+    var name=txt(f.name)||'file';
+    if(f.data){
+      var a=document.createElement('a');
+      a.href=f.data;
+      a.download=name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      note('📥 تم بدء تنزيل الملف');
+      return;
+    }
+    var content=(typeof summaryText==='function' ? summaryText(f) : (f.text||f.content||''));
+    var blob=new Blob([txt(content)],{type:'text/plain;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a2=document.createElement('a');
+    a2.href=url;
+    a2.download=(name.replace(/\.[^.]+$/,'')||'record')+'.txt';
+    document.body.appendChild(a2);
+    a2.click();
+    document.body.removeChild(a2);
+    setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 60000);
+    note('📥 تم تنزيل السجل');
+  };
+
+  window.expPDF=function(){
+    var td=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+    var rows=arr(window.data).slice().sort(function(a,b){
+      return txt(a.date+a.time).localeCompare(txt(b.date+b.time));
+    }).map(function(s){
+      return '<tr><td>'+esc(s.num)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.court||'—')+'</td><td>'+esc(s.plnt||'—')+'</td><td>'+esc(s.dfnd||'—')+'</td><td>'+esc(s.date)+'</td><td>'+esc(s.time)+'</td><td>'+esc(getStatusLabel(s.status))+'</td></tr>';
+    }).join('');
+    printableDoc('تقرير الجلسات القضائية',
+      '<div style="text-align:center;margin-bottom:20px"><h1>⚖️ تقرير الجلسات القضائية</h1><div class="muted">'+esc(td)+' | إجمالي: '+arr(window.data).length+' جلسة</div></div>'+
+      '<table><thead><tr><th>رقم القضية</th><th>النوع</th><th>المحكمة</th><th>المدعي</th><th>المدعى عليه</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    );
+    note('🖨️ جارٍ فتح تقرير الجلسات');
+  };
+
+  window.printAdvancedReport=function(){
+    var td=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+    var totalFees=arr(window.fees).reduce(function(s,f){ return s+num(f.amount); },0);
+    var paidFees=arr(window.fees).reduce(function(s,f){
+      var st=f&&f.status ? f.status : ((f&&f.paid) ? 'paid' : 'pending');
+      if(st==='paid') return s+num(f.amount);
+      if(st==='partial') return s+num(f.paidAmount);
+      return s;
+    },0);
+    var body='<div style="text-align:center;margin-bottom:20px"><h1>⚖️ التقرير القانوني</h1><div class="muted">تاريخ التقرير: '+esc(td)+'</div></div>'+
+      '<div class="grid">'+
+      '<div class="stat"><div class="v">'+arr(window.data).length+'</div><div>إجمالي الجلسات</div></div>'+
+      '<div class="stat"><div class="v">'+arr(window.data).filter(function(s){return s.status==="completed";}).length+'</div><div>منتهية</div></div>'+
+      '<div class="stat"><div class="v">'+arr(window.data).filter(function(s){return s.status==="scheduled";}).length+'</div><div>مجدولة</div></div>'+
+      '<div class="stat"><div class="v">'+fmtMoney(totalFees)+'</div><div>إجمالي الأتعاب</div></div>'+
+      '<div class="stat"><div class="v">'+fmtMoney(paidFees)+'</div><div>المحصل</div></div>'+
+      '<div class="stat"><div class="v">'+arr(window.archivedSessions).length+'</div><div>مؤرشف</div></div>'+
+      '</div>'+
+      '<div class="card"><h3>قائمة الجلسات</h3><table><thead><tr><th>رقم القضية</th><th>النوع</th><th>المحكمة</th><th>المدعي</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>'+
+      arr(window.data).map(function(s,i){ return '<tr><td>'+esc(s.num)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.court||'—')+'</td><td>'+esc(s.plnt||'—')+'</td><td>'+esc(s.date)+'</td><td>'+esc(getStatusLabel(s.status))+'</td></tr>'; }).join('')+
+      '</tbody></table></div>';
+    printableDoc('التقرير القانوني', body);
+    note('🖨️ جارٍ فتح التقرير القانوني');
+  };
+
+  window.printClientStatement=function(clientName){
+    clientName=txt(clientName).trim();
+    var fees=arr(window.fees).filter(function(f){ return txt(f.client).trim()===clientName; });
+    var total=fees.reduce(function(s,f){ return s+num(f.amount); },0);
+    var paid=fees.reduce(function(s,f){
+      var st=f&&f.status ? f.status : ((f&&f.paid) ? 'paid' : 'pending');
+      if(st==='paid') return s+num(f.amount);
+      if(st==='partial') return s+num(f.paidAmount);
+      return s;
+    },0);
+    var rows=fees.map(function(f){
+      var sess=arr(window.data).find(function(x){ return String(x.id)===String(f.sessionId); });
+      var st=f&&f.status ? f.status : ((f&&f.paid) ? 'paid' : 'pending');
+      return '<tr><td>'+esc(f.desc)+'</td><td>'+esc(sess ? sess.num : (f.caseNum||'—'))+'</td><td>'+esc(fmtMoney(f.amount))+' ر.س</td><td>'+esc(st==='paid'?'✅ مسدد':st==='partial'?'⚡ جزئي':'⏳ معلق')+'</td><td>'+esc(f.date||'—')+'</td></tr>';
+    }).join('');
+    printableDoc('كشف حساب العميل - '+clientName,
+      '<h1>💰 كشف حساب العميل</h1><div class="muted">العميل: '+esc(clientName||'غير محدد')+'</div>'+
+      '<table><thead><tr><th>الوصف</th><th>القضية</th><th>المبلغ</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div class="card"><div>الإجمالي: <strong>'+esc(fmtMoney(total))+' ر.س</strong></div><div style="color:green">المسدد: <strong>'+esc(fmtMoney(paid))+' ر.س</strong></div><div style="color:red">المتبقي: <strong>'+esc(fmtMoney(total-paid))+' ر.س</strong></div></div>'
+    );
+    note('🖨️ جارٍ فتح كشف الحساب');
+  };
+
+  if(typeof window.generateMonthlyReportPDF==='function'){
+    var _generateMonthlyReportPDF=window.generateMonthlyReportPDF;
+    window.generateMonthlyReportPDF=function(){
+      try{
+        var monthInput=document.getElementById('monthlyReportMonth');
+        var monthVal=monthInput && monthInput.value ? monthInput.value : '';
+        var items=arr(window.data).filter(function(s){ return !monthVal || txt(s.date).indexOf(monthVal)===0; });
+        var fees=arr(window.fees).filter(function(f){ return !monthVal || txt(f.date).indexOf(monthVal)===0; });
+        var body='<h1>📊 التقرير الشهري</h1><div class="muted">الفترة: '+esc(monthVal||'كل الفترات')+'</div>'+
+          '<div class="grid"><div class="stat"><div class="v">'+items.length+'</div><div>الجلسات</div></div><div class="stat"><div class="v">'+fees.length+'</div><div>سجلات الأتعاب</div></div><div class="stat"><div class="v">'+fmtMoney(fees.reduce(function(s,f){return s+num(f.amount);},0))+'</div><div>إجمالي الأتعاب</div></div></div>'+
+          '<div class="card"><h3>الجلسات</h3><table><thead><tr><th>رقم القضية</th><th>النوع</th><th>المحكمة</th><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>'+
+          items.map(function(s){ return '<tr><td>'+esc(s.num)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.court||'—')+'</td><td>'+esc(s.date)+'</td><td>'+esc(getStatusLabel(s.status))+'</td></tr>'; }).join('')+
+          '</tbody></table></div>';
+        printableDoc('التقرير الشهري', body);
+        note('🖨️ جارٍ فتح التقرير الشهري');
+      }catch(e){
+        return _generateMonthlyReportPDF.apply(this, arguments);
+      }
+    };
+  }
+
+  if(typeof window.wdExportPDF==='function'){
+    window.wdExportPDF=function(){
+      var ed=document.getElementById('wdEditor');
+      var html=(ed && ed.innerHTML) ? ed.innerHTML : (window.wdBodyText||'');
+      if(!txt(html).trim()){ note('⚠️ المستند فارغ'); return; }
+      printableDoc('المستند', '<div dir="rtl">'+html+'</div>');
+      note('🖨️ جارٍ فتح المستند للطباعة');
+    };
+  }
 })();
 </script>
 
